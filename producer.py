@@ -4,7 +4,7 @@ from collections import namedtuple
 ProductionSolution = namedtuple('ProductionSolution', ['supply', 'income', 'allocation', 'jacobi'])
 
 # adds an additonal entry at the end of prices which corresponds to one additional listenting for the price of gold. It's price is always 1 since prices are listed in gold.
-extended_prices(prices):
+def extended_prices(prices):
     return np.append(prices, 1)
 
 class Producer:
