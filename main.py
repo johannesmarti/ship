@@ -38,12 +38,12 @@ location_config = [
 utility_coefficients = np.array([2,1,1])
 
 def main():
-    world = World(location_config,utility_coefficients, 2)
+    world = World(location_config,utility_coefficients, 2, 2)
     print("There are", world.num_provinces(), "locations:")
     for i in range(0,world.num_provinces()):
         print(world.name_of_index(i))
+        print(world.producers[i].production_matrix)
 
-    print(world.producers[0].production_matrix)
     return 0
 
 if __name__ == '__main__':

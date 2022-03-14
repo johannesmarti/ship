@@ -9,6 +9,7 @@ class World:
         self.num_goods = pop_utility_coefficients.shape[0]
         if num_trade_goods is None:
             num_trade_goods = self.num_goods
+        self.num_trade_goods = num_trade_goods
         self.province_names = list(map(lambda h : h['name'], province_config))
         self.populations = np.array(list(map(lambda h : h['population'], province_config)))
         self.consumers = list(map(lambda h : Consumer(pop_utility_coefficients), province_config))
@@ -22,10 +23,10 @@ class World:
 
 
         def trade_matrix(s, t):
-            wide = np.zeros((num_trade_goods, num_prices + 1))
-            all_goods = trade_factor * np.eye(num_trade_goods)
-            wide[:,self.slice_of_market_in_province(s)] = -all_goods
-            wide[:,self.slice_of_market_in_province(t)] = all_goods
+            wide = np.zeros((self.num_trade_goods, num_prices + 1))
+            all_goods = trade_factor * np.eye(self.num_trade_goods)
+            wide[:,self.trade_slice_of_market_in_province(s)] = -all_goods
+            wide[:,self.trade_slice_of_market_in_province(t)] = all_goods
             return wide
 
         def production_matrix_for(index):
@@ -59,4 +60,8 @@ class World:
     def slice_of_market_in_province(self, i):
         s = self.num_goods * i
         return slice(s, s + self.num_goods)
+
+    def trade_slice_of_market_in_province(self, i):
+        s = self.num_goods * i
+        return slice(s, s + self.num_trade_goods)
 
