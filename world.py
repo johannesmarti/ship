@@ -1,7 +1,10 @@
 import numpy as np
+from collections import namedtuple
 
 from consumer import Consumer
 from producer import Producer
+
+Equilibrium = namedtuple('Equilibrium', ['prices', 'allocations', 'consumptions'])
 
 class World:
     def __init__(self, province_config, pop_utility_coefficients, trade_factor, num_trade_goods=None):
@@ -18,11 +21,11 @@ class World:
         trade_partners = list(map(lambda h : list(map(self.index_of_name, h['trade_partners'])), province_config))
 
 
-        num_prices = self.num_provinces() * self.num_goods
+        self.num_prices = self.num_provinces() * self.num_goods
 
 
         def trade_matrix(s, t):
-            wide = np.zeros((num_trade_goods, num_prices + 1))
+            wide = np.zeros((num_trade_goods, self.num_prices + 1))
             all_goods = trade_factor * np.eye(num_trade_goods)
             wide[:,self.slice_of_market_in_province(s)] = -all_goods
             wide[:,self.slice_of_market_in_province(t)] = all_goods
@@ -30,7 +33,7 @@ class World:
 
         def production_matrix_for(index):
             local = production[index]
-            wide_local = np.zeros((local.shape[0],num_prices + 1))
+            wide_local = np.zeros((local.shape[0],self.num_prices + 1))
             wide_local[:,self.slice_of_market_in_province(index)] = local[:,:-1]
             wide_local[:,-1] = local[:,-1] # append gold column at end
             
@@ -39,7 +42,7 @@ class World:
             
             trade_part = np.vstack(list(map(tm, trade_partners[index])))
             ret = np.vstack((wide_local,trade_part))
-            assert ret.shape[1] == num_prices + 1
+            assert ret.shape[1] == self.num_prices + 1
             return ret
             
             #production_coefficients = list(map(production_coefficients_of_group, range(num_groups)))
@@ -59,4 +62,9 @@ class World:
     def slice_of_market_in_province(self, i):
         s = self.num_goods * i
         return slice(s, s + self.num_goods)
+
+    def find_equilibrium(prices=None):
+        if prices is None:
+            prices = np.full(num_prices, 20)
+        return Equilibrium(prices, allocations, consumptions)
 
