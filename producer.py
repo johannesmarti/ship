@@ -11,6 +11,9 @@ class Producer:
     def __init__(self, production_matrix):
         self.production_matrix = production_matrix
 
+    def num_tasks(self):
+        return self.production_matrix.shape[0]
+
     def supply(self, allocation):
         return self.production_matrix.T @ np.sqrt(allocation)
 

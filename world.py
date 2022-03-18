@@ -94,6 +94,12 @@ class World:
         s = self.num_goods * i
         return slice(s, s + self.num_trade_goods)
 
+    def consumer(self, i)
+        return self.consumers[i]
+
+    def producer(self, i)
+        return self.producers[i]
+
 
 
 def find_equilibrium(world, prices=None, alpha=1.2):
