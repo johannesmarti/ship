@@ -46,13 +46,39 @@ class World:
             assert ret.shape[1] == self.num_prices + 1
             return ret
             
-            #production_coefficients = list(map(production_coefficients_of_group, range(num_groups)))
-
         self.producers = list(map(lambda i : Producer(production_matrix_for(i)), range(0,self.num_provinces())))
+
+
+    def one_iteration(prices):
+        supply = np.zeros(num_prices)
+        jacobi = np.zeros(num_prices)
+        income = np.zeros(num_groups)
+        for i in range(num_groups):
+            res = production(production_coefficients[i],prices,allocations[i])
+            supply = supply + pops[i] * res.supply
+            income[i] = res.income
+            allocations[i] = res.allocation
+            jacobi = jacobi + pops[i] * res.jacobi
+        demand = np.zeros(num_prices)
+        for i in range(num_groups):
+            ith_slice = slice_of_market(i)
+            #res = consumption(utility_coefficients, prices[ith_slice], income[i],consumptions[i])
+            res = consumer.consume(prices[ith_slice], income[i])
+            demand[ith_slice] = demand[ith_slice] + pops[i] * res.consumption
+            consumptions[i] = res.consumption
+            jacobi[ith_slice] = jacobi[ith_slice] - pops[i] * res.jacobi
+    
+        return (supply - demand,jacobi)
 
 
     def num_provinces(self):
         return len(self.province_names)
+
+    def num_provinces(self):
+        return self.num_goods
+
+    def num_prices(self):
+        return self.num_prices
 
     def index_of_name(self, name):
         return self.province_names.index(name)
@@ -68,7 +94,49 @@ class World:
         s = self.num_goods * i
         return slice(s, s + self.num_trade_goods)
 
-    def find_equilibrium(prices=None):
-        if prices is None:
-            prices = np.full(num_prices, 20)
-        return Equilibrium(prices, allocations, consumptions)
+
+
+def find_equilibrium(world, prices=None, alpha=1.2):
+    if prices is None:
+        prices = np.full(world.num_prices(), 20)
+    assert(prices.size == world.num_prices())
+
+    allocations = list(map(lambda nt: np.full(nt, 1/nt), num_tasks))
+    consumptions = np.full((world.num_provinces(),world.num_goods()), 0.01)
+
+    t = alpha
+    prev_badness = 1000000000000.0
+    prev_prices = prices
+    prev_derivative = prices
+    prev_error = prices
+    error_vector = prices
+    iterations = 0
+
+    while True:
+        (error_vector, derivative) = world.one_iteration(prices)
+        iterations += 1
+        badness = norm(error_vector)
+        #print("error_vector:", error_vector)
+        print("badness:", badness, "(previous:", prev_badness, ")")
+        if badness < 0.001:
+            break
+        elif badness > prev_badness:
+            t = 0.6 * t
+            print("worse! (new t =", t, ")")
+            prices = prev_prices - t * (prev_error / prev_derivative)
+            prices = np.maximum(prices,0.0001)
+            print("now trying with", prices)
+            badness = prev_badness
+            assert t > 0.0001
+        else:
+            prev_badness = badness
+            prev_prices = prices
+            prev_error = error_vector
+            prev_derivative = derivative
+            #prices = prices - alpha * prices * error_vector
+            prices = prices - t * (error_vector / derivative)
+            prices = np.maximum(prices,0.0001)
+            t = alpha
+            print("update")
+
+    return Equilibrium(prices, allocations, consumptions)
