@@ -8,11 +8,11 @@ location_config = [
  'population':  8,
  'production':  [
                     [1,1,0,0],
-                    [0,-1,0,0.5],
+                    [0,-1,0,8],
                     [0,3,0,0],
-                    [-1,-1,5,0]
+                    [-1,-1,4,0]
                 ],
- 'tax_rate':    0.05,
+ 'tax_rate':    0.001,
  'trade_partners': ['Italy','France']},
 
 {'name':        "Italy",
@@ -22,16 +22,18 @@ location_config = [
                     [0,2,0,0],
                     [-1,-1,3,0]
                 ],
- 'tax_rate':    0.08,
+ 'tax_rate':    0.0005,
  'trade_partners': ['Switzerland']},
 {'name':        "France",
  'population':  50,
  'production':  [
                     [5,1,0,0],
-                    [0,2,0,0],
-                    [-1,-1,3,0]
+                    [0,3,0,0],
+                    [0,-1,0,3],
+                    #[0,0,1,-2],
+                    [-1,-1,4,0]
                 ],
- 'tax_rate':    0.1,
+ 'tax_rate':    0.001,
  'trade_partners': ['Switzerland']}
 ]
 
@@ -43,6 +45,11 @@ def main():
     for i in range(0,world.num_provinces()):
         print(world.name_of_index(i))
         print(world.producers[i].production_matrix)
+
+    res = world.find_equilibrium(alpha=2)
+    print(res.values.error_vector)
+    print(res.prices)
+    print(res.values.allocations)
 
     return 0
 

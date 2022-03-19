@@ -14,27 +14,31 @@ class Producer:
     def num_tasks(self):
         return self.production_matrix.shape[0]
 
-    def supply(self, allocation):
+    def allocation_vector(self):
+        nt = self.num_tasks()
+        return np.full(nt, 1/nt)
+
+    def extended_supply(self, allocation):
         return self.production_matrix.T @ np.sqrt(allocation)
 
-    def income(self, allocation, extended_prices):
-        return extended_prices @ self.supply(allocation)
+    def income(self, allocation, eprices):
+        return eprices @ self.extended_supply(allocation)
 
-    def produce(prices):
+    def produce(self, prices):
         assert(prices.size + 1 == self.production_matrix.shape[1])
-        extended_prices = extend_prices(prices)
+        eprices = extended_prices(prices)
 
         # we first remove all tasks which result in negative income if all the necessary goods are bought at current prices
     
         # compute for each task how much money it makes
-        payoff_one_unit = production_matrix @ extended_prices
+        payoff_one_unit = self.production_matrix @ eprices
     
         # remove money loosing tasks from the production matrix
         tasks_to_cancel = payoff_one_unit < 0
-        pm = production_matrix.copy()
+        pm = self.production_matrix.copy()
         pm[tasks_to_cancel,] = 0
     
-        ep = pm @ extended_prices
+        ep = pm @ eprices
         epsq = ep * ep
         lambda_squared = np.sum(epsq)
         allocation = epsq / lambda_squared
@@ -44,7 +48,7 @@ class Producer:
         jacobi_diagonal = 1 / lbd * np.sum(prod_squared, axis=0)
         assert (allocation >= 0).all()
         assert (allocation <= 1).all()
-        return ProductionSolution(self.supply(allocation),
-                                  self.income(allocation, extended_prices),
+        return ProductionSolution(self.extended_supply(allocation)[:-1],
+                                  self.income(allocation, eprices),
                                   allocation,
-                                  jacobi_diagonal)
+                                  jacobi_diagonal[:-1])
