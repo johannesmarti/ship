@@ -37,7 +37,7 @@ location_config = [
                     [0,3,0,0],
                     [0,-1,0,5],
                     #[0,0,1,-2],
-                    [-1,-1,4,0]
+                    [-1,-1,4,-0.2]
                 ],
  'tax_rate':    0.0008,
  'balance':     80,
@@ -49,7 +49,7 @@ location_config = [
 utility_coefficients = np.array([2,1,1])
 
 def main():
-    world = World(location_config,utility_coefficients, 2, 2)
+    world = World(location_config,utility_coefficients, 2, 3)
     print("There are", world.num_provinces(), "locations:")
     for i in range(0, world.num_provinces()):
         print(world.name_of_index(i))
