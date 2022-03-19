@@ -4,10 +4,11 @@ from collections import namedtuple
 
 from consumer import Consumer
 from producer import Producer
+from government import Government
 
-AllocationAtPrices = namedtuple('AllocationAtPrices', ['error_vector', 'derivative', 'allocations', 'consumptions'])
+AllocationAtPrices = namedtuple('AllocationAtPrices', ['error_vector', 'derivative', 'allocations', 'consumptions', 'government_purchases'])
 
-Equilibrium = namedtuple('Equilibrium', ['prices', 'values'])
+Equilibrium = namedtuple('Equilibrium', ['prices', 'values', 'iterations'])
 
 class World:
     def __init__(self, province_config, pop_utility_coefficients, trade_factor, num_trade_goods=None):
@@ -19,12 +20,10 @@ class World:
         self.province_names = list(map(lambda h : h['name'], province_config))
         self.populations = np.array(list(map(lambda h : h['population'], province_config)))
         self.consumers = list(map(lambda h : Consumer(pop_utility_coefficients), province_config))
-        self.tax_rates = np.array(list(map(lambda h : h['tax_rate'], province_config)))
 
         production = list(map(lambda h : np.array(h['production']), province_config))
         trade_partners = list(map(lambda h : list(map(self.index_of_name, h['trade_partners'])), province_config))
-
-
+        
 
         def trade_matrix(s, t):
             wide = np.zeros((self._num_trade_goods, self.num_prices() + 1))
@@ -49,28 +48,39 @@ class World:
             
         self.producers = list(map(lambda i : Producer(production_matrix_for(i)), range(0,self.num_provinces())))
 
+        tax_rates = list(map(lambda h : h['tax_rate'], province_config))
+        balances = list(map(lambda h : h['balance'], province_config))
+        spending_rates = list(map(lambda h : h['spending_rate'], province_config))
+        spending_distributions = list(map(lambda h : np.array(h['spending_distribution']), province_config))
+        self._governments = list(map(lambda i : Government(tax_rates[i], spending_rates[i], spending_distributions[i], balances[i]), range(0,self.num_provinces())))
+
+
 
     def one_iteration(self, prices):
         supply = np.zeros(self.num_prices())
         jacobi = np.zeros(self.num_prices())
         income = np.zeros(self.num_provinces())
+        taxes = np.zeros(self.num_provinces())
         allocations = list(map(lambda i: self.producer(i).allocation_vector(), range(self.num_provinces())))
         consumptions = np.full((self.num_provinces(), self.num_goods()), 0.01)
+        government_purchases = np.zeros((self.num_provinces(), self.num_goods()))
         for i in range(self.num_provinces()):
             res = self.producer(i).produce(prices)
             supply = supply + self.population(i) * res.supply
-            income[i] = res.income * (1 - self.tax_rates[i])
             allocations[i] = res.allocation
             jacobi = jacobi + self.population(i) * res.jacobi
+            (income[i],taxes[i]) = self.government(i).tax_income(res.wages)
         demand = np.zeros(self.num_prices())
         for i in range(self.num_provinces()):
             ith_slice = self.slice_of_market_in_province(i)
             res = self.consumer(i).consume(prices[ith_slice], income[i])
-            demand[ith_slice] = demand[ith_slice] + self.population(i) * res.consumption
+            admin = self.government(i).govern(prices[ith_slice], taxes[i])
+            demand[ith_slice] = self.population(i) * res.consumption + admin.demand
+            jacobi[ith_slice] = jacobi[ith_slice] - self.population(i) * res.jacobi + admin.jacobi
             consumptions[i] = res.consumption
-            jacobi[ith_slice] = jacobi[ith_slice] - self.population(i) * res.jacobi
+            government_purchases[i] = admin.demand
     
-        return AllocationAtPrices(supply - demand, jacobi, allocations, consumptions)
+        return AllocationAtPrices(supply - demand, jacobi, allocations, consumptions, government_purchases)
 
 
     def num_provinces(self):
@@ -104,12 +114,15 @@ class World:
     def producer(self, i):
         return self.producers[i]
 
+    def government(self, i):
+        return self._governments[i]
+
     def population(self, i):
         return self.populations[i]
 
-    def find_equilibrium(self, prices=None, alpha=1.2):
+    def find_equilibrium(self, prices=None, alpha=1.6):
         if prices is None:
-            prices = np.full(self.num_prices(), 20)
+            prices = np.full(self.num_prices(), 10)
         assert(prices.size == self.num_prices())
     
         t = alpha
@@ -123,12 +136,13 @@ class World:
         while True:
             res = self.one_iteration(prices)
             error_vector = res.error_vector
+            print("error_vector   ", error_vector)
             derivative = res.derivative
             iterations += 1
             badness = norm(error_vector)
             #print("error_vector:", error_vector)
             print("badness:", badness, "(previous:", prev_badness, ")")
-            if badness < 0.01:
+            if badness < 0.1:
                 break
             elif badness > prev_badness and t > 1:
                 #t = 0.6 * t
@@ -136,10 +150,10 @@ class World:
                 print("worse! (new t =", t, ")")
                 prices = prev_prices - t * (prev_error / prev_derivative)
                 #prices = np.maximum(prices,0.0001)
-                #print("now trying with", prices)
+                print("now trying with", prices)
                 #print("had            ", prev_prices)
                 #print("derivative     ", prev_derivative)
-                print("error_vector   ", error_vector)
+                #print("error_vector   ", error_vector)
                 badness = prev_badness
             else:
                 prev_badness = badness
@@ -152,4 +166,4 @@ class World:
                 t = alpha
                 print("update")
     
-        return Equilibrium(prices, res)
+        return Equilibrium(prices, res, iterations)

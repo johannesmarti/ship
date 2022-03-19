@@ -1,7 +1,7 @@
 import numpy as np
 from collections import namedtuple
 
-ProductionSolution = namedtuple('ProductionSolution', ['supply', 'income', 'allocation', 'jacobi'])
+ProductionSolution = namedtuple('ProductionSolution', ['supply', 'wages', 'allocation', 'jacobi'])
 
 # adds an additonal entry at the end of prices which corresponds to one additional listenting for the price of gold. It's price is always 1 since prices are listed in gold.
 def extended_prices(prices):
@@ -21,7 +21,7 @@ class Producer:
     def extended_supply(self, allocation):
         return self.production_matrix.T @ np.sqrt(allocation)
 
-    def income(self, allocation, eprices):
+    def wages(self, allocation, eprices):
         return eprices @ self.extended_supply(allocation)
 
     def produce(self, prices):
@@ -49,6 +49,6 @@ class Producer:
         assert (allocation >= 0).all()
         assert (allocation <= 1).all()
         return ProductionSolution(self.extended_supply(allocation)[:-1],
-                                  self.income(allocation, eprices),
+                                  self.wages(allocation, eprices),
                                   allocation,
                                   jacobi_diagonal[:-1])
