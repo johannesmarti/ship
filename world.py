@@ -5,35 +5,37 @@ from collections import namedtuple
 from consumer import Consumer
 from producer import Producer
 from government import Government
+from goods import GoodsConfig
 
 AllocationAtPrices = namedtuple('AllocationAtPrices', ['error_vector', 'derivative', 'allocations', 'consumptions', 'government_purchases'])
 
 Equilibrium = namedtuple('Equilibrium', ['prices', 'values', 'iterations'])
 
 class World:
-    def __init__(self, province_config, pop_utility_coefficients, trade_factor, num_trade_goods=None):
+    def __init__(self, goods_config, province_config, utilities, trade_factor):
 
-        self._num_goods = pop_utility_coefficients.shape[0]
-        if num_trade_goods is None:
-            num_trade_goods = self.num_goods
-        self._num_trade_goods = num_trade_goods
+        self._goods_config = goods_config
         self.province_names = list(map(lambda h : h['name'], province_config))
         self.populations = np.array(list(map(lambda h : h['population'], province_config)))
-        self.consumers = list(map(lambda h : Consumer(pop_utility_coefficients), province_config))
+        utility_coefficients = goods_config.dict_to_vector(utilities)
+        self.consumers = list(map(lambda h : Consumer(utility_coefficients), province_config))
 
-        production = list(map(lambda h : np.array(h['production']), province_config))
+        def vectorize(list_of_dicts):
+            return list(map(lambda d : self._goods_config.gold_dict_to_vector(d), list_of_dicts))
+        production = list(map(lambda h : vectorize(h['production']), province_config))
         trade_partners = list(map(lambda h : list(map(self.index_of_name, h['trade_partners'])), province_config))
         
 
         def trade_matrix(s, t):
-            wide = np.zeros((self._num_trade_goods, self.num_prices() + 1))
-            all_goods = trade_factor * np.eye(self._num_trade_goods)
+            num_trade_goods = goods_config.num_tradable_goods()
+            wide = np.zeros((num_trade_goods, self.num_prices() + 1))
+            all_goods = trade_factor * np.eye(num_trade_goods)
             wide[:,self.trade_slice_of_market_in_province(s)] = -all_goods
             wide[:,self.trade_slice_of_market_in_province(t)] = all_goods
             return wide
 
         def production_matrix_for(index):
-            local = production[index]
+            local = np.array(production[index])
             wide_local = np.zeros((local.shape[0],self.num_prices() + 1))
             wide_local[:,self.slice_of_market_in_province(index)] = local[:,:-1]
             wide_local[:,-1] = local[:,-1] # append gold column at end
@@ -51,7 +53,7 @@ class World:
         tax_rates = list(map(lambda h : h['tax_rate'], province_config))
         balances = list(map(lambda h : h['balance'], province_config))
         spending_rates = list(map(lambda h : h['spending_rate'], province_config))
-        spending_distributions = list(map(lambda h : np.array(h['spending_distribution']), province_config))
+        spending_distributions = list(map(lambda h : self._goods_config.dict_to_vector(h['spending_distribution']), province_config))
         self._governments = list(map(lambda i : Government(tax_rates[i], spending_rates[i], spending_distributions[i], balances[i]), range(0,self.num_provinces())))
 
 
@@ -62,8 +64,8 @@ class World:
         income = np.zeros(self.num_provinces())
         taxes = np.zeros(self.num_provinces())
         allocations = list(map(lambda i: self.producer(i).allocation_vector(), range(self.num_provinces())))
-        consumptions = np.full((self.num_provinces(), self.num_goods()), 0.01)
-        government_purchases = np.zeros((self.num_provinces(), self.num_goods()))
+        consumptions = np.full((self.num_provinces(), self._goods_config.num_goods()), 0.01)
+        government_purchases = np.zeros((self.num_provinces(), self._goods_config.num_goods()))
         for i in range(self.num_provinces()):
             res = self.producer(i).produce(prices)
             supply = supply + self.population(i) * res.supply
@@ -87,7 +89,7 @@ class World:
         return len(self.province_names)
 
     def num_goods(self):
-        return self._num_goods
+        return self._goods_config.num_goods()
 
     def num_prices(self):
         return self.num_provinces() * self.num_goods()
@@ -106,7 +108,7 @@ class World:
     def trade_slice_of_market_in_province(self, i):
         ng = self.num_goods()
         s = ng * i
-        return slice(s, s + self._num_trade_goods)
+        return slice(s, s + self._goods_config.num_tradable_goods())
 
     def consumer(self, i):
         return self.consumers[i]

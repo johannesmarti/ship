@@ -8,6 +8,9 @@ class GoodsConfig:
     def num_goods(self):
         return len(self._names)
 
+    def num_tradable_goods(self):
+        return self._num_tradable_goods
+
     def name_of_index(self, i):
         if i == self.num_goods() + 1:
             return 'gold'
