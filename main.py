@@ -58,8 +58,8 @@ utility_coefficients = {'food': 2, 'wood': 1, 'weapons': 0.5}
 
 def main():
     world = World(goods_config, location_config, utility_coefficients, 2)
-    print("There are", world.num_provinces(), "locations:")
-    for i in range(0, world.num_provinces()):
+    print("There are", world.num_provinces, "locations:")
+    for i in range(0, world.num_provinces):
         print(world.name_of_index(i))
         print(world.producers[i].production_matrix)
 
