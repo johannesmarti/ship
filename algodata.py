@@ -11,7 +11,7 @@ AllocationAtPrices = namedtuple('AllocationAtPrices', ['error_vector', 'derivati
 
 Equilibrium = namedtuple('Equilibrium', ['prices', 'values', 'iterations'])
 
-class World:
+class AlgoData:
     def __init__(self, goods_config, province_config, utilities, trade_factor):
 
         self._goods_config = goods_config
