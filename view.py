@@ -1,59 +1,54 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
-class Money(int):
-    pass
+class Good(ABC):
+    @abstractmethod
+    def name(self : 'Good') -> str:
+        pass
+
+class Worktask(ABC):
+    @abstractmethod
+    def description(self : 'Worktask') -> str:
+        pass
+    @abstractmethod
+    def location(self : 'Worktask') -> 'Province':
+        pass
+
+class Province(ABC):
+    @abstractmethod
+    def name(self : 'Province') -> str:
+        pass
+    @abstractmethod
+    def population(self : 'Province') -> int:
+        pass
+    @abstractmethod
+    def local_worktasks(self : 'Province') -> Iterator[Worktask]:
+        pass
 
 class GoodId(int):
     pass
 
-class ProvinceId(int):
+class World(ABC):
+    @abstractmethod
+    def goods(self : 'World') -> Iterator[Good]:
+        pass
+    @abstractmethod
+    def worktasks(self : 'World') -> Iterator[Worktask]:
+        pass
+    @abstractmethod
+    def provinces(self : 'World') -> Iterator[Province]:
+        pass
+
+class Money(int):
     pass
 
-class WorktaskId():
-    def __init__(self : 'WorktaskId', province : ProvinceId, task : int):
-        self.province = province
-        self.task = task
-
-class WorldView(ABC):
+class Allocation(ABC):
     @abstractmethod
-    def good_name(self : 'WorldView', good : GoodId) -> str:
+    def world(self : 'Allocation') -> World:
         pass
     @abstractmethod
-    def goods(self : 'WorldView') -> Iterator[GoodId]:
+    def price(self : 'Allocation', province : Province, good : Good) -> Money:
         pass
     @abstractmethod
-    def is_tradable(self : 'WorldView', good : GoodId) -> bool:
-        pass
-
-    @abstractmethod
-    def province_name(self : 'WorldView', province : ProvinceId) -> str:
-        pass
-    @abstractmethod
-    def population(self : 'WorldView', province : ProvinceId) -> int:
-        pass
-    @abstractmethod
-    def provinces(self : 'WorldView') -> Iterator[ProvinceId]:
-        pass
-
-    @abstractmethod
-    def worktask_description(self : 'WorldView', wt : WorktaskId) -> str:
-        pass
-    @abstractmethod
-    def worktasks(self : 'WorldView') -> Iterator[WorktaskId]:
-        pass
-    @abstractmethod
-    def worktasks_in_province(self : 'WorldView',
-                              province : ProvinceId) -> Iterator[WorktaskId]:
-        pass
-
-class AllocationView(ABC):
-    @abstractmethod
-    def worldview(self : 'AllocationView') -> WorldView:
-        pass
-    @abstractmethod
-    def price(self : 'AllocationView', good : GoodId) -> Money:
-        pass
-    @abstractmethod
-    def workforce(self : 'AllocationView', task: WorktaskId) -> float:
+    def workforce(self : 'Allocation', task : Worktask) -> float:
         pass
