@@ -1,0 +1,23 @@
+
+provide types:
+
+GoodId, ProvinceId, WorkTaskId
+
+Config -> WorldView
+WorldView -> WorldView -> AllocationView
+
+WorldView:
+  goodName : ProvinceId -> String
+  goods : Iterator<GoodId>
+  is_trade_good : GoodId -> String
+  provinceName : ProvinceId -> String
+  provinces : Iterator<ProvinceId>
+  workTaskDescription : WorkTaskIde -> String
+  worktasks : Iterator<WorkTaskId>
+  worktask_in_province : ProvinceId -> Iterator<WorkTaskId>
+
+AllocationView:
+  worldView : WorldView
+  price : GoodId -> ProvinceId -> Money
+  workforce :: WorkTaskId -> Float
+
