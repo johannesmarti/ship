@@ -5,6 +5,10 @@ class Good(ABC):
     @abstractmethod
     def name(self : 'Good') -> str:
         pass
+    @abstractmethod
+    def is_tradable(self : 'Good') -> bool:
+        pass
+
 
 class Worktask(ABC):
     @abstractmethod
@@ -25,21 +29,20 @@ class Province(ABC):
     def local_worktasks(self : 'Province') -> Iterator[Worktask]:
         pass
 
-class GoodId(int):
-    pass
-
 class World(ABC):
     @abstractmethod
     def goods(self : 'World') -> Iterator[Good]:
         pass
     @abstractmethod
-    def worktasks(self : 'World') -> Iterator[Worktask]:
-        pass
-    @abstractmethod
     def provinces(self : 'World') -> Iterator[Province]:
         pass
 
-class Money(int):
+    def worktasks(self : 'World') -> Iterator[Worktask]:
+        for province in self.provinces():
+            for local_task in province.local_worktasks():
+                yield local_task
+    
+class Money(float):
     pass
 
 class Allocation(ABC):
