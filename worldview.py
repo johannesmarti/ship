@@ -1,57 +1,69 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
 
+
 class Good(ABC):
     @abstractmethod
-    def name(self : 'Good') -> str:
+    def name(self):
         pass
+
     @abstractmethod
-    def is_tradable(self : 'Good') -> bool:
+    def is_tradable(self):
         pass
 
 
 class Worktask(ABC):
     @abstractmethod
-    def description(self : 'Worktask') -> str:
+    def description(self):
         pass
+
     @abstractmethod
-    def location(self : 'Worktask') -> 'Province':
+    def location(self):
         pass
+
 
 class Province(ABC):
     @abstractmethod
-    def name(self : 'Province') -> str:
+    def name(self):
         pass
+
     @abstractmethod
-    def population(self : 'Province') -> int:
+    def population(self):
         pass
+
     @abstractmethod
-    def local_worktasks(self : 'Province') -> Iterator[Worktask]:
+    def local_worktasks(self):
         pass
+
 
 class World(ABC):
     @abstractmethod
-    def goods(self : 'World') -> Iterator[Good]:
-        pass
-    @abstractmethod
-    def provinces(self : 'World') -> Iterator[Province]:
+    def goods(self):
         pass
 
-    def worktasks(self : 'World') -> Iterator[Worktask]:
+    @abstractmethod
+    def provinces(self):
+        pass
+
+    def worktasks(self):
         for province in self.provinces():
             for local_task in province.local_worktasks():
                 yield local_task
-    
+
+
 class Money(float):
     pass
 
+
 class Allocation(ABC):
     @abstractmethod
-    def world(self : 'Allocation') -> World:
+    def world(self):
         pass
+
     @abstractmethod
-    def price(self : 'Allocation', province : Province, good : Good) -> Money:
+    def price(self, province, good):
         pass
+
     @abstractmethod
-    def workforce(self : 'Allocation', task : Worktask) -> float:
+    def workforce(self, task):
         pass
