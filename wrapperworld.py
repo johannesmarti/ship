@@ -80,9 +80,10 @@ class WrapperWorld(World):
 
 
 class WrapperAllocation(Allocation):
-    def __init__(self, world, allocation):
+    def __init__(self, world, prices, allocation):
         self.in_world = world
-        self.data = allocation
+        self.prices = prices
+        self.allocation = allocation
 
     def world(self):
         return self.in_world
@@ -90,4 +91,4 @@ class WrapperAllocation(Allocation):
     def price(self, province, good):
         assert province.world is self.in_world
         assert good.world is self.in_world
-        return None
+        return self.world.slice_of_market_in_province(province.id)[good.id]
