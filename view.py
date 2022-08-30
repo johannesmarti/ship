@@ -1,9 +1,3 @@
-
-def print_consumers(allocation, province):
-    print(province.name(), "(consumption)")
-    w = allocation.wages(province)
-    print("wages:", w)
-
 def print_consumers(allocation, province):
     world =  allocation.world()
     print(world.province_name(province), "(consumption)")
@@ -11,6 +5,8 @@ def print_consumers(allocation, province):
     print("wages:", w)
     u = allocation.utility(province)
     print("utility:", utility_per_pop)
+    price_of_utility = w / u
+    print("price of utility:", price_of_utility)
 
 def print_consumers(group):
     print(location_name[group], "(consumption)")

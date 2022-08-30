@@ -53,3 +53,7 @@ class Allocation(ABC):
     @abstractmethod
     def wages(self, province):
         pass
+
+    @abstractmethod
+    def utility(self, province):
+        pass
