@@ -5,11 +5,11 @@ from typing import Callable,Iterable,Protocol,Tuple
 import numpy.typing as npt
 
 
-ScalarType = np.float64
+Scalar = np.float32
 #ScalarType = float
 
-Prices = npt.NDArray[ScalarType]
-Bundle = npt.NDArray[ScalarType]
+Prices = npt.NDArray[Scalar]
+Bundle = npt.NDArray[Scalar]
 
 class Participant(Protocol):
     def participate(self, prices : Prices) -> Bundle:
@@ -18,7 +18,7 @@ class Participant(Protocol):
 Market = Callable[[Iterable[Participant],Prices],Prices]
 
 
-Elasticity = npt.NDArray[ScalarType]
+Elasticity = npt.NDArray[Scalar]
 
 class ElasticBundle:
     value : Bundle
@@ -76,9 +76,12 @@ def one_iteration(participants : Iterable[EEP], prices : Prices) -> ElasticBundl
 def update_prices(prices : Prices, error : ElasticBundle, t : float = 1) -> Prices:
     return prices - (error.value/error.elasticity)
 
+def badness(error : Bundle) -> Scalar:
+    return norm(error)
+
 def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1) -> Prices:
     error = one_iteration(participants, prices)
-    while norm(error.value) >= epsilon:
+    while badness(error.value) >= epsilon:
         prices = update_prices(prices, error)
         error = one_iteration(participants, prices)
     return prices
@@ -86,7 +89,7 @@ def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float
 def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBundle, t : float = 1, alpha : float = 1, beta : float = 0.5) -> Tuple[Prices,ElasticBundle]:
     next_prices = update_prices(prices, error, t)
     next_error = one_iteration(participants, next_prices)
-    while next_error.value >= alpha * error.value:
+    while badness(next_error.value) >= alpha * badness(error.value):
         t *= beta
         next_prices = update_prices(prices, error, t)
         next_error = one_iteration(participants, next_prices)
@@ -94,7 +97,7 @@ def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBu
 
 def line_search_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1) -> Prices:
     error = one_iteration(participants, prices)
-    while norm(error.value) >= epsilon:
+    while badness(error.value) >= epsilon:
         (prices, error) = line_search(participants, prices, error)
     return prices
 
