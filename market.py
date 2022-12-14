@@ -6,7 +6,6 @@ import numpy.typing as npt
 
 
 Scalar = np.float32
-#ScalarType = float
 
 Prices = npt.NDArray[Scalar]
 Bundle = npt.NDArray[Scalar]
@@ -17,13 +16,19 @@ class Participant(Protocol):
 
 Market = Callable[[Iterable[Participant],Prices],Prices]
 
+class VolumeReportingParticipant(Participant, Protocol):
+    def participate_with_volume(self, prices : Prices) -> Tuple[Bundle,Bundle]:
+        ...
+        
+    def participate(self, prices : Prices) -> Bundle:
+        return self.participate_with_volume(prices)[0]
 
 Elasticity = npt.NDArray[Scalar]
 
 class ElasticBundle:
     value : Bundle
     elasticity : Elasticity
-    def __init__(value, elasticity):
+    def __init__(self, value, elasticity):
         assert np.all(elasticity > 0)
         assert np.shape(value) == np.shape(elasticity)
         self.value = value
@@ -43,6 +48,7 @@ class ElasticBundle:
     def __iadd__(self, other):
         assert other.shape() == self.shape()
         assert isinstance(other, ElasticBundle)
+        print("add in place")
         self.value += other.value
         self.elasticity += other.elasticity
         return self
@@ -58,6 +64,14 @@ class ElasticityEstimatingParticipant(Participant, Protocol):
     def participate(self, prices : Prices) -> Bundle:
         return self.participate_and_estimate(prices).value
 
+
+class ElasticityFromVolumeParticipant:
+    def __init__(self, inner : VolumeReportingParticipant):
+        self.inner = inner
+    
+    def participate_and_estimate(self, prices : Prices):
+        (error, volume) = self.inner.participate_with_volume(prices)
+        return ElasticBundle(error, volume / prices)
 
 EEP = ElasticityEstimatingParticipant
 
