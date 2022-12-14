@@ -39,9 +39,9 @@ smith = Factory(np.array([0,-1,-2,2], Scalar), 20)
 consumers = Consumers(np.array([3,1,0,3], Scalar), 10000)
 
 village = list(map(ElasticityFromVolumeParticipant, [farm,mine,smith,consumers]))
-p0 = np.array([10,10,10,10], Scalar)
+p0 = np.array([10,100000,10,10], Scalar)
 
-p = line_search_market(village, p0, 0.001)
+p = line_search_market(village, p0, 0.01)
 print("iterations:", iterations)
 print(p)
 

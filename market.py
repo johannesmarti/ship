@@ -5,7 +5,7 @@ from typing import Callable,Iterable,Protocol,Tuple
 import numpy.typing as npt
 
 
-Scalar = np.float32
+Scalar = np.float64
 
 Prices = npt.NDArray[Scalar]
 Bundle = npt.NDArray[Scalar]
@@ -80,46 +80,50 @@ AdvancedMarket = Callable[[Iterable[ElasticityEstimatingParticipant],Prices],Pri
 iterations = 0
 
 def one_iteration(participants : Iterable[EEP], prices : Prices) -> ElasticBundle:
-    eb = ElasticBundle.zero(prices.shape)
-    for p in participants:
-        eb += p.participate_and_estimate(prices)
     global iterations
     iterations += 1
     print(iterations)
+    eb = ElasticBundle.zero(prices.shape)
+    for p in participants:
+        eb += p.participate_and_estimate(prices)
     return eb
 
-def update_prices(prices : Prices, error : ElasticBundle, t : float = 1) -> Prices:
+def update_prices(prices : Prices, error : ElasticBundle, t : float = 0.9) -> Prices:
     
     return prices - t * (error.value/error.elasticity)
 
 def badness(error : Bundle) -> Scalar:
     return norm(error)
 
-def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1, t : float = 1) -> Prices:
+def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1, t : float = 0.9) -> Prices:
     error = one_iteration(participants, prices)
     while badness(error.value) >= epsilon:
         prices = update_prices(prices, error, t)
         error = one_iteration(participants, prices)
     return prices
 
-def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBundle, t : float = 1, alpha : float = 1.0001, beta : float = 0.5) -> Tuple[Prices,ElasticBundle]:
+def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBundle, t : float = 0.9, alpha : float = 1, beta : float = 0.5) -> Tuple[Prices,ElasticBundle]:
     next_prices = update_prices(prices, error, t)
     print("starting line search")
     #print(f"error: ", error.value, error.elasticity)
     #print(f"badness: ", badness(error.value))
-    #print(f"next_prices: ", next_prices)
+    print(f"next_prices: ", next_prices)
+    assert((next_prices > 0).all())
     next_error = one_iteration(participants, next_prices)
     #print(f"next_error: ", next_error.value, next_error.elasticity)
     #print(f"badness: ", badness(next_error.value))
     while badness(next_error.value) >= alpha * badness(error.value):
         t *= beta
-        assert t > 0.0001
+        if (t < 0.01):
+            print("giving up on line search")
+            break
         print("next iteration of line search with t =", t)
         print(f"next_error: ", next_error.value)
         print(f"old_error: ", error.value, error.elasticity)
         print(f"badness: ", badness(next_error.value), "vs old:", badness(error.value))
         print(f"next_prices: ", next_prices)
         next_prices = update_prices(prices, error, t)
+        assert((next_prices > 0).all())
         next_error = one_iteration(participants, next_prices)
     return (next_prices, next_error)
 
@@ -129,5 +133,6 @@ def line_search_market(participants : Iterable[EEP], prices : Prices, epsilon : 
         (prices, error) = line_search(participants, prices, error)
         print(f"prices: ", prices)
         print(f"error: ", error.value, error.elasticity)
+        print(f"badness: ", badness(error.value))
     return prices
 
