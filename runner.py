@@ -15,10 +15,12 @@ smith = Factory(np.array([0,-1,-2,2]), 20)
 
 consumers = Consumers(np.array([3,1,0,3]), 10000)
 
-village = list(map(ElasticityFromVolumeParticipant, [farm,mine,smith,consumers]))
-p0 = np.array([10,10,20,40])
+village = [farm,mine,smith,consumers]
+lazy_village = list(map(ElasticityFromVolumeParticipant, village))
 
-p = line_search_market(village, p0, 0.01, t=0.5)
+p0 = np.array([10,10,10,10])
+
+p = line_search_market(lazy_village, p0, 0.01, t=0.5)
 #p = simple_market(village, p0, 0.01)
 print("iterations:", get_iteration())
 print(p)

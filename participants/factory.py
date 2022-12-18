@@ -17,4 +17,15 @@ class Factory:
             result = workforce * self.production_vector
             logging.debug(f"production: {result}")
             return (result, np.absolute(result))
+
+    def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
+        if (prices @ self.production_vector <= 0):
+            return Bundle(np.zeros(prices.shape), np.zeros(prices.shape))
+        else:
+            revenue = self.production_vector @ prices
+            workforce = (revenue / self.labor_cost) ** 2
+            result = workforce * self.production_vector
+            logging.debug(f"production: {result}")
+
+            return Bundle(result, jacobi_diagonal)
             
