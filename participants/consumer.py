@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 
+from market.types import *
+
 class Consumers:
     def __init__(self, utility : Bundle, money : float):
         self.utility = utility

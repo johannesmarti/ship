@@ -45,7 +45,7 @@ def update_prices(prices : Prices, error : ElasticBundle, t : float = 0.9) -> Pr
 def badness(error : Bundle) -> float:
     return norm(error)
 
-def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1, t : float = 0.9) -> Prices:
+def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.001, t : float = 0.9) -> Prices:
     logging.info(f"simple market for epsilon = {epsilon}")
     logging.info(f"with prices: {prices}")
     error = one_iteration(participants, prices)
@@ -93,7 +93,7 @@ def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBu
     logging.info("\n")
     return (next_prices, next_error)
 
-def line_search_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1, t : float = 0.9) -> Prices:
+def line_search_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.001, t : float = 0.9) -> Prices:
     error = one_iteration(participants, prices)
     while badness(error.value) >= epsilon:
         increment_step()

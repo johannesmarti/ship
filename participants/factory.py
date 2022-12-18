@@ -1,6 +1,8 @@
 import logging
 import numpy as np
 
+from market.types import *
+
 class Factory:
     def __init__(self, production_vector : Bundle, labor_cost : float):
     	self.production_vector = production_vector
