@@ -1,14 +1,13 @@
 import numpy as np
 from numpy.linalg import norm
+import logging
 
 from typing import Callable,Iterable,Protocol,Tuple
 import numpy.typing as npt
 
 
-Scalar = np.float64
-
-Prices = npt.NDArray[Scalar]
-Bundle = npt.NDArray[Scalar]
+Prices = npt.NDArray
+Bundle = npt.NDArray
 
 class Participant(Protocol):
     def participate(self, prices : Prices) -> Bundle:
@@ -16,7 +15,7 @@ class Participant(Protocol):
 
 Market = Callable[[Iterable[Participant],Prices],Prices]
 
-Elasticity = npt.NDArray[Scalar]
+Elasticity = npt.NDArray
 
 class ElasticBundle:
     value : Bundle
@@ -34,7 +33,7 @@ class ElasticBundle:
     def __add__(self, other):
         assert other.shape() == self.shape()
         assert isinstance(other, ElasticBundle)
-        print("add creates new object")
+        logging.debug("add creates new object")
         return ElasticBundle(self.value + other.value,
                              self.elasticity + other.elasticity)
 
@@ -48,6 +47,8 @@ class ElasticBundle:
     def shape(self):
         return self.value.shape
 
+    def set_min_elasticity(self, min_value : float) -> None:
+        np.maximum(self.elasticity, min_value, out=self.elasticity)
 
 class ElasticityEstimatingParticipant(Participant, Protocol):
     def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
@@ -77,62 +78,87 @@ EEP = ElasticityEstimatingParticipant
 AdvancedMarket = Callable[[Iterable[ElasticityEstimatingParticipant],Prices],Prices]
 
 
-iterations = 0
+iteration : int = 0
+
+def reset_iterations() -> None:
+    global iteration
+    iteration = 0
+
+def increment_iterations() -> None:
+    global iteration
+    iteration += 1
+
+def iterations() -> int:
+    global iteration
+    return iteration
+
 
 def one_iteration(participants : Iterable[EEP], prices : Prices) -> ElasticBundle:
-    global iterations
-    iterations += 1
-    print(iterations)
+    increment_iterations()
+    logging.info(f"at iteration {iterations()}")
     eb = ElasticBundle.zero(prices.shape)
     for p in participants:
         eb += p.participate_and_estimate(prices)
+    eb.set_min_elasticity(0.001)
     return eb
 
 def update_prices(prices : Prices, error : ElasticBundle, t : float = 0.9) -> Prices:
     
     return prices - t * (error.value/error.elasticity)
 
-def badness(error : Bundle) -> Scalar:
+def badness(error : Bundle) -> float:
     return norm(error)
 
 def simple_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1, t : float = 0.9) -> Prices:
+    logging.info(f"simple market for epsilon = {epsilon}")
+    logging.info(f"with prices: {prices}")
     error = one_iteration(participants, prices)
+    
+    logging.info(f"with error: {error.value}")
+    logging.info(f"with badness: {badness(error.value)}")
+    logging.info(f"with elasticity: {error.elasticity}")
     while badness(error.value) >= epsilon:
+        logging.info("next iteration")
         prices = update_prices(prices, error, t)
         error = one_iteration(participants, prices)
+        logging.info(f"next_prices: {prices}")
+        assert((prices > 0).all())
+        logging.info(f"with error: {error.value}")
+        logging.info(f"with badness: {badness(error.value)}")
+        logging.info(f"with elasticity: {error.elasticity}")
     return prices
 
 def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBundle, t : float = 0.9, alpha : float = 1, beta : float = 0.5) -> Tuple[Prices,ElasticBundle]:
+    logging.info(f"starting line search, with t = {t}, alpha = {alpha}")
+    logging.info(f"at prices: {prices}")
+    logging.info(f"for error: {error.value}")
+    logging.info(f"with badness: {badness(error.value)}")
+    logging.info(f"with elasticity: {error.elasticity}")
+
     next_prices = update_prices(prices, error, t)
-    print("starting line search")
-    #print(f"error: ", error.value, error.elasticity)
-    #print(f"badness: ", badness(error.value))
-    print(f"next_prices: ", next_prices)
-    assert((next_prices > 0).all())
     next_error = one_iteration(participants, next_prices)
-    #print(f"next_error: ", next_error.value, next_error.elasticity)
-    #print(f"badness: ", badness(next_error.value))
+    logging.info(f"next_prices: {next_prices}")
+    assert((next_prices > 0).all())
+    logging.info(f"with error: {next_error.value}")
+    logging.info(f"with badness: {badness(next_error.value)}, vs old: {badness(error.value)}")
     while badness(next_error.value) >= alpha * badness(error.value):
         t *= beta
         if (t < 0.01):
-            print("giving up on line search")
+            logging.warning(f"giving up on line search at t = {t}")
             break
-        print("next iteration of line search with t =", t)
-        print(f"next_error: ", next_error.value)
-        print(f"old_error: ", error.value, error.elasticity)
-        print(f"badness: ", badness(next_error.value), "vs old:", badness(error.value))
-        print(f"next_prices: ", next_prices)
+        logging.info(f"next iteration of line search with t = {t}")
         next_prices = update_prices(prices, error, t)
-        assert((next_prices > 0).all())
         next_error = one_iteration(participants, next_prices)
+        logging.info(f"next_prices: {next_prices}")
+        assert((next_prices > 0).all())
+        logging.info(f"with error: {next_error.value}")
+        logging.info(f"with badness: {badness(next_error.value)}, vs old: {badness(error.value)}")
+    logging.info("\n")
     return (next_prices, next_error)
 
 def line_search_market(participants : Iterable[EEP], prices : Prices, epsilon : float = 0.1) -> Prices:
     error = one_iteration(participants, prices)
     while badness(error.value) >= epsilon:
         (prices, error) = line_search(participants, prices, error)
-        print(f"prices: ", prices)
-        print(f"error: ", error.value, error.elasticity)
-        print(f"badness: ", badness(error.value))
     return prices
 
