@@ -42,6 +42,9 @@ class ElasticBundle:
         self.value += other.value
         self.elasticity += other.elasticity
         return self
+    
+    def __str__(self):
+        return str(self.value) + " with eleasticity " + str(self.elasticity)
 
     def shape(self):
         return self.value.shape

@@ -3,7 +3,7 @@ import numpy as np
 
 from market.types import *
 
-class Consumers:
+class Consumer:
     def __init__(self, utility : Bundle, money : float):
         self.utility = utility
         self.money = money
@@ -16,4 +16,15 @@ class Consumers:
         solution = lambda_squared * self.utility / (prices * prices)
         logging.debug(f"consumption: {solution}")
         return (-solution, solution)
+
+    def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
+        assert prices.shape == self.utility.shape
+        a = np.sum(self.utility / prices)
+        # lambda can be interpreted as the price of 1 utility
+        lambda_squared = self.money / a
+        solution = lambda_squared * self.utility / (prices * prices)
+        logging.debug(f"consumption: {solution}")
+
+        elasticity =  (-2) * solution/ prices
+        return ElasticBundle(-solution, -elasticity)
 

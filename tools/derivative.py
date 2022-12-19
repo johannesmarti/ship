@@ -2,22 +2,26 @@ import numpy as np
 
 def estimate_jacobian(f, point, epsilon):
     def partial_derivative(i):
+        #print("partial derivative in", i, "at", point)
         higher = np.copy(point)
+        #print("high", higher)
         higher[i] = higher[i] + epsilon
+        #print("high adj", higher)
         lower = np.copy(point)
+        #print("low", lower)
         lower[i] = lower[i] - epsilon
-        #print("\npartial derivative in", i, "at", point)
         #print("high", higher)
         #print("f high", f(higher))
         #print("low", lower)
         #print("f low", f(lower))
         #print("diff", f(higher) - f(lower))
         #print(2*epsilon)
+        #print()
         return (f(higher) - f(lower)) / (2*epsilon)
     #print("point", point)
     #print("point.shape", point.shape)
     #print(np.indices(point.shape)[0])
-    return np.vectorize(partial_derivative, otypes=[np.float])(np.indices(point.shape)[0])
+    return np.vectorize(partial_derivative, otypes=[np.float64])(np.indices(point.shape)[0])
 
 def print_estimation(f,x,epsilon):
     print("Jacobian at", x, "is", estimate_jacobian(f,x,epsilon), "for epsilon", epsilon)

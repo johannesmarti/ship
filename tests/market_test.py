@@ -11,15 +11,15 @@ def village():
     farm = Factory(np.array([8,1,0,0]), 10)
     mine = Factory(np.array([0,-0.5,1.5,0]), 10)
     smith = Factory(np.array([0,-1,-2,2]), 20)
-    consumers = Consumers(np.array([3,1,0,3]), 10000)
+    consumers = Consumer(np.array([3,1,0,3]), 10000)
     return list(map(ElasticityFromVolumeParticipant, [farm,mine,smith,consumers]))
 
-equilibrium = [9.927184, 17.584015, 28.267812, 66.166662]
+equilibrium = [30.20319, 58.366023, 65.199585, 145.845051]
 
 def test_line_search(village):
     p0 = np.array([10,1000,10,10])
 
-    p = line_search_market(village, p0, epsilon=0.001, t=0.5)
+    p = line_search_market(village, p0, epsilon=0.0001, t=0.5)
     assert np.isclose(p, equilibrium).all()
 
 def test_line_search2(village):
