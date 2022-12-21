@@ -40,7 +40,7 @@ def one_iteration(participants : Iterable[EEP], prices : Prices) -> ElasticBundl
 
 def update_prices(prices : Prices, error : ElasticBundle, t : float = 0.9) -> Prices:
     
-    return prices - t * (error.value/error.elasticity)
+    return np.maximum(prices - t * (error.value/error.elasticity), 0.000001)
 
 def badness(error : Bundle) -> float:
     return norm(error)
@@ -73,9 +73,9 @@ def line_search(participants : Iterable[EEP], prices : Prices, error : ElasticBu
     logging.info(f"with elasticity: {error.elasticity}")
 
     next_prices = update_prices(prices, error, t)
+    assert((next_prices > 0).all())
     next_error = one_iteration(participants, next_prices)
     logging.info(f"next_prices: {next_prices}")
-    assert((next_prices > 0).all())
     logging.info(f"with error: {next_error.value}")
     logging.info(f"with badness: {badness(next_error.value)}, vs old: {badness(error.value)}")
     while badness(next_error.value) >= alpha * badness(error.value):

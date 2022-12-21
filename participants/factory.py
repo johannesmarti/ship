@@ -21,7 +21,7 @@ class Factory:
     def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
         income_rate = self.production_coefficient @ prices
         if (income_rate <= 0):
-            return (np.zeros(prices.shape), np.zeros(prices.shape))
+            return ElasticBundle(np.zeros(prices.shape), np.zeros(prices.shape))
         else:
             sqrt_workforce = income_rate / self.labor_cost
             supply = self.production_coefficient * sqrt_workforce
