@@ -1,20 +1,22 @@
+from abc import ABC, abstractmethod
 import numpy as np
-from numpy.linalg import norm
 import logging
 
-from typing import Callable,Iterable,Protocol,Tuple
+from typing import Iterable,Tuple
 import numpy.typing as npt
 
 Prices = npt.NDArray
 Bundle = npt.NDArray
 
-class Participant(Protocol):
+class Participant(ABC):
+    @abstractmethod
     def participate(self, prices : Prices) -> Bundle:
         ...
 
-Market = Callable[[Iterable[Participant],Prices],Prices]
-
 Elasticity = npt.NDArray
+
+MINIMAL_ELASTICITY = 0.001
+MAXIMAL_ELASTICITY = 100
 
 class ElasticBundle:
     value : Bundle
@@ -52,7 +54,8 @@ class ElasticBundle:
     def set_min_elasticity(self, min_value : float) -> None:
         np.maximum(self.elasticity, min_value, out=self.elasticity)
 
-class ElasticityEstimatingParticipant(Participant, Protocol):
+class ElasticityEstimatingParticipant(Participant, ABC):
+    @abstractmethod
     def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
         ...
 
@@ -60,14 +63,15 @@ class ElasticityEstimatingParticipant(Participant, Protocol):
         return self.participate_and_estimate(prices).value
 
 
-class VolumeReportingParticipant(Participant, Protocol):
+class VolumeReportingParticipant(Participant, ABC):
+    @abstractmethod
     def participate_with_volume(self, prices : Prices) -> Tuple[Bundle,Bundle]:
         ...
         
     def participate(self, prices : Prices) -> Bundle:
         return self.participate_with_volume(prices)[0]
 
-class ElasticityFromVolumeParticipant:
+class ElasticityFromVolumeParticipant(ElasticityEstimatingParticipant):
     def __init__(self, inner : VolumeReportingParticipant):
         self.inner = inner
     
@@ -76,6 +80,3 @@ class ElasticityFromVolumeParticipant:
         return ElasticBundle(error, volume / prices)
 
 EEP = ElasticityEstimatingParticipant
-
-AdvancedMarket = Callable[[Iterable[ElasticityEstimatingParticipant],Prices],Prices]
-

@@ -1,9 +1,9 @@
 import logging
 import numpy as np
 
-from market.types import *
+from participants.abstract import *
 
-class Factory:
+class Factory(VolumeReportingParticipant,ElasticityEstimatingParticipant):
     def __init__(self, production_coefficient : Bundle, labor_cost : float):
     	self.production_coefficient = production_coefficient
     	self.labor_cost = labor_cost

@@ -1,9 +1,9 @@
 import logging
 import numpy as np
 
-from market.types import *
+from participants.abstract import *
 
-class Consumer:
+class Consumer(VolumeReportingParticipant,ElasticityEstimatingParticipant):
     def __init__(self, utility : Bundle, money : float):
         self.utility = utility
         self.money = money
@@ -24,9 +24,8 @@ class Consumer:
         lambda_squared = self.money / a
         solution = lambda_squared * self.utility / (prices * prices)
         logging.debug(f"consumption: {solution}")
-        logging.debug(f":prices: {prices}")
+        logging.debug(f"prices: {prices}")
 
         elasticity =  (-2) * solution / prices
-        logging.debug(f"elasticity: {elasticity}")
         return ElasticBundle(-solution, -elasticity)
 
