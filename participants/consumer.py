@@ -24,7 +24,6 @@ class Consumer(VolumeReportingParticipant,ElasticityEstimatingParticipant):
         lambda_squared = self.money / a
         solution = lambda_squared * self.utility / (prices * prices)
         logging.debug(f"consumption: {solution}")
-        logging.debug(f"prices: {prices}")
 
         elasticity =  (-2) * solution / prices
         return ElasticBundle(-solution, -elasticity)
