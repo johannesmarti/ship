@@ -9,11 +9,11 @@ def one_iteration(participants : Iterable[Participant], prices : Prices) -> Volu
         eb += p.participate(prices)
     return eb
 
-def line_search(participants : Iterable[Participant], prices : Prices, error : VolumeBundle, t : float = 0.9, alpha : float = 1, beta : float = 0.5) -> Tuple[Prices,VolumeBundle]:
+def line_search(participants : Iterable[Participant], prices : Prices, error : VolumeBundle, t : float = 0.9, alpha : float = 1, beta : float = 0.6) -> Tuple[Prices,VolumeBundle]:
     logging.info(f"starting line search, with t = {t}, alpha = {alpha}")
     logging.info(f"at prices: {prices}")
     logging.info(f"for error: {error.value}")
-    logging.info(f"with badness: {badness(error.value)}")
+    logging.info(f"with badness: {badness(error)}")
     logging.info(f"with volume: {error.volume}")
 
     next_prices = adapt_prices(prices, error, t)
@@ -21,8 +21,8 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
     next_error = one_iteration(participants, next_prices)
     logging.info(f"next_prices: {next_prices}")
     logging.info(f"with error: {next_error.value}")
-    logging.info(f"with badness: {badness(next_error.value)}, vs old: {badness(error.value)}")
-    while badness(next_error.value) >= alpha * badness(error.value):
+    logging.info(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
+    while badness(next_error) >= alpha * badness(error):
         t *= beta
         if (t < 0.01):
             logging.warning(f"giving up on line search at t = {t}")
@@ -33,13 +33,13 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
         logging.info(f"next_prices: {next_prices}")
         assert((next_prices > 0).all())
         logging.info(f"with error: {next_error.value}")
-        logging.info(f"with badness: {badness(next_error.value)}, vs old: {badness(error.value)}")
+        logging.info(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
     logging.info("\n")
     return (next_prices, next_error)
 
 def line_search_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, t : float = 0.9) -> Prices:
     supply = one_iteration(participants, prices)
-    while badness(supply.value) >= epsilon:
+    while badness(supply) >= epsilon:
         increment_step()
         (prices, supply) = line_search(participants, prices, supply, t=t)
     return prices

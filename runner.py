@@ -23,9 +23,10 @@ village = [farm,mine,smith,woodCutter,consumers]
 p0 = np.array([10,10,30,50])
 epsilon = 0.01
 
-#p = line_search_market(village, p0, epsilon, t=0.7)
-p = line_search_market(village, p0, epsilon, t=0.71)
+p = line_search_market(village, p0, epsilon, t=0.6)
 # It is really odd that thare is this point around 0.71 where the algorithm becomes really inefficient if we are using the ord=1 norm?!?!
+#p = line_search_market(village, p0, epsilon, t=0.71)
+
 print("iterations:", get_iteration())
 print(p)
 

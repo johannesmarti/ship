@@ -47,6 +47,7 @@ def adapt_prices(price : Prices, error : VolumeBundle, t : float = 0.9) -> Price
     return new_price
     #return np.maximum(new_price, MIN_PRICE)
 
-def badness(error : Bundle) -> float:
+def badness(error : VolumeBundle) -> float:
     #return norm(error)
-    return norm(error, ord=1)
+    #return norm(error, ord=1)
+    return norm(error.value/error.volume, ord=1)
