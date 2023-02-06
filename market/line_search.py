@@ -39,7 +39,7 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
 
 def line_search_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, t : float = 0.9) -> Prices:
     supply = one_iteration(participants, prices)
-    while badness(supply) >= epsilon:
+    while absolute_badness(supply) >= epsilon:
         increment_step()
         (prices, supply) = line_search(participants, prices, supply, t=t)
     return prices

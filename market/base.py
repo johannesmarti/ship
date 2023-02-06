@@ -51,3 +51,8 @@ def badness(error : VolumeBundle) -> float:
     #return norm(error)
     #return norm(error, ord=1)
     return norm(error.value/error.volume, ord=1)
+
+def absolute_badness(error : VolumeBundle) -> float:
+    #return norm(error)
+    #return norm(error, ord=1)
+    return norm(error.value, ord=1)
