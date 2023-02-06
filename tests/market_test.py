@@ -12,7 +12,7 @@ def village():
     mine = Factory(np.array([0,-0.5,1.5,0]), 10)
     smith = Factory(np.array([0,-1,-2,2]), 20)
     consumers = Consumer(np.array([3,1,0,3]), 10000)
-    return list(map(ElasticityFromVolumeParticipant, [farm,mine,smith,consumers]))
+    return [farm,mine,smith,consumers]
 
 equilibrium = [30.20319, 58.366023, 65.199585, 145.845051]
 

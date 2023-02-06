@@ -3,12 +3,12 @@ import numpy as np
 
 from participants.abstract import *
 
-class Factory(VolumeReportingParticipant,ElasticityEstimatingParticipant):
+class Factory(Participant):
     def __init__(self, production_coefficient : Bundle, labor_cost : float):
     	self.production_coefficient = production_coefficient
     	self.labor_cost = labor_cost
     
-    def participate_with_volume(self, prices : Prices) -> Tuple[Bundle,Bundle]:
+    def participate(self, prices : Prices) -> VolumeBundle:
         income_rate = self.production_coefficient @ prices
         if (income_rate <= 0):
             return (np.zeros(prices.shape), np.zeros(prices.shape))
@@ -16,21 +16,7 @@ class Factory(VolumeReportingParticipant,ElasticityEstimatingParticipant):
             sqrt_workforce = income_rate / self.labor_cost
             supply = self.production_coefficient * sqrt_workforce
             logging.debug(f"production: {supply}")
-            return (supply, np.absolute(supply))
-
-    def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
-        income_rate = self.production_coefficient @ prices
-        if (income_rate <= 0):
-            return ElasticBundle(np.zeros(prices.shape), np.zeros(prices.shape))
-        else:
-            sqrt_workforce = income_rate / self.labor_cost
-            supply = self.production_coefficient * sqrt_workforce
-            logging.debug(f"production: {supply}")
-
-            elasticity = (self.production_coefficient ** 2) / self.labor_cost
-
-            return ElasticBundle(supply, elasticity)
-            
+            return VolumeBundle(supply, np.absolute(supply))
 
 
 # supply = sqrt(wf) * coeff

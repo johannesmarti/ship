@@ -9,7 +9,7 @@ from participants.abstract import *
 
 Market = Callable[[Iterable[Participant],Prices],Prices]
 
-AdvancedMarket = Callable[[Iterable[ElasticityEstimatingParticipant],Prices],Prices]
+MIN_PRICE = 0.0001
 
 iteration : int = 0
 
@@ -41,9 +41,12 @@ def get_step() -> int:
     return step
 
 
-def adapt_prices(prices : Prices, error : ElasticBundle, t : float = 0.9) -> Prices:
-    
-    return np.maximum(prices - t * (error.value/error.elasticity), 0.001)
+def adapt_prices(price : Prices, error : VolumeBundle, t : float = 0.9) -> Prices:
+    new_price = price * (1 - t * (error.value/error.volume))
+    assert (new_price > 0).all()
+    return new_price
+    #return np.maximum(new_price, MIN_PRICE)
 
 def badness(error : Bundle) -> float:
-    return norm(error)
+    #return norm(error)
+    return norm(error, ord=1)

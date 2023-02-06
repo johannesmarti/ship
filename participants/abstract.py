@@ -2,81 +2,48 @@ from abc import ABC, abstractmethod
 import numpy as np
 import logging
 
-from typing import Iterable,Tuple
+#from typing import Tuple
 import numpy.typing as npt
 
 Prices = npt.NDArray
 Bundle = npt.NDArray
 
-class Participant(ABC):
-    @abstractmethod
-    def participate(self, prices : Prices) -> Bundle:
-        ...
-
-Elasticity = npt.NDArray
-
-MINIMAL_ELASTICITY = 0.001
-MAXIMAL_ELASTICITY = 100
-
-class ElasticBundle:
+class VolumeBundle:
     value : Bundle
-    elasticity : Elasticity
-    def __init__(self, value, elasticity):
-        assert np.all(elasticity >= 0)
-        assert np.shape(value) == np.shape(elasticity)
+    volume : Bundle
+    def __init__(self, value, volume):
+        assert np.all(volume>= 0)
+        assert np.shape(value) == np.shape(volume)
         self.value = value
-        self.elasticity = elasticity
+        self.volume = volume
 
     @classmethod
-    def zero(cls,shape):
-        return ElasticBundle(np.zeros(shape), np.zeros(shape))
+    def zero(cls, shape):
+        return VolumeBundle(np.zeros(shape), np.zeros(shape))
 
     def __add__(self, other):
         assert other.shape() == self.shape()
-        assert isinstance(other, ElasticBundle)
-        logging.debug("add creates new object")
-        return ElasticBundle(self.value + other.value,
-                             self.elasticity + other.elasticity)
+        assert isinstance(other, VolumeBundle)
+        logging.debug("add creates new volume bundle")
+        return VolumeBundle(self.value + other.value,
+                            self.volume + other.volume)
 
     def __iadd__(self, other):
         assert other.shape() == self.shape()
-        assert isinstance(other, ElasticBundle)
+        assert isinstance(other, VolumeBundle)
         self.value += other.value
-        self.elasticity += other.elasticity
+        self.volume += other.volume
         return self
     
     def __str__(self):
-        return str(self.value) + " with eleasticity " + str(self.elasticity)
+        return str(self.value) + " with volume " + str(self.volume)
 
     def shape(self):
         return self.value.shape
 
-    def set_min_elasticity(self, min_value : float) -> None:
-        np.maximum(self.elasticity, min_value, out=self.elasticity)
 
-class ElasticityEstimatingParticipant(Participant, ABC):
+class Participant(ABC):
     @abstractmethod
-    def participate_and_estimate(self, prices : Prices) -> ElasticBundle:
+    def participate(self, prices : Prices) -> VolumeBundle:
         ...
 
-    def participate(self, prices : Prices) -> Bundle:
-        return self.participate_and_estimate(prices).value
-
-
-class VolumeReportingParticipant(Participant, ABC):
-    @abstractmethod
-    def participate_with_volume(self, prices : Prices) -> Tuple[Bundle,Bundle]:
-        ...
-        
-    def participate(self, prices : Prices) -> Bundle:
-        return self.participate_with_volume(prices)[0]
-
-class ElasticityFromVolumeParticipant(ElasticityEstimatingParticipant):
-    def __init__(self, inner : VolumeReportingParticipant):
-        self.inner = inner
-    
-    def participate_and_estimate(self, prices : Prices):
-        (error, volume) = self.inner.participate_with_volume(prices)
-        return ElasticBundle(error, volume / prices)
-
-EEP = ElasticityEstimatingParticipant
