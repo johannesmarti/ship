@@ -22,15 +22,15 @@ class VolumeBundle:
         return VolumeBundle(np.zeros(shape), np.zeros(shape))
 
     def __add__(self, other):
-        assert other.shape() == self.shape()
         assert isinstance(other, VolumeBundle)
+        assert other.shape() == self.shape()
         logging.debug("add creates new volume bundle")
         return VolumeBundle(self.value + other.value,
                             self.volume + other.volume)
 
     def __iadd__(self, other):
-        assert other.shape() == self.shape()
         assert isinstance(other, VolumeBundle)
+        assert other.shape() == self.shape()
         self.value += other.value
         self.volume += other.volume
         return self

@@ -11,7 +11,7 @@ class Factory(Participant):
     def participate(self, prices : Prices) -> VolumeBundle:
         income_rate = self.production_coefficient @ prices
         if (income_rate <= 0):
-            return (np.zeros(prices.shape), np.zeros(prices.shape))
+            return VolumeBundle.zero(prices.shape)
         else:
             sqrt_workforce = income_rate / self.labor_cost
             supply = self.production_coefficient * sqrt_workforce
