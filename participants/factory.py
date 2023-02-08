@@ -4,18 +4,20 @@ import numpy as np
 from participants.abstract import *
 
 class Factory(Participant):
-    def __init__(self, production_coefficient : Bundle, labor_cost : float):
-    	self.production_coefficient = production_coefficient
-    	self.labor_cost = labor_cost
+    def __init__(self, name : str, production_coefficient : Bundle, labor_cost : float):
+        self.production_coefficient = production_coefficient
+        self.labor_cost = labor_cost
+        self.name = name
     
     def participate(self, prices : Prices) -> VolumeBundle:
         income_rate = self.production_coefficient @ prices
         if (income_rate <= 0):
+            logging.debug(f"{self.name}: income_rate: {income_rate}")
             return VolumeBundle.zero(prices.shape)
         else:
             sqrt_workforce = income_rate / self.labor_cost
             supply = self.production_coefficient * sqrt_workforce
-            logging.debug(f"production: {supply}")
+            logging.debug(f"{self.name}: production: {supply}")
             return VolumeBundle(supply, np.absolute(supply))
 
 

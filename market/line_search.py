@@ -13,18 +13,19 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
     logging.info(f"starting line search, with t = {t}, alpha = {alpha}")
     logging.info(f"at prices: {prices}")
     logging.info(f"for error: {error.value}")
-    logging.info(f"with badness: {badness(error)}")
     logging.info(f"with volume: {error.volume}")
+    logging.info(f"with badness: {badness(error)}")
 
     next_prices = adapt_prices(prices, error, t)
     assert((next_prices > 0).all())
     next_error = one_iteration(participants, next_prices)
     logging.info(f"next_prices: {next_prices}")
     logging.info(f"with error: {next_error.value}")
+    logging.info(f"with volume: {next_error.volume}")
     logging.info(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
     while badness(next_error) >= alpha * badness(error):
         t *= beta
-        if (t < 0.01):
+        if (t < 0.1):
             logging.warning(f"giving up on line search at t = {t}")
             break
         logging.info(f"next iteration of line search with t = {t}")
@@ -33,6 +34,7 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
         logging.info(f"next_prices: {next_prices}")
         assert((next_prices > 0).all())
         logging.info(f"with error: {next_error.value}")
+        logging.info(f"next volume: {next_error.volume}")
         logging.info(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
     logging.info("\n")
     return (next_prices, next_error)
