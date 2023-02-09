@@ -43,8 +43,11 @@ def get_step() -> int:
 MIN_PRICE : float = 0.00001
 
 def adapt_prices(price : Prices, error : VolumeBundle, t : float = 0.9) -> Prices:
-    new_price = price * (1 - t * (error.value/(error.volume + 0.0001)))
+    new_price = price * (1 - t * (error.value/(error.volume + 1.0)))
     #assert (new_price > 0).all()
+    avg_price = np.average(new_price)
+    scaling_factor = 10/avg_price
+    new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 
 def badness(error : VolumeBundle) -> float:

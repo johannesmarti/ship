@@ -21,25 +21,6 @@ class Factory(Participant):
             return VolumeBundle(supply, np.absolute(supply))
 
 
-# supply = sqrt(wf) * coeff
-# 
-# wf * l = supply @ prices
-# wf * l = (coeff @ prices) * sqrt(wf) 
-# sqrt(wf) * l = coeff @ prices
-# wf = ((coeff@prices)/l)^2
-# wf = ir^2 / l^2
-#
-# supply = coeff * (coeff @ price / l)
-# supply' = (coeff / l) * (coeff)
-# supply' = (coeff^2 / l) 
-# 
-# wf * l = (coeff @ prices) * sqrt(wf) 
-# wf^2 * l^2 = (coeff @ prices)^2 * wf 
-# l^2 * wf^2 = (coeff @ prices)^2 * wf
-# l^2 * wf^2 - (coeff @ prices)^2 * wf = 0
-# wf * (l^2 * wf - (coeff @ prices)^2) = 0
-
-
 # Example
 # 
 # ======

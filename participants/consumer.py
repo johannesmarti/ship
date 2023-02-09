@@ -12,6 +12,7 @@ def consume(utility : Bundle, money : float, prices : Prices) -> VolumeBundle:
     logging.debug(f"consumption: {solution}")
     return VolumeBundle(-solution, solution)
     
+
 class FixedBudgetConsumer(Participant):
     def __init__(self, utility : Bundle, budget : float):
         self.utility = utility
@@ -20,9 +21,10 @@ class FixedBudgetConsumer(Participant):
     def participate(self, prices : Prices) -> VolumeBundle:
         return consume(self.utility, self.budget, prices)
 
-class SalaryConsumer(Participant):
+
+class SalaryConsumer():
     def __init__(self, utility : Bundle):
         self.utility = utility
         
-    def participate(self, salary : float, prices : Prices) -> VolumeBundle:
+    def consume_salary(self, salary : float, prices : Prices) -> VolumeBundle:
         return consume(self.utility, salary, prices)
