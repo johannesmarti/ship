@@ -46,6 +46,7 @@ def line_search_market(participants : Iterable[Participant], prices : Prices, ep
         #print(supply.volume)
         #print(supply.volume)
         #print(supply.value, absolute_badness(supply))
+        #print(supply.value, badness(supply))
         #print(prices, absolute_badness(supply))
         (prices, supply) = line_search(participants, prices, supply, t=t)
     return prices

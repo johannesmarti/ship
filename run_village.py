@@ -23,9 +23,11 @@ consumer = SalaryConsumer(np.array([2,1,0,2]))
 producer = Producer(200, production_matrix)
 village = Village(producer, consumer)
 
+
+#p0 = np.array([10,10,10,10])
 #p0 = np.array([50,1000,30,5])
-#p0 = np.array([5.6,5.2,9.7,19])
-p0 = np.array([50,1200,30,5])
+p0 = np.array([5,5,11,19])
+#p0 = np.array([50,1200,30,5])
 #p0 = np.array([13,13,27,50])
 epsilon = 0.01
 
