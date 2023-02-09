@@ -40,7 +40,7 @@ def get_step() -> int:
     global step
     return step
 
-MIN_PRICE : float = 0.00001
+MIN_PRICE : float = 0.001
 
 def adapt_prices(price : Prices, error : VolumeBundle, t : float = 0.9) -> Prices:
     new_price = price * (1 - t * (error.value/(error.volume + 0.1)))

@@ -18,6 +18,9 @@ class Producer():
     def supply(self, allocation : Allocation):
         return self.production_matrix.T @ np.sqrt(allocation)
 
+    def volume(self, allocation : Allocation):
+        return np.absolute(self.production_matrix.T) @ np.sqrt(allocation)
+
     def wages(self, allocation : Allocation, prices : Prices):
         return prices @ self.supply(allocation)
 
@@ -31,7 +34,9 @@ class Producer():
     
         # remove money loosing tasks from the production matrix
         tasks_to_cancel = payoff_one_unit < 0
-        logging.info(f"productivity: {payoff_one_unit}")
+        #logging.debug(f"{prices}: prices ")
+        #logging.debug(f"{self.production_matrix}: pm ")
+        logging.info(f"{payoff_one_unit} productivity")
         pm = self.production_matrix.copy()
         pm[tasks_to_cancel,] = 0
     
@@ -44,5 +49,9 @@ class Producer():
         assert (allocation <= 1).all()
         real_allocation = allocation * self.workforce
         supply = self.supply(real_allocation)
+        volume = self.volume(real_allocation)
+        logging.debug(f"{allocation} allocation from production")
+        logging.debug(f"{supply} supply from production")
+        logging.debug(f"{volume} volume from production")
         return (self.wages(real_allocation, prices),
-                VolumeBundle(supply, np.absolute(supply)))
+                VolumeBundle(supply, volume))

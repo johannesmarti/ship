@@ -9,6 +9,6 @@ class Village(Participant):
 
     def participate(self, prices : Prices) -> VolumeBundle:
         (wages, pbundle) = self.producer.produce(prices)
-        print(wages, "wages, at prices ", prices)
+        #print(wages, "wages, at prices ", prices)
         cbundle = self.consumer.consume_salary(wages, prices)
         return pbundle + cbundle

@@ -17,9 +17,9 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
     logging.info(f"with badness: {badness(error)}")
 
     next_prices = adapt_prices(prices, error, t)
+    logging.debug(f"iterating for prices: {next_prices}")
     assert((next_prices > 0).all())
     next_error = one_iteration(participants, next_prices)
-    logging.debug(f"next_prices: {next_prices}")
     logging.debug(f"with error: {next_error.value}")
     logging.debug(f"with volume: {next_error.volume}")
     logging.debug(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
@@ -30,8 +30,8 @@ def line_search(participants : Iterable[Participant], prices : Prices, error : V
             break
         logging.debug(f"next iteration of line search with t = {t}")
         next_prices = adapt_prices(prices, error, t)
+        logging.debug(f"iterating for prices: {next_prices}")
         next_error = one_iteration(participants, next_prices)
-        logging.debug(f"next_prices: {next_prices}")
         assert((next_prices > 0).all())
         logging.debug(f"with error: {next_error.value}")
         logging.debug(f"next volume: {next_error.volume}")
@@ -44,8 +44,8 @@ def line_search_market(participants : Iterable[Participant], prices : Prices, ep
     while absolute_badness(supply) >= epsilon:
         increment_step()
         #print(supply.volume)
-        print(supply.volume)
-        print(supply.value, absolute_badness(supply))
+        #print(supply.volume)
+        #print(supply.value, absolute_badness(supply))
         #print(prices, absolute_badness(supply))
         (prices, supply) = line_search(participants, prices, supply, t=t)
     return prices
