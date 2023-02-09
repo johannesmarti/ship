@@ -19,7 +19,7 @@ production_matrix = np.array([
     [0,-1,-2,2],
     [0,5,0,-0.5] ])
 
-consumer = SalaryConsumer(np.array([2,1,0.1,2]))
+consumer = SalaryConsumer(np.array([2,1,0,2]))
 producer = Producer(200, production_matrix)
 village = Village(producer, consumer)
 
