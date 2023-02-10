@@ -34,6 +34,10 @@ class VolumeBundle:
         self.value += other.value
         self.volume += other.volume
         return self
+
+    def add_at_ix(self, ix : int, value : float):   
+        self.value[ix] += value
+        self.volume[ix] += abs(value)
     
     def __str__(self):
         return str(self.value) + " with volume " + str(self.volume)

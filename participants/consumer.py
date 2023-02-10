@@ -28,3 +28,18 @@ class SalaryConsumer():
         
     def consume_salary(self, salary : float, prices : Prices) -> VolumeBundle:
         return consume(self.utility, salary, prices)
+
+
+class LabourerConsumer(Participant):
+    def __init__(self, utility : Bundle, workforce : float, labour_index : int, goods_index : int):
+        self.utility = utility
+        self.workforce = workforce
+        self.labour_index = labour_index
+        self.goods_index = goods_index
+
+    def participate(self, prices : Prices) -> VolumeBundle:
+        salary = self.workforce * price[self.labour_index]
+        consumption_of_goods = consume(self.utility, salary, prices)
+        # need to place goods at the right ix
+        consumption_of_goods.add_at_ix(self.labour_index, self.workforce)
+        return consumption_of_goods
