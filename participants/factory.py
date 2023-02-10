@@ -36,13 +36,13 @@ class Factory(Participant):
         self.goods_slice = goods_slice
 
     def participate(self, prices : Prices) -> VolumeBundle:
-        (wf,res) = produce(self.name, self.production_coefficients,
-                           price[self.labour_index], prices[self.goods_slice])
-        consumption_of_goods = consume(self.utilities, salary,
-                                       prices[self.goods_slice])
+        (workforce,production) = produce(self.name,
+                                         self.production_coefficients,
+                                         prices[self.labour_index],
+                                         prices[self.goods_slice])
         total_consumption = VolumeBundle.zero(prices.shape)
-        total_consumption.add_at_ix(self.labour_index, wf)
-        total_consumption.add_at_slice(self.goods_slice, consumption_of_goods)
+        total_consumption.add_at_ix(self.labour_index, -workforce)
+        total_consumption.add_at_slice(self.goods_slice, production)
         return total_consumption
 
 # Example
