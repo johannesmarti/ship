@@ -38,6 +38,12 @@ class VolumeBundle:
     def add_at_ix(self, ix : int, value : float):   
         self.value[ix] += value
         self.volume[ix] += abs(value)
+
+    def add_at_slice(self, sl : slice, other):
+        assert isinstance(other, VolumeBundle)
+        assert other.shape() == self.value[sl].shape
+        self.value[sl] += other.value
+        self.volume[sl] += other.volume
     
     def __str__(self):
         return str(self.value) + " with volume " + str(self.volume)
