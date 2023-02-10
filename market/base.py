@@ -1,8 +1,9 @@
 import numpy as np
 from numpy.linalg import norm
 import logging
+from dataclasses import dataclass
 
-from typing import Callable,Iterable
+from typing import Callable,Iterable,Optional
 #import numpy.typing as npt
 
 from participants.abstract import *
@@ -42,12 +43,17 @@ def get_step() -> int:
 
 MIN_PRICE : float = 0.001
 
-def adapt_prices(price : Prices, error : VolumeBundle, t : float = 0.9) -> Prices:
+@dataclass(frozen=True)
+class ScalingConfiguration:
+    set_to_average : float = 10
+
+def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
     new_price = price * (1 - t * (error.value/(error.volume + 0.1)))
     #assert (new_price > 0).all()
-    avg_price = np.average(new_price)
-    scaling_factor = 10/avg_price
-    new_price *= scaling_factor
+    if (price_scaling != None):
+        avg_price = np.average(new_price)
+        scaling_factor = price_scaling.set_to_average/avg_price
+        new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 
 def badness(error : VolumeBundle) -> float:
