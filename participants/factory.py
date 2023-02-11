@@ -16,17 +16,6 @@ def produce(name : str, production_coefficients : Bundle, wage_per_worker : floa
         logging.debug(f"{name}: production: {supply}")
         return (sqrt_workforce**2, VolumeBundle(supply, np.absolute(supply)))
 
-class UncompetitiveFactory(Participant):
-    def __init__(self, name : str, production_coefficients : Bundle, wage_per_worker : float):
-        self.production_coefficients = production_coefficients
-        self.wage_per_worker = wage_per_worker
-        self.name = name
-    
-    def participate(self, prices : Prices) -> VolumeBundle:
-        (_,res) = produce(self.name, self.production_coefficients,
-                          self.wage_per_worker, prices)
-        return res
-
 class Factory(Participant):
     def __init__(self, name : str, production_coefficients : Bundle,
                  labour_index : int, goods_slice : slice):
@@ -44,6 +33,25 @@ class Factory(Participant):
         total_consumption.add_at_ix(self.labour_index, -workforce)
         total_consumption.add_at_slice(self.goods_slice, production)
         return total_consumption
+
+"""
+class Trader(Participant):
+    def __init__(self, name : str, labour_index : int, good : int, trade_efficency : float, home_goods_slice : slice, foreign_goods_slice : slice):
+        self.name = name 
+        self.production_coefficients = production_coefficients
+        self.labour_index = labour_index
+        self.goods_slice = goods_slice
+
+    def participate(self, prices : Prices) -> VolumeBundle:
+        (workforce,production) = produce(self.name,
+                                         self.production_coefficients,
+                                         prices[self.labour_index],
+                                         prices[self.goods_slice])
+        total_consumption = VolumeBundle.zero(prices.shape)
+        total_consumption.add_at_ix(self.labour_index, -workforce)
+        total_consumption.add_at_slice(self.goods_slice, production)
+        return total_consumption
+"""
 
 # Example
 # 
