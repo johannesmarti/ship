@@ -2,9 +2,8 @@ import numpy as np
 import logging
 
 from participants.consumer import *
-from participants.producer import *
+from participants.balanced_producer import *
 from participants.village import *
-from market.base import *
 from market.line_search import *
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
@@ -20,7 +19,7 @@ production_matrix = np.array([
     [0,5,0,-0.5] ])
 
 consumer = SalaryConsumer(np.array([2,1,0,2]))
-producer = Producer(200, production_matrix)
+producer = BalancedProducer(200, production_matrix)
 village = Village(producer, consumer)
 
 

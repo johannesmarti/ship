@@ -2,9 +2,7 @@ import numpy as np
 import logging
 
 from participants.consumer import *
-from participants.factory import *
-from participants.village import *
-from market.base import *
+from participants.producer import *
 from market.line_search import *
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
