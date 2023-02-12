@@ -15,8 +15,10 @@ def produce(name : str, production_coefficients : Bundle, wage_per_worker : floa
     else:
         sqrt_workforce = income_rate / wage_per_worker
         supply = production_coefficients * sqrt_workforce
+        workforce = sqrt_workforce**2
+        logging.debug(f"{name}: workforce: {workforce}")
         logging.debug(f"{name}: production: {supply}")
-        return (sqrt_workforce**2, VolumeBundle(supply, np.absolute(supply)))
+        return (workforce, VolumeBundle(supply, np.absolute(supply)))
 
 class Producer(Participant):
     @classmethod
