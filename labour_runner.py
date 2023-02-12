@@ -30,10 +30,10 @@ goods_slice = slice(1,5)
 
 consumers = LabourerConsumer(np.array([2,1,0,2]), 200, 0, goods_slice)
 
-farm = Factory("farm", np.array([5,1,0,0]), 0, goods_slice)
-mine = Factory("mine", np.array([0,-0.5,1.5,0]), 0, goods_slice)
-smith = Factory("smith", np.array([0,-1,-2,2]), 0, goods_slice)
-woodCutter = Factory("wood cutter", np.array([0,5,0,-0.5]), 0, goods_slice)
+farm = Producer.factory("farm", np.array([5,1,0,0]), goods_slice, 0, 5)
+mine = Producer.factory("mine", np.array([0,-0.5,1.5,0]), goods_slice, 0, 5)
+smith = Producer.factory("smith", np.array([0,-1,-2,2]), goods_slice, 0, 5)
+woodCutter = Producer.factory("wood cutter", np.array([0,5,0,-0.5]), goods_slice, 0, 5)
 
 village = [farm,mine,smith,woodCutter,consumers]
 
