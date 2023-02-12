@@ -4,6 +4,7 @@ import numpy as np
 from typing import Tuple
 
 from participants.abstract import *
+from placement import Placement
 
 # litter helper function we use further below
 def produce(name : str, production_coefficients : Bundle, wage_per_worker : float, prices : Prices) -> Tuple[float, VolumeBundle]:
@@ -20,11 +21,10 @@ def produce(name : str, production_coefficients : Bundle, wage_per_worker : floa
 class Producer(Participant):
     @classmethod
     def factory(cls, name : str, production_coefficients : Bundle,
-                production_slice : slice, labour_index : int,
-                global_width : int):
-        wide_pcs = np.zeros(global_width)
-        wide_pcs[production_slice] = production_coefficients
-        return Producer(name, wide_pcs, labour_index)
+                placement : Placement):
+        wide_pcs = np.zeros(placement.width)
+        wide_pcs[placement.production_slice] = production_coefficients
+        return Producer(name, wide_pcs, placement.labour_index)
 
     @classmethod
     def trader(cls, name : str, production_coefficients : Bundle,

@@ -4,6 +4,7 @@ import logging
 from participants.consumer import *
 from participants.producer import *
 from market.line_search import *
+from schema import LabourSchema
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
@@ -20,18 +21,20 @@ production_matrix = np.array([
 #p0 = np.array([10,10,10,10,10])
 #p0 = np.array([50,1000,30,5])
 #p0 = np.array([5,5,11,19])
-p0 = np.array([32,50,1200,30,5])
+p0 = np.array([50,1200,30,5,32])
 #p0 = np.array([13,13,27,50])
 epsilon = 0.01
 
-goods_slice = slice(1,5)
+ls = LabourSchema(["food", "wood", "ore", "tools"], [])
 
-consumers = LabourerConsumer(np.array([2,1,0,2]), 200, 0, goods_slice)
+pl = ls.placement()
 
-farm = Producer.factory("farm", np.array([5,1,0,0]), goods_slice, 0, 5)
-mine = Producer.factory("mine", np.array([0,-0.5,1.5,0]), goods_slice, 0, 5)
-smith = Producer.factory("smith", np.array([0,-1,-2,2]), goods_slice, 0, 5)
-woodCutter = Producer.factory("wood cutter", np.array([0,5,0,-0.5]), goods_slice, 0, 5)
+consumers = LabourerConsumer(np.array([2,1,0,2]), 200, pl)
+
+farm = Producer.factory("farm", np.array([5,1,0,0]), pl)
+mine = Producer.factory("mine", np.array([0,-0.5,1.5,0]), pl)
+smith = Producer.factory("smith", np.array([0,-1,-2,2]), pl)
+woodCutter = Producer.factory("wood cutter", np.array([0,5,0,-0.5]), pl)
 
 village = [farm,mine,smith,woodCutter,consumers]
 

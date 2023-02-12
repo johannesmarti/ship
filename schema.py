@@ -1,6 +1,6 @@
-from dataclasses import dataclass
-
 from typing import Iterable
+
+from placement import Placement
 
 # These schema classes are tightly coupled. They extendend each other and make
 # assumptions about each others implementation. This is not nice but should be
@@ -44,8 +44,12 @@ class LabourSchema(TradeSchema):
     def labour(self) -> int:
         return self.num_goods() - 1
 
-    def goods_slice(self) -> slice:
+    def production_slice(self) -> slice:
         return slice(0,self.num_goods() - 1)
+    
+    def placement(self) -> Placement:
+        return Placement(self.num_goods(), self.production_slice(),
+                         self.labour())
 
 
 class GlobalSchema:
@@ -88,3 +92,16 @@ class GlobalSchema:
         offset = self.start_of_province(province)
         return slice(offset + sl.start, offset + sl.stop, sl.step)
 
+    def labour_in_province(self, province : int) -> int:
+        assert isinstance(self.local_schema(), LabourSchema)
+        return self.good_in_province(province, self.local_schema().labour())
+
+    def production_slice_in_province(self, province : int) -> slice:
+        assert isinstance(self.local_schema(), LabourSchema)
+        return self.slice_in_province(province,
+                                      self.local_schema().production_slice())
+
+    def placment_in_province(self, province : int) -> Placement:
+        return Placement(self.global_width(),
+                         self.production_slice_in_province(province),
+                         self.labour_in_province(province))
