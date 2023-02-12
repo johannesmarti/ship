@@ -6,7 +6,7 @@ from typing import Tuple
 from participants.abstract import *
 from placement import Placement
 
-# litter helper function we use further below
+# helper function used further below
 def produce(name : str, production_coefficients : Bundle, wage_per_worker : float, prices : Prices) -> Tuple[float, VolumeBundle]:
     income_rate = production_coefficients @ prices
     if (income_rate <= 0):
@@ -27,11 +27,11 @@ class Producer(Participant):
         return Producer(name, wide_pcs, placement.labour_index)
 
     @classmethod
-    def trader(cls, name : str, production_coefficients : Bundle,
-               production_slice : slice, labour_index : int, global_width : int):
+    def trader(cls, name : str, labour_index : int, from_index : int,
+               to_index : int, trade_efficiency : float, global_width : int):
         wide_pcs = np.zeros(global_width)
         wide_pcs[from_index] = -trade_efficiency
-        wide_pcd[to_index] = trade_efficiency
+        wide_pcs[to_index] = trade_efficiency
         return Producer(name, wide_pcs, labour_index)
 
     def __init__(self, name : str, production_coefficients : Bundle,

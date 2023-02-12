@@ -15,7 +15,7 @@ class GoodsSchema:
 
     def name_of_good(self, good : int) -> str:
         assert good < self.num_goods()
-        return self._good_names[i]
+        return self._good_names[good]
 
     def good_of_name(self, name : str) -> int:
         return self._good_names.index(name)
@@ -34,6 +34,10 @@ class TradeSchema(GoodsSchema):
 
     def trade_slice(self) -> slice:
         return slice(0, self._num_trade_goods)
+    
+    def trade_goods(self) -> Iterable[int]:
+        ts = self.trade_slice()
+        return range(ts.start, ts.stop)
 
 
 class LabourSchema(TradeSchema):
@@ -53,7 +57,7 @@ class LabourSchema(TradeSchema):
 
 
 class GlobalSchema:
-    def __init__(self, province_names : Iterable[str], local_schema : GoodsSchema):
+    def __init__(self, local_schema : GoodsSchema, province_names : Iterable[str]):
         self._province_names = list(province_names);
         self._num_provinces = len(self._province_names)
         self._local_schema = local_schema
@@ -62,7 +66,7 @@ class GlobalSchema:
         return self._local_schema.num_goods()
 
     def global_width(self) -> int:
-        return self.local_width + self.num_provinces()
+        return self.local_width() * self.num_provinces()
 
     def num_provinces(self):
         return self._num_provinces
@@ -101,7 +105,7 @@ class GlobalSchema:
         return self.slice_in_province(province,
                                       self.local_schema().production_slice())
 
-    def placment_in_province(self, province : int) -> Placement:
+    def placement_in_province(self, province : int) -> Placement:
         return Placement(self.global_width(),
                          self.production_slice_in_province(province),
                          self.labour_in_province(province))

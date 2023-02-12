@@ -11,13 +11,6 @@ class LineSearchConfiguration:
     beta : float = 0.6
     price_scaling : Optional[ScalingConfiguration] = None
 
-"""
-default_LineSearchConfiguration = LineSearchConfiguration(
-    alpha = 1,
-    beta = 0.6,
-    price_scaling = None)
-"""
-
 def one_iteration(participants : Iterable[Participant], prices : Prices) -> VolumeBundle:
     increment_iteration()
     logging.info(f"at iteration {get_iteration()}")
@@ -47,7 +40,7 @@ def line_search(participants : Iterable[Participant],
     while badness(next_error) >= config.alpha * badness(error):
         t *= config.beta
         if (t < 0.1):
-            logging.warning(f"giving up on line search at t = {t}")
+            logging.warning(f"giving up on line search at badness {badness(next_error)}")
             break
         logging.info(f"next iteration of line search with t = {t}")
         next_prices = adapt_prices(prices, error, t, config.price_scaling)
