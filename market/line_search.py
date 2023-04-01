@@ -32,7 +32,7 @@ def line_search(participants : Iterable[Participant],
 
     next_prices = adapt_prices(prices, error, t, config.price_scaling)
     logging.info(f"iterating for prices: {next_prices}")
-    assert((next_prices > 0).all())
+    assert (next_prices > 0).all()
     next_error = one_iteration(participants, next_prices)
     logging.info(f"with error: {next_error.value}")
     logging.info(f"with volume: {next_error.volume}")
@@ -46,7 +46,7 @@ def line_search(participants : Iterable[Participant],
         next_prices = adapt_prices(prices, error, t, config.price_scaling)
         logging.info(f"iterating for prices: {next_prices}")
         next_error = one_iteration(participants, next_prices)
-        assert((next_prices > 0).all())
+        assert (next_prices > 0).all()
         logging.info(f"with error: {next_error.value}")
         logging.info(f"next volume: {next_error.volume}")
         logging.info(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
@@ -64,4 +64,3 @@ def line_search_market(participants : Iterable[Participant], prices : Prices, ep
         #print(prices, absolute_badness(supply))
         (prices, supply) = line_search(participants, prices, supply, config)
     return prices
-

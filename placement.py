@@ -2,6 +2,6 @@ from dataclasses import dataclass
 
 @dataclass
 class Placement:
-    width : int
+    global_width : int
     production_slice : slice
     labour_index : int

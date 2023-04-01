@@ -24,7 +24,7 @@ class Producer(Participant):
     @classmethod
     def factory(cls, name : str, production_coefficients : Bundle,
                 placement : Placement):
-        wide_pcs = np.zeros(placement.width)
+        wide_pcs = np.zeros(placement.global_width)
         wide_pcs[placement.production_slice] = production_coefficients
         return Producer(name, wide_pcs, placement.labour_index)
 

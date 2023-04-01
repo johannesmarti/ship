@@ -47,20 +47,20 @@ def concat_map(func, it):
 
 trade_factors = 2*np.array([3,4,2,1])
 
-def set_up_merchants(gs : GlobalSchema, home : int, foreign : int) -> Iterable[Producer]:
+def set_up_merchants(global_schema : GlobalSchema, home : int, foreign : int) -> Iterable[Producer]:
     def for_good(good : int) -> Iterable[Producer]:
-        width = gs.global_width()
-        li = gs.labour_in_province(home)
-        hi = gs.good_in_province(home, good)
-        fi = gs.good_in_province(foreign, good)
+        width = global_schema.global_width()
+        li = global_schema.labour_in_province(home)
+        hi = global_schema.good_in_province(home, good)
+        fi = global_schema.good_in_province(foreign, good)
         tf = trade_factors[good]
-        hname = gs.name_of_province(home) 
-        fname = gs.name_of_province(foreign) 
-        gname = gs.local_schema().name_of_good(good)
+        hname = global_schema.name_of_province(home) 
+        fname = global_schema.name_of_province(foreign) 
+        gname = global_schema.local_schema().name_of_good(good)
         exporter = Producer.trader(f"{gname} from {hname} to {fname}", li, hi, fi, tf, width)
         importer = Producer.trader(f"{gname} from {fname} to {hname}", li, fi, hi, tf, width)
         return [importer, exporter]
-    return concat_map(for_good, gs.local_schema().trade_goods())
+    return concat_map(for_good, global_schema.local_schema().trade_goods())
 
 italian_merchants = list(set_up_merchants(gs, italy, switzerland))
 
