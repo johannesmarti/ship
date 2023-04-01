@@ -12,12 +12,6 @@ np.set_printoptions(precision=4,suppress=True,threshold=8)
 logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-production_matrix = np.array([
-    [5,1,0,0],
-    [0,-0.5,1.5,0],
-    [0,-1,-2,2],
-    [0,5,0,-0.5] ])
-
 #p0 = np.array([10,10,10,10,10])
 #p0 = np.array([50,1000,30,5])
 #p0 = np.array([5,5,11,19])
@@ -27,7 +21,7 @@ epsilon = 0.01
 
 ls = LabourSchema(["food", "wood", "ore", "tools"], [])
 
-pl = ls.placement()
+pl = ls.labour_placement()
 
 consumers = LabourerConsumer(np.array([2,1,0,2]), 200, pl)
 

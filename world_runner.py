@@ -18,7 +18,7 @@ gs = GlobalSchema(local_schema, ["Switzerland", "Italy"])
 
 
 switzerland = gs.province_of_name("Switzerland")
-sw_pl = gs.placement_in_province(switzerland)
+sw_pl = gs.labour_placement_in_province(switzerland)
 
 swiss_consumers = LabourerConsumer(np.array([2,1.2,0,1.1]), 800, sw_pl)
 
@@ -30,7 +30,7 @@ swiss_participants = [swiss_consumers, cow_farm, swiss_mine, swiss_artisans]
 
 
 italy = gs.province_of_name("Italy")
-it_pl = gs.placement_in_province(italy)
+it_pl = gs.labour_placement_in_province(italy)
 
 italian_consumers = LabourerConsumer(np.array([2.1,1,0,1]), 6000, it_pl)
 

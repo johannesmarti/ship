@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from placement import Placement
+from placement import Placement, LabourPlacement
 
 # These schema classes are tightly coupled. They extendend each other and make
 # assumptions about each others implementation. This is not nice but should be
@@ -19,6 +19,9 @@ class GoodsSchema:
 
     def good_of_name(self, name : str) -> int:
         return self._good_names.index(name)
+    
+    def placement(self) -> Placement:
+        return Placement(self.num_goods(), slice(0, self._num_goods))
 
 
 class TradeSchema(GoodsSchema):
@@ -40,6 +43,7 @@ class TradeSchema(GoodsSchema):
         return range(ts.start, ts.stop)
 
 
+
 class LabourSchema(TradeSchema):
     def __init__(self, trade_good_names : Iterable[str], fixed_good_names : Iterable[str]):
         extended_fixed_good_names = list(fixed_good_names) + ["labour"]
@@ -51,9 +55,9 @@ class LabourSchema(TradeSchema):
     def production_slice(self) -> slice:
         return slice(0,self.num_goods() - 1)
     
-    def placement(self) -> Placement:
-        return Placement(self.num_goods(), self.production_slice(),
-                         self.labour())
+    def labour_placement(self) -> LabourPlacement:
+        return LabourPlacement(self.num_goods(), self.production_slice(),
+                               self.labour())
 
 
 class GlobalSchema:
@@ -107,5 +111,9 @@ class GlobalSchema:
 
     def placement_in_province(self, province : int) -> Placement:
         return Placement(self.global_width(),
+                         self.production_slice_in_province(province))
+    
+    def labour_placement_in_province(self, province : int) -> Placement:
+        return LabourPlacement(self.global_width(),
                          self.production_slice_in_province(province),
                          self.labour_in_province(province))

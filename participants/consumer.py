@@ -2,29 +2,34 @@ import logging
 import numpy as np
 
 from participants.abstract import *
-from placement import Placement
+from placement import Placement, LabourPlacement
 
-def consume(utility : Bundle, money : float, prices : Prices) -> VolumeBundle:
+def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
     assert prices.shape == utility.shape
     a = np.sum(utility / prices)
     # lambda can be interpreted as the price of 1 utility
-    lambda_squared = money / a
+    lambda_squared = budget / a
     solution = lambda_squared * utility / (prices * prices)
     logging.debug(f"{-solution} consumption")
     return VolumeBundle(-solution, solution)
 
 
 class SalaryConsumer():
-    def __init__(self, utilities : Bundle):
+    def __init__(self, utilities : Bundle, placement : Placement):
         self.utilities = utilities
+        self.goods_slice = placement.production_slice
         
     def consume_salary(self, salary : float, prices : Prices) -> VolumeBundle:
-        return consume(self.utilities, salary, prices)
+        consumption_of_goods = consume(self.utilities, salary,
+                                       prices[self.goods_slice])
+        total_consumption = VolumeBundle.zero(prices.shape)
+        total_consumption.add_at_slice(self.goods_slice, consumption_of_goods)
+        return total_consumption
 
 
 class LabourerConsumer(Participant):
     def __init__(self, utilities : Bundle, workforce : float,
-                 placement : Placement):
+                 placement : LabourPlacement):
         self.utilities = utilities
         self.workforce = workforce
         self.labour_index = placement.labour_index
