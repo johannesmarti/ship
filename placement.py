@@ -6,5 +6,5 @@ class Placement:
     production_slice : slice
 
 @dataclass
-class LabourPlacement(Placement):
+class LaborPlacement(Placement):
     labour_index : int

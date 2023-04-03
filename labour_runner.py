@@ -4,7 +4,7 @@ import logging
 from participants.consumer import *
 from participants.producer import *
 from market.line_search import *
-from schema import LabourTradeGoodsSchema
+from schema import LaborTradeGoodsSchema
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
@@ -19,11 +19,11 @@ p0 = np.array([50,1200,30,5,32])
 #p0 = np.array([13,13,27,50])
 epsilon = 0.01
 
-ls = LabourTradeGoodsSchema(["food", "wood", "ore", "tools"], [])
+ls = LaborTradeGoodsSchema(["food", "wood", "ore", "tools"], [])
 
 pl = ls.labour_placement()
 
-consumers = LabourerConsumer(np.array([2,1,0,2]), 200, pl)
+consumers = LaborerConsumer(np.array([2,1,0,2]), 200, pl)
 
 farm = Producer.factory("farm", np.array([5,1,0,0]), pl)
 mine = Producer.factory("mine", np.array([0,-0.5,1.5,0]), pl)

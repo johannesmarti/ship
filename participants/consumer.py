@@ -2,7 +2,7 @@ import logging
 import numpy as np
 
 from participants.abstract import *
-from placement import Placement, LabourPlacement
+from placement import Placement, LaborPlacement
 
 def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
     assert prices.shape == utility.shape
@@ -27,9 +27,9 @@ class SalaryConsumer():
         return total_consumption
 
 
-class LabourerConsumer(Participant):
+class LaborerConsumer(Participant):
     def __init__(self, utilities : Bundle, workforce : float,
-                 placement : LabourPlacement):
+                 placement : LaborPlacement):
         self.utilities = utilities
         self.workforce = workforce
         self.labour_index = placement.labour_index

@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Type, TypeVar
+from typing import Type, TypeVar, List
 import numpy.typing as npt
 
-from schema import GoodId, ProvinceId, MarketPriceSchema
+from schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema
 
 Bundle = npt.NDArray
 
@@ -14,20 +14,22 @@ class FactoryConfig:
 @dataclass
 class TradeConfig:
     good: GoodId
-    other_province: ProvinceId
+    from_province: ProvinceId
+    to_province: ProvinceId
     trade_factor: float
 
 @dataclass
 class ProvinceConfig:
     population: int
     utilities: Bundle 
-    factories: [FactoryConfig]
-    traders: [TradeConfig]
+    factories: List[FactoryConfig]
+    traders: List[TradeConfig]
 
 @dataclass
 class EconomyConfig:
-    goods_schema: MarketPriceSchema
-    province_config: [ProvinceConfig]
+    goods_schema: TradeGoodsSchema
+    province_schema: ProvinceSchema
+    province_configs: List[ProvinceConfig]
 
 T = TypeVar("T", bound="Economy")
 class Economy(ABC):

@@ -1,6 +1,6 @@
-from typing import Iterable
+from typing import List, Iterable
 
-from placement import Placement, LabourPlacement
+from placement import Placement, LaborPlacement
 
 # These schema classes are tightly coupled. They extendend each other and make
 # assumptions about each others implementation. This is not nice but should be
@@ -8,7 +8,7 @@ from placement import Placement, LabourPlacement
 GoodId = int
 
 class GoodsSchema:
-    def __init__(self, good_names : Iterable[str]):
+    def __init__(self, good_names : List[str]):
         self._good_names = list(good_names);
         self._num_goods = len(self._good_names)
         
@@ -30,12 +30,17 @@ class GoodsSchema:
 
 
 class TradeGoodsSchema(GoodsSchema):
-    def __init__(self, trade_good_names : Iterable[str], fixed_good_names : Iterable[str]):
+    def __init__(self, num_trade_goods: int, num_fixed_goods: int, good_names: List[str]):
         #self._good_names = list(goods);
-        self._num_trade_goods = len(trade_good_names)
-        self._num_fixed_goods = len(fixed_good_names)
-        good_names = trade_good_names + fixed_good_names
+        self._num_trade_goods = num_trade_goods
+        self._num_fixed_goods = num_fixed_goods
         super().__init__(good_names)
+
+    @classmethod
+    def from_lists(cls, trade_good_names : List[str], fixed_good_names : List[str]):
+        num_trade_goods = len(trade_good_names)
+        num_fixed_goods = len(fixed_good_names)
+        return cls(num_trade_goods, num_fixed_goods, trade_good_names + fixed_good_names)
 
     def is_trade_good(self, good : GoodId) -> bool:
         return good < self._num_trade_goods
@@ -47,10 +52,14 @@ class TradeGoodsSchema(GoodsSchema):
         ts = self.trade_slice()
         return range(ts.start, ts.stop)
 
-class LabourTradeGoodsSchema(TradeGoodsSchema):
-    def __init__(self, trade_good_names : Iterable[str], fixed_good_names : Iterable[str]):
-        extended_fixed_good_names = list(fixed_good_names) + ["labour"]
-        super().__init__(trade_good_names, extended_fixed_good_names)
+class LaborTradeGoodsSchema(TradeGoodsSchema):
+    def __init__(self, base: TradeGoodsSchema):
+        extended_names = base._good_names + ["labour"]
+        super().__init__(base._num_trade_goods, base._num_fixed_goods + 1, extended_names)
+
+    @classmethod
+    def from_lists(cls, trade_good_names: List[str], fixed_good_names: List[str]):
+        return LaborTradeGoodsSchema(TradeGoodsSchema.from_lists(trade_good_names, fixed_good_names))
 
     def labour(self) -> GoodId:
         return self.num_goods() - 1
@@ -58,8 +67,8 @@ class LabourTradeGoodsSchema(TradeGoodsSchema):
     def production_slice(self) -> slice:
         return slice(0,self.num_goods() - 1)
     
-    def labour_placement(self) -> LabourPlacement:
-        return LabourPlacement(self.num_goods(), self.production_slice(),
+    def labour_placement(self) -> LaborPlacement:
+        return LaborPlacement(self.num_goods(), self.production_slice(),
                                self.labour())
 
 ProvinceId = int
@@ -85,7 +94,7 @@ class ProvinceSchema:
 MarketPriceId = int
 
 class MarketPriceSchema:
-    def __init__(self, local_schema : GoodsSchema, province_schema : ProvinceSchema):
+    def __init__(self, local_schema : LaborTradeGoodsSchema, province_schema : ProvinceSchema):
         self._local_schema = local_schema
         self._province_schema = province_schema
 
@@ -106,7 +115,7 @@ class MarketPriceSchema:
         offset = self.start_of_province(province)
         return slice(offset,offset + self.local_width())
 
-    def local_schema(self) -> GoodsSchema:
+    def local_schema(self) -> LaborTradeGoodsSchema:
         return self._local_schema
 
     def good_in_province(self, province: ProvinceId, good: GoodId) -> MarketPriceId:
@@ -119,19 +128,17 @@ class MarketPriceSchema:
         return slice(offset + sl.start, offset + sl.stop, sl.step)
 
     def labour_in_province(self, province : ProvinceId) -> MarketPriceId:
-        assert isinstance(self.local_schema(), LabourTradeGoodsSchema)
         return self.good_in_province(province, self.local_schema().labour())
 
     def production_slice_in_province(self, province : ProvinceId) -> slice:
-        assert isinstance(self.local_schema(), LabourTradeGoodsSchema)
         return self.slice_in_province(province,
                                       self.local_schema().production_slice())
 
-    def placement_in_province(self, province : ProvinceId) -> Placement:
+    def placement_of_province(self, province : ProvinceId) -> Placement:
         return Placement(self.global_width(),
                          self.production_slice_in_province(province))
     
-    def labour_placement_in_province(self, province : ProvinceId) -> Placement:
-        return LabourPlacement(self.global_width(),
+    def labor_placement_of_province(self, province : ProvinceId) -> LaborPlacement:
+        return LaborPlacement(self.global_width(),
                          self.production_slice_in_province(province),
                          self.labour_in_province(province))

@@ -13,14 +13,14 @@ np.set_printoptions(precision=8,suppress=True,threshold=12)
 logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-local_schema = LabourTradeGoodsSchema(["food", "wood", "ore", "tools"],[])
+local_schema = LaborTradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
 province_schema = ProvinceSchema(["Switzerland", "Italy"])
 gs = MarketPriceSchema(local_schema, province_schema)
 
 switzerland = province_schema.province_of_name("Switzerland")
-sw_pl = gs.labour_placement_in_province(switzerland)
+sw_pl = gs.labor_placement_of_province(switzerland)
 
-swiss_consumers = LabourerConsumer(np.array([2,1.2,0,1.1]), 800, sw_pl)
+swiss_consumers = LaborerConsumer(np.array([2,1.2,0,1.1]), 800, sw_pl)
 
 cow_farm = Producer.factory("Cow farm", np.array([3.5,1.8,0,0]), sw_pl)
 swiss_mine = Producer.factory("Swiss mine", np.array([0,-0.5,1.7,0]), sw_pl)
@@ -30,9 +30,9 @@ swiss_participants = [swiss_consumers, cow_farm, swiss_mine, swiss_artisans]
 
 
 italy = province_schema.province_of_name("Italy")
-it_pl = gs.labour_placement_in_province(italy)
+it_pl = gs.labor_placement_of_province(italy)
 
-italian_consumers = LabourerConsumer(np.array([2.1,1,0,1]), 6000, it_pl)
+italian_consumers = LaborerConsumer(np.array([2.1,1,0,1]), 6000, it_pl)
 
 po_farm = Producer.factory("Po farm", np.array([9,0,0,0]), it_pl)
 italian_wood_cutter = Producer.factory("wood cutter", np.array([-1,4,0,0]), it_pl)
