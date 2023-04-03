@@ -13,11 +13,11 @@ np.set_printoptions(precision=8,suppress=True,threshold=12)
 logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-local_schema = LabourSchema(["food", "wood", "ore", "tools"],[])
-gs = GlobalSchema(local_schema, ["Switzerland", "Italy"])
+local_schema = LabourTradeGoodsSchema(["food", "wood", "ore", "tools"],[])
+province_schema = ProvinceSchema(["Switzerland", "Italy"])
+gs = MarketPriceSchema(local_schema, province_schema)
 
-
-switzerland = gs.province_of_name("Switzerland")
+switzerland = province_schema.province_of_name("Switzerland")
 sw_pl = gs.labour_placement_in_province(switzerland)
 
 swiss_consumers = LabourerConsumer(np.array([2,1.2,0,1.1]), 800, sw_pl)
@@ -29,7 +29,7 @@ swiss_artisans = Producer.factory("artisans", np.array([0,-2,-1,2]), sw_pl)
 swiss_participants = [swiss_consumers, cow_farm, swiss_mine, swiss_artisans]
 
 
-italy = gs.province_of_name("Italy")
+italy = province_schema.province_of_name("Italy")
 it_pl = gs.labour_placement_in_province(italy)
 
 italian_consumers = LabourerConsumer(np.array([2.1,1,0,1]), 6000, it_pl)
@@ -47,15 +47,15 @@ def concat_map(func, it):
 
 trade_factors = 2*np.array([3,4,2,1])
 
-def set_up_merchants(global_schema : GlobalSchema, home : int, foreign : int) -> Iterable[Producer]:
+def set_up_merchants(global_schema : MarketPriceSchema, home : int, foreign : int) -> Iterable[Producer]:
     def for_good(good : int) -> Iterable[Producer]:
         width = global_schema.global_width()
         li = global_schema.labour_in_province(home)
         hi = global_schema.good_in_province(home, good)
         fi = global_schema.good_in_province(foreign, good)
         tf = trade_factors[good]
-        hname = global_schema.name_of_province(home) 
-        fname = global_schema.name_of_province(foreign) 
+        hname = global_schema.province_schema().name_of_province(home) 
+        fname = global_schema.province_schema().name_of_province(foreign) 
         gname = global_schema.local_schema().name_of_good(good)
         exporter = Producer.trader(f"{gname} from {hname} to {fname}", li, hi, fi, tf, width)
         importer = Producer.trader(f"{gname} from {fname} to {hname}", li, fi, hi, tf, width)

@@ -5,7 +5,7 @@ from participants.consumer import *
 from participants.balanced_producer import *
 from participants.village import *
 from market.line_search import *
-from schema import GoodsSchema, TradeSchema
+from schema import GoodsSchema, TradeGoodsSchema
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
@@ -20,13 +20,12 @@ production_matrix = np.array([
     [0,5,0,-0.5] ])
 
 ls = GoodsSchema(["food", "wood", "ore", "tools"])
-#ls = TradeSchema(["food", "wood", "ore", "tools"], [])
+#ls = TradeGoodsSchema(["food", "wood", "ore", "tools"], [])
 pl = ls.placement()
 
 consumer = SalaryConsumer(np.array([2,1,0,2]), pl)
 producer = BalancedProducer(200, production_matrix)
 village = Village(producer, consumer)
-
 
 #p0 = np.array([10,10,10,10])
 #p0 = np.array([50,1000,30,5])
