@@ -1,4 +1,4 @@
-from typing import List, Iterable
+from typing import Iterable, cast
 
 from placement import Placement, LaborPlacement
 
@@ -8,12 +8,12 @@ from placement import Placement, LaborPlacement
 GoodId = int
 
 class GoodsSchema:
-    def __init__(self, good_names : List[str]):
-        self._good_names = list(good_names);
+    def __init__(self, good_names : list[str]):
+        self._good_names = list(good_names)
         self._num_goods = len(self._good_names)
-        
+
     def valid_id(self, good_id: GoodId) -> bool:
-        return 0 <= good_id and good_id < self.num_goods()
+        return 0 <= good_id < self.num_goods()
 
     def num_goods(self) -> int:
         return self._num_goods
@@ -24,20 +24,20 @@ class GoodsSchema:
 
     def good_of_name(self, name : str) -> GoodId:
         return self._good_names.index(name)
-    
+
     def placement(self) -> Placement:
         return Placement(self.num_goods(), slice(0, self._num_goods))
 
 
 class TradeGoodsSchema(GoodsSchema):
-    def __init__(self, num_trade_goods: int, num_fixed_goods: int, good_names: List[str]):
+    def __init__(self, num_trade_goods: int, num_fixed_goods: int, good_names: list[str]):
         #self._good_names = list(goods);
         self._num_trade_goods = num_trade_goods
         self._num_fixed_goods = num_fixed_goods
         super().__init__(good_names)
 
     @classmethod
-    def from_lists(cls, trade_good_names : List[str], fixed_good_names : List[str]):
+    def from_lists(cls, trade_good_names : list[str], fixed_good_names : list[str]):
         num_trade_goods = len(trade_good_names)
         num_fixed_goods = len(fixed_good_names)
         return cls(num_trade_goods, num_fixed_goods, trade_good_names + fixed_good_names)
@@ -47,10 +47,13 @@ class TradeGoodsSchema(GoodsSchema):
 
     def trade_slice(self) -> slice:
         return slice(0, self._num_trade_goods)
-    
+
     def trade_goods(self) -> Iterable[GoodId]:
         ts = self.trade_slice()
         return range(ts.start, ts.stop)
+
+    def production_slice(self) -> slice:
+        return slice(0,self.num_goods())
 
 class LaborTradeGoodsSchema(TradeGoodsSchema):
     def __init__(self, base: TradeGoodsSchema):
@@ -58,8 +61,9 @@ class LaborTradeGoodsSchema(TradeGoodsSchema):
         super().__init__(base._num_trade_goods, base._num_fixed_goods + 1, extended_names)
 
     @classmethod
-    def from_lists(cls, trade_good_names: List[str], fixed_good_names: List[str]):
-        return LaborTradeGoodsSchema(TradeGoodsSchema.from_lists(trade_good_names, fixed_good_names))
+    def from_lists(cls, trade_good_names: list[str], fixed_good_names: list[str]):
+        return LaborTradeGoodsSchema(TradeGoodsSchema.from_lists(trade_good_names,
+                                                                 fixed_good_names))
 
     def labour(self) -> GoodId:
         return self.num_goods() - 1
@@ -79,7 +83,7 @@ class ProvinceSchema:
         self._num_provinces = len(self._province_names)
 
     def valid_id(self, province_id: ProvinceId) -> bool:
-        return 0 <= province_id and province_id < self.num_provinces()
+        return 0 <= province_id < self.num_provinces()
 
     def num_provinces(self) -> int:
         return self._num_provinces
@@ -94,7 +98,7 @@ class ProvinceSchema:
 MarketPriceId = int
 
 class MarketPriceSchema:
-    def __init__(self, local_schema : LaborTradeGoodsSchema, province_schema : ProvinceSchema):
+    def __init__(self, local_schema : TradeGoodsSchema, province_schema : ProvinceSchema):
         self._local_schema = local_schema
         self._province_schema = province_schema
 
@@ -115,7 +119,7 @@ class MarketPriceSchema:
         offset = self.start_of_province(province)
         return slice(offset,offset + self.local_width())
 
-    def local_schema(self) -> LaborTradeGoodsSchema:
+    def local_schema(self) -> TradeGoodsSchema:
         return self._local_schema
 
     def good_in_province(self, province: ProvinceId, good: GoodId) -> MarketPriceId:
@@ -127,9 +131,6 @@ class MarketPriceSchema:
         offset = self.start_of_province(province)
         return slice(offset + sl.start, offset + sl.stop, sl.step)
 
-    def labour_in_province(self, province : ProvinceId) -> MarketPriceId:
-        return self.good_in_province(province, self.local_schema().labour())
-
     def production_slice_in_province(self, province : ProvinceId) -> slice:
         return self.slice_in_province(province,
                                       self.local_schema().production_slice())
@@ -137,7 +138,18 @@ class MarketPriceSchema:
     def placement_of_province(self, province : ProvinceId) -> Placement:
         return Placement(self.global_width(),
                          self.production_slice_in_province(province))
-    
+
+class LaborMarketPriceSchema(MarketPriceSchema):
+    def __init__(self, local_schema : LaborTradeGoodsSchema, province_schema : ProvinceSchema):
+        super().__init__(local_schema, province_schema)
+
+    # This is an override just to have the more specific types
+    def local_schema(self) -> LaborTradeGoodsSchema:
+        return cast(LaborTradeGoodsSchema, self._local_schema)
+
+    def labour_in_province(self, province : ProvinceId) -> MarketPriceId:
+        return self.good_in_province(province, self.local_schema().labour())
+
     def labor_placement_of_province(self, province : ProvinceId) -> LaborPlacement:
         return LaborPlacement(self.global_width(),
                          self.production_slice_in_province(province),

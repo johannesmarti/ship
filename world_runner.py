@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 
 local_schema = LaborTradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
 province_schema = ProvinceSchema(["Switzerland", "Italy"])
-gs = MarketPriceSchema(local_schema, province_schema)
+gs = LaborMarketPriceSchema(local_schema, province_schema)
 
 switzerland = province_schema.province_of_name("Switzerland")
 sw_pl = gs.labor_placement_of_province(switzerland)

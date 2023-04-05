@@ -4,7 +4,7 @@ from itertools import chain
 import participants.consumer as c
 import participants.producer as p
 from participants.abstract import Participant
-from schema import LaborTradeGoodsSchema, MarketPriceSchema, ProvinceId
+from schema import LaborTradeGoodsSchema, LaborMarketPriceSchema, ProvinceId
 import economy
 
 def uncurry(function: Callable):
@@ -14,7 +14,7 @@ class LaborEconomy(economy.Economy):
     """Implements the economy interface for algorithms in which labor is one of
     the goods that is priced by the market."""
 
-    def __init__(self, market_schema: MarketPriceSchema, consumers: List[c.LaborerConsumer],
+    def __init__(self, market_schema: LaborMarketPriceSchema, consumers: List[c.LaborerConsumer],
                  factories: List[p.Producer], traders: List[p.Producer]):
         self._market_schema = market_schema
         self._consumers = consumers
@@ -23,8 +23,9 @@ class LaborEconomy(economy.Economy):
 
     @classmethod
     def from_config(cls, config: economy.EconomyConfig):
-        market_schema = MarketPriceSchema(LaborTradeGoodsSchema(config.goods_schema),
-                                          config.province_schema)
+        market_schema = LaborMarketPriceSchema(
+            LaborTradeGoodsSchema(config.goods_schema),
+            config.province_schema)
 
         def create_consumer(province: ProvinceId,
                             config: economy.ProvinceConfig) -> c.LaborerConsumer:
