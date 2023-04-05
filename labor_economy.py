@@ -3,6 +3,7 @@ from itertools import chain
 
 import participants.consumer as c
 import participants.producer as p
+from participants.abstract import Participant
 from schema import LaborTradeGoodsSchema, MarketPriceSchema, ProvinceId
 import economy
 
@@ -49,3 +50,9 @@ class LaborEconomy(economy.Economy):
         traders = list(chain(*nested_traders))
 
         return cls(market_schema, consumers, factories, traders)
+
+    def population_in_province(self, province: ProvinceId) -> int:
+        return self._consumers[province].population()
+
+    def participants(self) -> Iterable[Participant]:
+        return chain(self._consumers, self._factories, self._traders)

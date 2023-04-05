@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Type, TypeVar, List
+from typing import Type, TypeVar, List, Iterable
 import numpy.typing as npt
 
+from participants.abstract import Participant
 from schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema
 
 Bundle = npt.NDArray
@@ -34,7 +35,7 @@ class EconomyConfig:
 T = TypeVar("T", bound="Economy")
 class Economy(ABC):
     """Interface to implementations of the core economic functionality.
-    Implementations set up the market participants and run the market."""
+    Implementations set up the market participants."""
 
     @classmethod
     @abstractmethod
@@ -44,3 +45,8 @@ class Economy(ABC):
     @abstractmethod
     def population_in_province(self, province: ProvinceId) -> int:
         pass
+
+    @abstractmethod
+    def participants(self) -> Iterable[Participant]:
+        pass
+

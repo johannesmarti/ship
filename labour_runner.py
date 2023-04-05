@@ -19,7 +19,7 @@ p0 = np.array([50,1200,30,5,32])
 #p0 = np.array([13,13,27,50])
 epsilon = 0.01
 
-ls = LaborTradeGoodsSchema(["food", "wood", "ore", "tools"], [])
+ls = LaborTradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"], [])
 
 pl = ls.labour_placement()
 
