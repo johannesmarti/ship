@@ -22,7 +22,7 @@ class TradeConfig:
 @dataclass
 class ProvinceConfig:
     population: int
-    utilities: Bundle 
+    utilities: Bundle
     factories: List[FactoryConfig]
     traders: List[TradeConfig]
 
@@ -49,4 +49,3 @@ class Economy(ABC):
     @abstractmethod
     def participants(self) -> Iterable[Participant]:
         pass
-

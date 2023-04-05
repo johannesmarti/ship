@@ -23,27 +23,39 @@ class LaborEconomy(economy.Economy):
 
     @classmethod
     def from_config(cls, config: economy.EconomyConfig):
-        market_schema = MarketPriceSchema(LaborTradeGoodsSchema(config.goods_schema), config.province_schema)
+        market_schema = MarketPriceSchema(LaborTradeGoodsSchema(config.goods_schema),
+                                          config.province_schema)
 
-        def create_consumer(province: ProvinceId, config: economy.ProvinceConfig) -> c.LaborerConsumer:
+        def create_consumer(province: ProvinceId,
+                            config: economy.ProvinceConfig) -> c.LaborerConsumer:
             return c.LaborerConsumer(config.utilities, config.population,
                                      market_schema.labor_placement_of_province(province))
 
         consumers = list(map(uncurry(create_consumer), enumerate(config.province_configs)))
 
-        def create_factories(province: ProvinceId, config: economy.ProvinceConfig) -> Iterable[p.Producer]:
+        def create_factories(province: ProvinceId,
+                             config: economy.ProvinceConfig
+                            ) -> Iterable[p.Producer]:
             def create_factory(factory_config: economy.FactoryConfig) -> p.Producer:
-                return p.Producer.factory("factory without name", factory_config.production_coefficients, market_schema.labor_placement_of_province(province))
+                labor_index = market_schema.labor_placement_of_province(province)
+                return p.Producer.factory("factory without name",
+                                          factory_config.production_coefficients,
+                                          labor_index)
             return map(create_factory, config.factories)
         nested_factories = map(uncurry(create_factories), enumerate(config.province_configs))
         factories = list(chain(*nested_factories))
 
-        def create_traders(province: ProvinceId, config: economy.ProvinceConfig) -> Iterable[p.Producer]:
+        def create_traders(province: ProvinceId, config: economy.ProvinceConfig
+                          ) -> Iterable[p.Producer]:
             def create_trader(trade_config: economy.TradeConfig) -> p.Producer:
-                from_listing = market_schema.good_in_province(trade_config.from_province, trade_config.good)
-                to_listing = market_schema.good_in_province(trade_config.to_province, trade_config.good)
-                return p.Producer.trader("trader without name", market_schema.labour_in_province(province),
-                                         from_listing, to_listing, trade_config.trade_factor,
+                from_listing = market_schema.good_in_province(trade_config.from_province,
+                                                              trade_config.good)
+                to_listing = market_schema.good_in_province(trade_config.to_province,
+                                                            trade_config.good)
+                return p.Producer.trader("trader without name",
+                                         market_schema.labour_in_province(province),
+                                         from_listing, to_listing,
+                                         trade_config.trade_factor,
                                          market_schema.global_width())
             return map(create_trader, config.traders)
         nested_traders = map(uncurry(create_traders), enumerate(config.province_configs))
