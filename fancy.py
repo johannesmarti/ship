@@ -62,11 +62,11 @@ province_configs = [
 ]
 
 econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
-#econ = we.WageEconomy.from_config(econfig)
-econ = le.LaborEconomy.from_config(econfig)
+econ = we.WageEconomy.from_config(econfig)
+#econ = le.LaborEconomy.from_config(econfig)
 
 p0 = np.full(econ.price_width(), 10)
-epsilon = 0.001
+epsilon = 0.000001
 participants = list(econ.participants())
 
 def run_once(t : float):

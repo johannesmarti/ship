@@ -62,12 +62,13 @@ def set_up_merchants(global_schema : MarketPriceSchema, home : int, foreign : in
         return [importer, exporter]
     return concat_map(for_good, global_schema.local_schema().trade_goods())
 
+swiss_merchants = list(set_up_merchants(gs, switzerland, italy))
 italian_merchants = list(set_up_merchants(gs, italy, switzerland))
 
-participants = swiss_participants + italian_participants + italian_merchants
+participants = swiss_participants + swiss_merchants + italian_participants + italian_merchants
 
 p0 = np.full((gs.global_width()), 10)
-epsilon = 0.001
+epsilon = 0.000001
 
 
 def run_once(t : float):
