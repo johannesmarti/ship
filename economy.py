@@ -24,7 +24,7 @@ class ProvinceConfig:
     population: int
     utilities: Bundle
     factories: List[FactoryConfig]
-    traders: List[TradeConfig]
+    merchants: List[TradeConfig]
 
 @dataclass
 class EconomyConfig:

@@ -8,7 +8,7 @@ from participants.abstract import *
 Allocation = npt.NDArray
 
 class BalancedProducer():
-    def __init__(self, workforce : float, production_matrix : npt.NDArray):
+    def __init__(self, workforce : int, production_matrix : npt.NDArray):
         self.production_matrix = production_matrix
         self.workforce = workforce
 

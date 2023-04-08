@@ -58,7 +58,7 @@ class LaborEconomy(economy.Economy):
                                          from_listing, to_listing,
                                          trade_config.trade_factor,
                                          market_schema.global_width())
-            return map(create_trader, config.traders)
+            return map(create_trader, config.merchants)
         nested_traders = map(uncurry(create_traders), enumerate(config.province_configs))
         traders = list(chain(*nested_traders))
 
