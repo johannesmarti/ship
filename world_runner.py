@@ -10,8 +10,8 @@ from itertools import chain
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = LaborTradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
 province_schema = ProvinceSchema(["Switzerland", "Italy"])
@@ -67,7 +67,7 @@ italian_merchants = list(set_up_merchants(gs, italy, switzerland))
 participants = swiss_participants + italian_participants + italian_merchants
 
 p0 = np.full((gs.global_width()), 10)
-epsilon = 0.01
+epsilon = 0.001
 
 
 def run_once(t : float):

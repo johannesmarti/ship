@@ -1,13 +1,13 @@
-import numpy as np
 from typing import Iterable, Callable
 from itertools import chain
+import numpy as np
 
 import participants.consumer as c
 import participants.balanced_producer as p
 import participants.village as v
 from participants.abstract import Participant
-from schema import TradeGoodsSchema, MarketPriceSchema, ProvinceId
-import economy as economy
+from schema import MarketPriceSchema, ProvinceId
+import economy
 
 def uncurry(function: Callable):
     return lambda args: function(*args)
@@ -65,6 +65,9 @@ class WageEconomy(economy.Economy):
 
     def population_in_province(self, province: ProvinceId) -> int:
         return self._villages[province].population()
+
+    def price_width(self) -> int:
+        return self._market_schema.global_width()
 
     def participants(self) -> Iterable[Participant]:
         return self._villages

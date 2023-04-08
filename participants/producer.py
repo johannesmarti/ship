@@ -1,7 +1,6 @@
+from typing import Tuple
 import logging
 import numpy as np
-
-from typing import Tuple
 
 from participants.abstract import *
 from placement import LaborPlacement
@@ -41,6 +40,7 @@ class Producer(Participant):
         self.name = name 
         self.production_coefficients = production_coefficients
         self.labour_index = labour_index
+        # could this also be implemented if we make labour part of the production_coefficients
 
     def participate(self, prices : Prices) -> VolumeBundle:
         (workforce,production) = produce(self.name,

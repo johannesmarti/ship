@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Type, TypeVar, List, Iterable
+from typing import Type, TypeVar, Iterable
 import numpy.typing as npt
 
 from participants.abstract import Participant
@@ -23,14 +23,14 @@ class TradeConfig:
 class ProvinceConfig:
     population: int
     utilities: Bundle
-    factories: List[FactoryConfig]
-    merchants: List[TradeConfig]
+    factories: list[FactoryConfig]
+    merchants: list[TradeConfig]
 
 @dataclass
 class EconomyConfig:
     goods_schema: TradeGoodsSchema
     province_schema: ProvinceSchema
-    province_configs: List[ProvinceConfig]
+    province_configs: list[ProvinceConfig]
 
 T = TypeVar("T", bound="Economy")
 class Economy(ABC):
@@ -44,6 +44,10 @@ class Economy(ABC):
 
     @abstractmethod
     def population_in_province(self, province: ProvinceId) -> int:
+        pass
+
+    @abstractmethod
+    def price_width(self) -> int:
         pass
 
     @abstractmethod
