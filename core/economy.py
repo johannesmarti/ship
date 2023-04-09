@@ -4,7 +4,7 @@ from typing import Type, TypeVar, Iterable
 import numpy.typing as npt
 
 from core.participant import Participant
-from core.schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema
+from core.schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema, MarketPriceSchema
 
 Bundle = npt.NDArray
 
@@ -47,7 +47,7 @@ class Economy(ABC):
         pass
 
     @abstractmethod
-    def price_width(self) -> int:
+    def price_schema(self) -> MarketPriceSchema:
         pass
 
     @abstractmethod

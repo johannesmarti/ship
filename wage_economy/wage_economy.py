@@ -66,8 +66,8 @@ class WageEconomy(economy.Economy):
     def population_in_province(self, province: ProvinceId) -> int:
         return self._villages[province].population()
 
-    def price_width(self) -> int:
-        return self._market_schema.global_width()
+    def price_schema(self) -> MarketPriceSchema:
+        return self._market_schema
 
     def participants(self) -> Iterable[Participant]:
         return self._villages
