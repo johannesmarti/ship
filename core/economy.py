@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Type, TypeVar, Iterable
 import numpy.typing as npt
 
-from participants.abstract import Participant
-from schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema
+from core.participant import Participant
+from core.schema import GoodId, ProvinceId, TradeGoodsSchema, ProvinceSchema
 
 Bundle = npt.NDArray
 

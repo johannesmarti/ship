@@ -1,11 +1,11 @@
 import numpy as np
 import logging
 
-from participants.consumer import *
-from participants.balanced_producer import *
-from participants.village import *
+from consumer import *
+from wage_economy.balanced_producer import *
+from wage_economy.village import *
 from market.line_search import *
-from schema import GoodsSchema, TradeGoodsSchema
+from core.schema import GoodsSchema, TradeGoodsSchema
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')

@@ -2,8 +2,8 @@ from typing import Tuple
 import logging
 import numpy as np
 
-from participants.abstract import *
-from placement import LaborPlacement
+from core.participant import *
+from core.placement import LaborPlacement
 
 # helper function used further below
 def produce(name : str, production_coefficients : Bundle, wage_per_worker : float, prices : Prices) -> Tuple[float, VolumeBundle]:

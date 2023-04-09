@@ -3,7 +3,7 @@ import logging
 
 import tools.derivative as sjd
 
-from participants.consumer import *
+from consumer import *
 
 np.set_printoptions(precision=4,suppress=True,threshold=8)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')

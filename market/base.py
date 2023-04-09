@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Callable,Iterable,Optional
 #import numpy.typing as npt
 
-from participants.abstract import *
+from core.participant import *
 
 Market = Callable[[Iterable[Participant],Prices],Prices]
 

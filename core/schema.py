@@ -1,6 +1,6 @@
 from typing import Iterable, cast
 
-from placement import Placement, LaborPlacement
+from core.placement import Placement, LaborPlacement
 
 # These schema classes are tightly coupled. They extendend each other and make
 # assumptions about each others implementation. This is not nice but should be

@@ -3,7 +3,7 @@ import numpy as np
 from typing import Tuple
 import numpy.typing as npt
 
-from participants.abstract import *
+from core.participant import *
 
 Allocation = npt.NDArray
 

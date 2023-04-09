@@ -1,6 +1,6 @@
-from participants.abstract import *
-import participants.balanced_producer as pro
-import participants.consumer as con
+from core.participant import *
+import wage_economy.balanced_producer as pro
+import consumer as con
 
 class Village(Participant):
     def __init__(self, producer : pro.BalancedProducer, consumer : con.SalaryConsumer):

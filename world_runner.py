@@ -1,10 +1,10 @@
 import numpy as np
 import logging
 
-from participants.consumer import *
-from participants.producer import *
+from consumer import *
+from labor_market.producer import *
 from market.line_search import *
-from schema import *
+from core.schema import *
 from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)

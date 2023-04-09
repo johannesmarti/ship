@@ -1,11 +1,11 @@
 from typing import List, Iterable, Callable
 from itertools import chain
 
-import participants.consumer as c
-import participants.producer as p
-from participants.abstract import Participant
-from schema import LaborTradeGoodsSchema, LaborMarketPriceSchema, ProvinceId
-import economy
+import consumer as c
+import labor_market.producer as p
+from core.participant import Participant
+from core.schema import LaborTradeGoodsSchema, LaborMarketPriceSchema, ProvinceId
+import core.economy as economy
 
 def uncurry(function: Callable):
     return lambda args: function(*args)

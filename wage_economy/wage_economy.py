@@ -2,12 +2,12 @@ from typing import Iterable, Callable
 from itertools import chain
 import numpy as np
 
-import participants.consumer as c
-import participants.balanced_producer as p
-import participants.village as v
-from participants.abstract import Participant
-from schema import MarketPriceSchema, ProvinceId
-import economy
+import consumer as c
+import wage_economy.balanced_producer as p
+import wage_economy.village as v
+from core.participant import Participant
+from core.schema import MarketPriceSchema, ProvinceId
+import core.economy as economy
 
 def uncurry(function: Callable):
     return lambda args: function(*args)

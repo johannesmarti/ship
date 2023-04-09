@@ -1,8 +1,8 @@
 import logging
 import numpy as np
 
-from participants.abstract import *
-from placement import Placement, LaborPlacement
+from core.participant import *
+from core.placement import Placement, LaborPlacement
 
 def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
     assert prices.shape == utility.shape
