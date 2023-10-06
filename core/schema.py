@@ -57,7 +57,7 @@ class TradeGoodsSchema(GoodsSchema):
 
 class LaborTradeGoodsSchema(TradeGoodsSchema):
     def __init__(self, base: TradeGoodsSchema):
-        extended_names = base._good_names + ["labour"]
+        extended_names = base._good_names + ["labor"]
         super().__init__(base._num_trade_goods, base._num_fixed_goods + 1, extended_names)
 
     @classmethod

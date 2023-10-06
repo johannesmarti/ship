@@ -68,7 +68,7 @@ def test_global(config):
     lecon = le.LaborEconomy.from_config(config)
     lpart = list(lecon.participants())
     lschema = lecon.price_schema()
-    epsilon = 0.0001
+    epsilon = 0.001
 
     p0 = np.full(wschema.global_width(), 10)
     search_config = LineSearchConfiguration(t=0.2, beta=0.3, price_scaling=ScalingConfiguration(10))

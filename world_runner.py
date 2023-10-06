@@ -2,7 +2,7 @@ import numpy as np
 import logging
 
 from consumer import *
-from labor_market.producer import *
+from labor_economy.producer import *
 from market.line_search import *
 from core.schema import *
 from itertools import chain
