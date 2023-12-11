@@ -2,11 +2,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 import logging
 
-#from typing import Tuple
-import numpy.typing as npt
-
-Prices = npt.NDArray
-Bundle = npt.NDArray
+Prices = np.ndarray
+Bundle = np.ndarray
 
 class VolumeBundle:
     value : Bundle

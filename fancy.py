@@ -4,7 +4,7 @@ import numpy as np
 
 import core.economy as economy
 import wage_economy.wage_economy as we
-import labor_market.labor_economy as le
+import labor_economy.labor_economy as le
 from market.line_search import line_search_market, get_iteration, reset_iteration, LineSearchConfiguration, ScalingConfiguration
 from core.schema import *
 from itertools import chain
@@ -62,11 +62,11 @@ province_configs = [
 ]
 
 econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
-econ = we.WageEconomy.from_config(econfig)
-#econ = le.LaborEconomy.from_config(econfig)
+#econ = we.WageEconomy.from_config(econfig)
+econ = le.LaborEconomy.from_config(econfig)
 
-p0 = np.full(econ.price_width(), 10)
-epsilon = 0.000001
+p0 = np.full(econ.price_schema().global_width(), 10)
+epsilon = 0.001
 participants = list(econ.participants())
 
 def run_once(t : float):

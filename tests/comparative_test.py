@@ -4,7 +4,7 @@ import numpy as np
 
 import core.economy as economy
 import wage_economy.wage_economy as we
-import labor_market.labor_economy as le
+import labor_economy.labor_economy as le
 from market.line_search import *
 from core.schema import ProvinceSchema, TradeGoodsSchema
 from itertools import chain
