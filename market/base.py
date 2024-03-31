@@ -8,7 +8,7 @@ from typing import Callable,Iterable,Optional
 
 from core.participant import *
 
-Market = Callable[[Iterable[Participant],Prices],Prices]
+#Market = Callable[[Iterable[Participant],Prices],Prices]
 
 MIN_PRICE = 0.0001
 
@@ -41,14 +41,34 @@ def get_step() -> int:
     global step
     return step
 
+def one_iteration(participants : Iterable[Participant], prices : Prices) -> VolumeBundle:
+    increment_iteration()
+    logging.debug(f"at iteration {get_iteration()}")
+    eb = VolumeBundle.zero(prices.shape)
+    for p in participants:
+        eb += p.participate(prices)
+    return eb
+
 MIN_PRICE : float = 0.001
+MIN_VOLUME : float = 0.001
 
 @dataclass(frozen=True)
 class ScalingConfiguration:
     set_to_price : float = 10
 
 def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
-    new_price = price * (1 - t * (error.value/(error.volume + 0.1)))
+    new_price = price * (1 - t * (error.value/(error.volume + MIN_VOLUME)))
+    #assert (new_price > 0).all()
+    if (price_scaling != None):
+        #avg_price = np.average(new_price)
+        avg_price = price[0]
+        scaling_factor = price_scaling.set_to_price/avg_price
+        new_price *= scaling_factor
+    return np.maximum(new_price, MIN_PRICE)
+
+def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, price_scaling : Optional[ScalingConfiguration]) -> Prices:
+    assert t.shape == price.shape
+    new_price = price * (1 - t * (error.value/(error.volume + MIN_VOLUME)))
     #assert (new_price > 0).all()
     if (price_scaling != None):
         #avg_price = np.average(new_price)
