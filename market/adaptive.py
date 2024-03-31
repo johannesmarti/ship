@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Tuple,Optional
 
 from market.base import *
+import table_logger as tl
 
 @dataclass(frozen=True)
 class AdaptiveSearchConfiguration:
@@ -65,20 +66,17 @@ def adapt_ts(max_change_factor: float, ts: np.ndarray,
 
 def adaptive_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : AdaptiveSearchConfiguration = AdaptiveSearchConfiguration()) -> Prices:
     logging.info(f"starting adaptive search, with starting_t = {config.starting_t}")
-    logging.info(f"prices.dtype: {prices.dtype}")
-    logging.info(f"at prices: {prices}")
     supply = one_iteration(participants, prices)
     ts = np.full_like(prices, config.starting_t)
-    logging.info(f"ts.dtype: {ts.dtype}")
-    logging.info(f"with ts: {ts}")
+    tl.log_values(logging.INFO, [("price",prices),("error", supply.value),
+                                 ("volume", supply.volume),("t",ts)])
     while absolute_badness(supply) >= epsilon:
         logging.info(f"\n\nnext iteration because of badness: {absolute_badness(supply)}")
-        logging.info(f"at prices: {prices}")
-        logging.info(f"for error: {supply.value}")
-        logging.info(f"with volume: {supply.volume}")
-        logging.info(f"with ts: {ts}")
+
+        tl.log_values(logging.INFO, [("price",prices),("error", supply.value),
+                                     ("volume", supply.volume),("t",ts)])
         increment_step()
-        prices = adapt_prices(prices, supply, ts, config.price_scaling)
+        prices = broad_adapt_prices(prices, supply, ts, config.price_scaling)
         new_supply = one_iteration(participants, prices)
         ts = adapt_ts(config.max_change_factor, ts, supply, new_supply)
         supply = new_supply

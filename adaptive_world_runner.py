@@ -6,8 +6,9 @@ from labor_economy.producer import *
 from market.adaptive import *
 from core.schema import *
 from itertools import chain
+import table_logger as tl
 
-np.set_printoptions(precision=8,suppress=True,threshold=12)
+np.set_printoptions(precision=4,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
 logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
@@ -70,11 +71,15 @@ participants = swiss_participants + swiss_merchants + italian_participants + ita
 p0 = np.full((gs.global_width()), 10.0)
 epsilon = 0.000001
 
+tl.set_global_table_logging_configuration(tl.TableLoggingConfiguration(
+        schema = gs,
+        list_of_indices = list(range(gs.global_width()))
+))
 
 def run_once(t : float):
     config = AdaptiveSearchConfiguration(
                     starting_t=t,
-                    max_change_factor=1,
+                    max_change_factor=1.3,
                     price_scaling=ScalingConfiguration(100)
              )
     p = adaptive_market(participants, p0, epsilon, config)

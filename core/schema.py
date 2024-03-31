@@ -13,20 +13,22 @@ class GoodsSchema:
         self._num_goods = len(self._good_names)
 
     def valid_id(self, good_id: GoodId) -> bool:
-        return 0 <= good_id < self.num_goods()
+        return 0 <= good_id < self.width()
 
-    def num_goods(self) -> int:
+    def width(self) -> int:
         return self._num_goods
 
     def name_of_good(self, good : GoodId) -> str:
-        assert good < self.num_goods()
+        assert good < self.width()
         return self._good_names[good]
+
+    ix_to_str = name_of_good
 
     def good_of_name(self, name : str) -> GoodId:
         return self._good_names.index(name)
 
     def placement(self) -> Placement:
-        return Placement(self.num_goods(), slice(0, self._num_goods))
+        return Placement(self.__num_goods, slice(0, self._num_goods))
 
 
 class TradeGoodsSchema(GoodsSchema):
@@ -53,7 +55,7 @@ class TradeGoodsSchema(GoodsSchema):
         return range(ts.start, ts.stop)
 
     def production_slice(self) -> slice:
-        return slice(0,self.num_goods())
+        return slice(0,self.width())
 
 class LaborTradeGoodsSchema(TradeGoodsSchema):
     def __init__(self, base: TradeGoodsSchema):
@@ -66,13 +68,13 @@ class LaborTradeGoodsSchema(TradeGoodsSchema):
                                                                  fixed_good_names))
 
     def labour(self) -> GoodId:
-        return self.num_goods() - 1
+        return self.width() - 1
 
     def production_slice(self) -> slice:
-        return slice(0,self.num_goods() - 1)
+        return slice(0,self.width() - 1)
     
     def labour_placement(self) -> LaborPlacement:
-        return LaborPlacement(self.num_goods(), self.production_slice(),
+        return LaborPlacement(self.width(), self.production_slice(),
                                self.labour())
 
 ProvinceId = int
@@ -95,7 +97,7 @@ class ProvinceSchema:
     def province_of_name(self, name : str) -> ProvinceId:
         return self._province_names.index(name)
 
-MarketPriceId = int
+ListingId = int
 
 class MarketPriceSchema:
     def __init__(self, local_schema : TradeGoodsSchema, province_schema : ProvinceSchema):
@@ -103,7 +105,7 @@ class MarketPriceSchema:
         self._province_schema = province_schema
 
     def local_width(self) -> int:
-        return self._local_schema.num_goods()
+        return self._local_schema.width()
 
     def global_width(self) -> int:
         return self.local_width() * self._province_schema.num_provinces()
@@ -122,7 +124,7 @@ class MarketPriceSchema:
     def local_schema(self) -> TradeGoodsSchema:
         return self._local_schema
 
-    def good_in_province(self, province: ProvinceId, good: GoodId) -> MarketPriceId:
+    def good_in_province(self, province: ProvinceId, good: GoodId) -> ListingId:
         assert self._local_schema.valid_id(good)
         assert self._province_schema.valid_id(province)
         return self.start_of_province(province) + good
@@ -139,6 +141,17 @@ class MarketPriceSchema:
         return Placement(self.global_width(),
                          self.production_slice_in_province(province))
 
+    def decompose(self, listingId: ListingId) -> tuple[ProvinceId, GoodId]:
+        w = self.local_width()
+        (provinceId,goodId) = divmod(listingId, w)
+        return (provinceId, goodId)
+
+    def ix_to_str(self, listing: int) -> str:
+        (provinceId, goodId) = self.decompose(listing)
+        provinceName = self.province_schema().name_of_province(provinceId)
+        goodName = self.local_schema().name_of_good(goodId)
+        return goodName + " in " + provinceName
+
 class LaborMarketPriceSchema(MarketPriceSchema):
     def __init__(self, local_schema : LaborTradeGoodsSchema, province_schema : ProvinceSchema):
         super().__init__(local_schema, province_schema)
@@ -147,7 +160,7 @@ class LaborMarketPriceSchema(MarketPriceSchema):
     def local_schema(self) -> LaborTradeGoodsSchema:
         return cast(LaborTradeGoodsSchema, self._local_schema)
 
-    def labour_in_province(self, province : ProvinceId) -> MarketPriceId:
+    def labour_in_province(self, province : ProvinceId) -> ListingId:
         return self.good_in_province(province, self.local_schema().labour())
 
     def labor_placement_of_province(self, province : ProvinceId) -> LaborPlacement:
