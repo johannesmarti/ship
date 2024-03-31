@@ -7,7 +7,7 @@ from market.line_search import *
 from core.schema import *
 from itertools import chain
 
-np.set_printoptions(precision=8,suppress=True,threshold=12)
+np.set_printoptions(precision=4,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
@@ -68,7 +68,7 @@ italian_merchants = list(set_up_merchants(gs, italy, switzerland))
 participants = swiss_participants + swiss_merchants + italian_participants + italian_merchants
 
 p0 = np.full((gs.global_width()), 10)
-epsilon = 0.000001
+epsilon = 0.1
 
 
 def run_once(t : float):

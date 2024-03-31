@@ -32,6 +32,10 @@ class VolumeBundle:
         self.volume += other.volume
         return self
 
+    def update_term(self) -> np.ndarray:
+        MIN_VOLUME : float = 0.001
+        return (self.value/(self.volume + MIN_VOLUME))
+
     def add_at_ix(self, ix : int, value : float):   
         self.value[ix] += value
         self.volume[ix] += abs(value)

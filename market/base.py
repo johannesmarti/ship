@@ -50,14 +50,13 @@ def one_iteration(participants : Iterable[Participant], prices : Prices) -> Volu
     return eb
 
 MIN_PRICE : float = 0.001
-MIN_VOLUME : float = 0.001
 
 @dataclass(frozen=True)
 class ScalingConfiguration:
     set_to_price : float = 10
 
 def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
-    new_price = price * (1 - t * (error.value/(error.volume + MIN_VOLUME)))
+    new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
         #avg_price = np.average(new_price)
@@ -68,7 +67,7 @@ def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling 
 
 def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, price_scaling : Optional[ScalingConfiguration]) -> Prices:
     assert t.shape == price.shape
-    new_price = price * (1 - t * (error.value/(error.volume + MIN_VOLUME)))
+    new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
         #avg_price = np.average(new_price)

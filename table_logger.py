@@ -14,7 +14,9 @@ class Schema(Protocol):
 class TableLoggingConfiguration:
     schema: Schema
     list_of_indices: list[int]
-    numeric_column_width: int = 8
+    float_precision: int = 3
+    column_width: int = 10 
+    separator: str = "  "
 
 def set_global_table_logging_configuration(config: TableLoggingConfiguration):
     global global_table_logging_configuration
@@ -28,28 +30,30 @@ def log_values(log_level, value_list: list[str, np.ndarray]):
     if not logging.getLogger(__name__).isEnabledFor(log_level):
         return
 
-    num_columns = len(value_list)
-    headers = [""] + [v[0] for v in value_list]
-    values = [v[1] for v in value_list]
-
     config = global_table_logging_configuration
     schema = config.schema
     list_of_indices = config.list_of_indices
+    sep = config.separator
+    float_precision = config.float_precision
+    column_width = config.column_width
+ 
+    num_columns = len(value_list)
+    headers = (v[0] for v in value_list)
+    values = [v[1] for v in value_list]
+
 
     row_names = (schema.ix_to_str(ix) for ix in list_of_indices)
     first_column_width = max(len(s) for s in row_names)
-    other_columns_width = config.numeric_column_width
 
-    fmt_first_column = "{:<" + str(first_column_width) + "} "
-    fmt_other_columns = " ".join("{:>" + str(other_columns_width) + "}"
+    fmt_floats = sep.join("{:" + str(column_width) + "." + str(float_precision) + "f}"
                                            for _ in range(num_columns))
-    fmt = fmt_first_column + fmt_other_columns
+    fmt_headers = sep.join("{:<" + str(column_width) + "}"
+                                           for _ in range(num_columns))
     
-    # Print headers
-    out(fmt.format(*headers))
-    # Print rows
+    out(fmt_headers.format(*headers))
     for ix in list_of_indices:
-        row = [schema.ix_to_str(ix)] + [v[ix] for v in values]
-        out(fmt.format(*row))
+        row = [v[ix] for v in values]
+        line = fmt_floats.format(*(v[ix] for v in values)) + sep + schema.ix_to_str(ix)
+        out(line)
 
 

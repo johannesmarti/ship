@@ -69,7 +69,7 @@ italian_merchants = list(set_up_merchants(gs, italy, switzerland))
 participants = swiss_participants + swiss_merchants + italian_participants + italian_merchants
 
 p0 = np.full((gs.global_width()), 10.0)
-epsilon = 0.000001
+epsilon = 0.01
 
 tl.set_global_table_logging_configuration(tl.TableLoggingConfiguration(
         schema = gs,
@@ -79,7 +79,7 @@ tl.set_global_table_logging_configuration(tl.TableLoggingConfiguration(
 def run_once(t : float):
     config = AdaptiveSearchConfiguration(
                     starting_t=t,
-                    max_change_factor=1.3,
+                    max_change_factor=1.10,
                     price_scaling=ScalingConfiguration(100)
              )
     p = adaptive_market(participants, p0, epsilon, config)
