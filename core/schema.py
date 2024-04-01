@@ -124,10 +124,16 @@ class MarketPriceSchema:
     def local_schema(self) -> TradeGoodsSchema:
         return self._local_schema
 
-    def good_in_province(self, province: ProvinceId, good: GoodId) -> ListingId:
+    def good_in_province(self, good: GoodId, province: ProvinceId) -> ListingId:
         assert self._local_schema.valid_id(good)
         assert self._province_schema.valid_id(province)
         return self.start_of_province(province) + good
+
+    def listing_of_good_in_province(self, good: str, province: str) -> ListingId:
+        good_id = self.local_schema().good_of_name(good)
+        province_id = self.province_schema().province_of_name(province)
+        return self.good_in_province(good_id, province_id)
+
     
     def slice_in_province(self, province : ProvinceId, sl : slice) -> slice:
         offset = self.start_of_province(province)
@@ -161,7 +167,7 @@ class LaborMarketPriceSchema(MarketPriceSchema):
         return cast(LaborTradeGoodsSchema, self._local_schema)
 
     def labour_in_province(self, province : ProvinceId) -> ListingId:
-        return self.good_in_province(province, self.local_schema().labour())
+        return self.good_in_province(self.local_schema().labour(), province)
 
     def labor_placement_of_province(self, province : ProvinceId) -> LaborPlacement:
         return LaborPlacement(self.global_width(),

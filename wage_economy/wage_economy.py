@@ -43,10 +43,10 @@ class WageEconomy(economy.Economy):
 
             def create_merchant(trade_config: economy.TradeConfig) -> np.ndarray:
                 row = np.zeros(market_schema.global_width())
-                from_listing = market_schema.good_in_province(trade_config.from_province,
-                                                              trade_config.good)
-                to_listing = market_schema.good_in_province(trade_config.to_province,
-                                                            trade_config.good)
+                from_listing = market_schema.good_in_province(trade_config.good,
+                                                              trade_config.from_province)
+                to_listing = market_schema.good_in_province(trade_config.good,
+                                                            trade_config.to_province)
                 trade_efficiency = trade_config.trade_factor
                 row[from_listing] = -trade_efficiency
                 row[to_listing] = trade_efficiency

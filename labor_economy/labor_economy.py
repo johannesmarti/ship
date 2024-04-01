@@ -49,10 +49,9 @@ class LaborEconomy(economy.Economy):
         def create_traders(province: ProvinceId, config: economy.ProvinceConfig
                           ) -> Iterable[p.Producer]:
             def create_trader(trade_config: economy.TradeConfig) -> p.Producer:
-                from_listing = market_schema.good_in_province(trade_config.from_province,
-                                                              trade_config.good)
-                to_listing = market_schema.good_in_province(trade_config.to_province,
-                                                            trade_config.good)
+                from_listing = market_schema.good_in_province(trade_config.good, trade_config.from_province)
+                to_listing = market_schema.good_in_province(trade_config.good,
+                                                            trade_config.to_province)
                 return p.Producer.trader("trader without name",
                                          market_schema.labour_in_province(province),
                                          from_listing, to_listing,

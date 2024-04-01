@@ -53,15 +53,19 @@ MIN_PRICE : float = 0.001
 
 @dataclass(frozen=True)
 class ScalingConfiguration:
-    set_to_price : float = 10
+    set_to_price: float = 10
+    norm_listing: Optional[int] = None
 
 def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
     new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
-        #avg_price = np.average(new_price)
-        avg_price = price[0]
-        scaling_factor = price_scaling.set_to_price/avg_price
+        leading = price_scaling.norm_listing
+        if (leading == None):
+            base = np.average(new_price)
+        else:
+            base = new_price[leading]
+        scaling_factor = price_scaling.set_to_price / base
         new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 
@@ -70,9 +74,12 @@ def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, pri
     new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
-        #avg_price = np.average(new_price)
-        avg_price = price[0]
-        scaling_factor = price_scaling.set_to_price/avg_price
+        leading = price_scaling.norm_listing
+        if (leading == None):
+            base = np.average(new_price)
+        else:
+            base = new_price[leading]
+        scaling_factor = price_scaling.set_to_price / base
         new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 

@@ -28,7 +28,9 @@ def concat_map(func, it):
     """Map a function over a list and concatenate the results."""
     return chain.from_iterable(map(func, it))
 
-trade_factors = 2*np.array([3,4,2,1])
+trade_factors = 3*np.array([3,4,2,1])
+#trade_factors = 2*np.array([3,4,2,1])
+#trade_factors = np.array([3,4,2,1])
 
 def set_up_merchants(home: int, foreign: int) -> Iterable[economy.TradeConfig]:
     def for_good(good: int) -> Iterable[economy.TradeConfig]:
@@ -41,11 +43,11 @@ province_configs = [
     # Switzerland
     economy.ProvinceConfig(
         800,
-        np.array([2, 1.2, 0, 1.1]),
+        np.array([2, 1.2, 0, 0.7]),
         [
             economy.FactoryConfig(np.array([3.5, 1.8, 0, 0])), # Cow farm
-            economy.FactoryConfig(np.array([0, -0.5, 1.7, 0])), # Swiss mine
-            economy.FactoryConfig(np.array([0, -2, -1, 2])), # artisans
+            economy.FactoryConfig(np.array([0, -0.5, 1.4, 0])), # Swiss mine
+            economy.FactoryConfig(np.array([0, -2, -1.4, 2])), # artisans
         ],
         list(set_up_merchants(switzerland, italy))
     ),
@@ -53,12 +55,12 @@ province_configs = [
     # Italy
     economy.ProvinceConfig(
         6000,
-        np.array([2.1, 1, 0, 1]),
+        np.array([2.05, 1, 0, 0.5]),
         [
             economy.FactoryConfig(np.array([9, 0, 0, 0])), # Po farm
-            economy.FactoryConfig(np.array([-1, 4, 0, 0])), # wood cutter
-            economy.FactoryConfig(np.array([0, -1.5, -1.2, 1.8])), # smith
-            economy.FactoryConfig(np.array([0, -0.5, 1.8, 0])), # Italian mine
+            economy.FactoryConfig(np.array([-1, 6, 0, 0])), # wood cutter
+            economy.FactoryConfig(np.array([0, -1.5, -1, 1.6])), # smith
+            economy.FactoryConfig(np.array([0, -0.5, 1.5, 0])), # Italian mine
         ],
         list(set_up_merchants(italy, switzerland))
     ),
@@ -69,8 +71,9 @@ econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
 econ = le.LaborEconomy.from_config(econfig)
 
 market_schema = econ.price_schema()
+#p0 = np.array([70,100,60,200,15,70,110,60,200,11])
 p0 = np.full(market_schema.global_width(), 10.0)
-epsilon = 0.01
+epsilon = 0.05
 participants = list(econ.participants())
 
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
@@ -78,20 +81,7 @@ pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
         list_of_indices = list(range(market_schema.global_width()))
 ))
 
-scaling = ScalingConfiguration(100)
-
-def run_ad():
-    config = ad.AdaptiveSearchConfiguration(
-                    starting_t=0.2,
-                    max_change_factor=1.10,
-                    necessary_improvement=0.5,
-                    price_scaling=scaling
-             )
-    p = ad.make_market(participants, p0, epsilon, config)
-    print(f"ads iterations: {get_iteration()}")
-    pt.pretty_table([("price", p)])
-    reset_iteration()
-
+scaling = ScalingConfiguration(set_to_price=10, norm_listing=market_schema.listing_of_good_in_province("labor", "Italy"))
 
 def run_ls():
     config = ls.LineSearchConfiguration(
@@ -104,6 +94,22 @@ def run_ls():
     pt.pretty_table([("price", p)])
     reset_iteration()
 
-run_ls()
-print()
+def run_ad():
+    config = ad.AdaptiveSearchConfiguration(
+                    starting_t=0.2,
+                    backoff=0.6,
+                    max_t=10000,
+                    min_t=0.00001,
+                    max_change_factor=5000,
+                    necessary_improvement=0.7,
+                    price_scaling=scaling
+             )
+    p = ad.make_market(participants, p0, epsilon, config)
+    print(f"ads iterations: {get_iteration()}")
+    pt.pretty_table([("price", p)])
+    reset_iteration()
+
+
+#run_ls()
+#print()
 run_ad()

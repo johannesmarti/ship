@@ -8,6 +8,8 @@ import pretty_table as tl
 @dataclass(frozen=True)
 class AdaptiveSearchConfiguration:
     starting_t: float = 0.4
+    max_t: float = 100.0
+    min_t: float = 0.0001
     max_change_factor: float = 1.3
     necessary_improvement: float = 1
     backoff: float = 0.8
@@ -21,7 +23,7 @@ def crop(s, values):
     cropped = np.clip(values, lower_bound, upper_bound)
     return cropped
 
-def adapt_ts(max_change_factor: float, ts: np.ndarray,
+def adapt_ts(config: AdaptiveSearchConfiguration, ts: np.ndarray,
              old_supply: VolumeBundle, new_supply: VolumeBundle) -> np.ndarray:
     signed_old = old_supply.update_term()
     sig = np.sign(signed_old)
@@ -30,11 +32,11 @@ def adapt_ts(max_change_factor: float, ts: np.ndarray,
     diff = old - new
     #diff = np.maximum(old - new, 0.001)
 
-    adaptation = crop(max_change_factor, old / diff)
+    adaptation = crop(config.max_change_factor, old / diff)
     tl.log_values(logging.INFO, [("o*1000", old*1000), ("n*1000", new*1000),
-                                 ("d", diff), ("o/d", old/diff), ("ada", adaptation)])
+                                 ("d*1000", diff*1000), ("o/d", old/diff), ("ada", adaptation)])
     new_ts = ts * adaptation
-    return np.clip(new_ts, 0.0001, 10)
+    return np.clip(new_ts, config.min_t, config.max_t)
 
 def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : AdaptiveSearchConfiguration = AdaptiveSearchConfiguration()) -> Prices:
     logging.info(f"starting adaptive search, with starting_t = {config.starting_t}")
@@ -49,7 +51,7 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
         increment_step()
         new_prices = broad_adapt_prices(prices, supply, ts, config.price_scaling)
         new_supply = one_iteration(participants, new_prices)
-        ts = adapt_ts(config.max_change_factor, ts, supply, new_supply)
+        ts = adapt_ts(config, ts, supply, new_supply)
         new_badness = relative_badness(new_supply)
         if config.necessary_improvement * new_badness <= badness:
             supply = new_supply
