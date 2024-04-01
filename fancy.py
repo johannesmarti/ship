@@ -8,6 +8,7 @@ import labor_economy.labor_economy as le
 import pretty_table as pt
 import market.line_search as ls
 import market.adaptive as ad
+import market.elastic as el
 from market.base import ScalingConfiguration,get_iteration,reset_iteration
 from core.schema import *
 from itertools import chain
@@ -70,9 +71,9 @@ econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
 econ = le.LaborEconomy.from_config(econfig)
 
 market_schema = econ.price_schema()
-#p0 = np.array([70.0,100,60,200.0,15,70,110,60,200,11])
-p0 = np.full(market_schema.global_width(), 100.0)
-epsilon = 0.05
+p0 = np.array([70.0,100,60,200.0,15,70,110,60,200,11])
+#p0 = np.full(market_schema.global_width(), 100.0)
+epsilon = 0.1
 participants = list(econ.participants())
 
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
@@ -97,11 +98,11 @@ def run_ad():
     config = ad.AdaptiveSearchConfiguration(
                     starting_t=0.2,
                     backoff=0.6,
-                    max_t=10000,
-                    min_t=0.0001,
-                    min_change_factor=0.1,
-                    max_change_factor=10,
-                    necessary_improvement=1.00,
+                    max_t=100000,
+                    min_t=0.00001,
+                    min_change_factor=0.5,
+                    max_change_factor=2,
+                    necessary_improvement=0.8,
                     price_scaling=scaling
              )
     p = ad.make_market(participants, p0, epsilon, config)
@@ -109,7 +110,22 @@ def run_ad():
     pt.pretty_table([("price", p)])
     reset_iteration()
 
+def run_el():
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement_decay = 0.80,
+                    elasticity_mixing = 0.6,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    p = el.make_market(participants, p0, epsilon, config)
+    print(f"ads iterations: {get_iteration()}")
+    pt.pretty_table([("price", p)])
+    reset_iteration()
+
 
 #run_ls()
 #print()
-run_ad()
+#run_ad()
+#print()
+run_el()

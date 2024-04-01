@@ -2,6 +2,7 @@ from typing import Tuple
 import logging
 import numpy as np
 
+from core.bundle import *
 from core.participant import *
 from core.placement import LaborPlacement
 

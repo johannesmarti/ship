@@ -46,7 +46,7 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
     badness = absolute_badness(supply)
     stable_ts = np.full_like(prices, config.starting_t)
     ts = stable_ts
-    tl.log_values(logging.INFO, [("price",prices),("error", supply.value),
+    tl.log_values(logging.INFO, [("price",prices),("error", supply.error),
                                  ("volume", supply.volume),("t*1000",ts*1000)])
     necessary_improvement = config.necessary_improvement
     while absolute_badness(supply) >= epsilon:
@@ -63,14 +63,14 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
             supply = new_supply
             prices = new_prices
             badness = new_badness
-            stable_ts = config.t_mixing*stable_ts + config.t_mixing*ts
+            stable_ts = mixing(stable_ts, ts, config.t_mixing)
             ts = stable_ts
         else:
             logging.warning(f"did not adapt prices because new badness {new_badness} is worse than previous badness {badness}")
             ts = config.backoff*ts
             necessary_improvement *= 0.9
             logging.info(f"necessary_improvement = {necessary_improvement}")
-        tl.log_values(logging.INFO, [("price",new_prices),("error", new_supply.value),
+        tl.log_values(logging.INFO, [("price",new_prices),("error", new_supply.error),
                                      ("volume", new_supply.volume),("1000stabt",1000*stable_ts)])
     return prices
 

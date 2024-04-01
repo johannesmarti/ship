@@ -8,6 +8,7 @@ import wage_economy.village as v
 from core.participant import Participant
 from core.schema import MarketPriceSchema, ProvinceId
 import core.economy as economy
+from core.bundle import *
 
 def uncurry(function: Callable):
     return lambda args: function(*args)

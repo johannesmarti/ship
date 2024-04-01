@@ -83,12 +83,16 @@ def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, pri
         new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 
+def mixing(a: np.ndarray, b: np.ndarray, factor: float) -> np.ndarray:
+    assert a.shape == b.shape
+    return (1 - factor)*a + factor*b
+
 def relative_badness(error : VolumeBundle) -> float:
     #return norm(error)
     #return norm(error, ord=1)
-    return norm(error.value/(error.volume + 0.0001), ord=1)
+    return norm(error.error/(error.volume + 0.0001), ord=1)
 
 def absolute_badness(error : VolumeBundle) -> float:
     #return norm(error)
     #return norm(error, ord=1)
-    return norm(error.value, ord=1)
+    return norm(error.error, ord=1)

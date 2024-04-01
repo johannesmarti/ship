@@ -26,7 +26,7 @@ def line_search(participants : Iterable[Participant],
     t = config.t
     logging.debug(f"starting line search, with t = {t}, necessary_improvement = {config.necessary_improvement}")
     logging.debug(f"at prices: {prices}")
-    logging.debug(f"for error: {error.value}")
+    logging.debug(f"for error: {error.error}")
     logging.debug(f"with volume: {error.volume}")
     logging.debug(f"with badness: {relative_badness(error)}")
 
@@ -34,7 +34,7 @@ def line_search(participants : Iterable[Participant],
     logging.debug(f"iterating for prices: {next_prices}")
     assert (next_prices > 0).all()
     next_error = one_iteration(participants, next_prices)
-    logging.debug(f"with error: {next_error.value}")
+    logging.debug(f"with error: {next_error.error}")
     logging.debug(f"with volume: {next_error.volume}")
     logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
     while config.necessary_improvement * relative_badness(next_error) >=  relative_badness(error):
@@ -47,7 +47,7 @@ def line_search(participants : Iterable[Participant],
         logging.debug(f"iterating for prices: {next_prices}")
         next_error = one_iteration(participants, next_prices)
         assert (next_prices > 0).all()
-        logging.debug(f"with error: {next_error.value}")
+        logging.debug(f"with error: {next_error.error}")
         logging.debug(f"next volume: {next_error.volume}")
         logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
     logging.debug("\n")
@@ -59,8 +59,8 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
         increment_step()
         #print(supply.volume)
         #print(supply.volume)
-        #print(supply.value, absolute_badness(supply))
-        #print(supply.value, badness(supply))
+        #print(supply.error, absolute_badness(supply))
+        #print(supply.error, badness(supply))
         #print(prices, absolute_badness(supply))
         (prices, supply) = line_search(participants, prices, supply, config)
     return prices
