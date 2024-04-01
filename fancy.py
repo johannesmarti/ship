@@ -14,8 +14,8 @@ from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = TradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
@@ -25,7 +25,6 @@ switzerland = province_schema.province_of_name("Switzerland")
 italy = province_schema.province_of_name("Italy")
 
 def concat_map(func, it):
-    """Map a function over a list and concatenate the results."""
     return chain.from_iterable(map(func, it))
 
 trade_factors = 3*np.array([3,4,2,1])
@@ -71,7 +70,7 @@ econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
 econ = le.LaborEconomy.from_config(econfig)
 
 market_schema = econ.price_schema()
-#p0 = np.array([70,100,60,200,15,70,110,60,200,11])
+#p0 = np.array([70.0,100,60,200.0,15,70,110,60,200,11])
 p0 = np.full(market_schema.global_width(), 10.0)
 epsilon = 0.05
 participants = list(econ.participants())
@@ -98,10 +97,10 @@ def run_ad():
     config = ad.AdaptiveSearchConfiguration(
                     starting_t=0.2,
                     backoff=0.6,
-                    max_t=10000,
-                    min_t=0.00001,
-                    max_change_factor=5000,
-                    necessary_improvement=0.7,
+                    max_t=1000,
+                    min_t=0.001,
+                    max_change_factor=50,
+                    necessary_improvement=1.00,
                     price_scaling=scaling
              )
     p = ad.make_market(participants, p0, epsilon, config)

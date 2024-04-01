@@ -13,6 +13,7 @@ class AdaptiveSearchConfiguration:
     max_change_factor: float = 1.3
     necessary_improvement: float = 1
     backoff: float = 0.8
+    t_mixing: float = 0.2
     price_scaling : Optional[ScalingConfiguration] = None
 
 def crop(s, values):
@@ -29,38 +30,46 @@ def adapt_ts(config: AdaptiveSearchConfiguration, ts: np.ndarray,
     sig = np.sign(signed_old)
     old = sig * signed_old
     new = sig * new_supply.update_term()
-    diff = old - new
-    #diff = np.maximum(old - new, 0.001)
+    #diff = old - new
+    diff = np.maximum(old - new, 0.0001)
 
     adaptation = crop(config.max_change_factor, old / diff)
-    tl.log_values(logging.INFO, [("o*1000", old*1000), ("n*1000", new*1000),
-                                 ("d*1000", diff*1000), ("o/d", old/diff), ("ada", adaptation)])
     new_ts = ts * adaptation
+    tl.log_values(logging.INFO, [("o*1000", old*1000), ("n*1000", new*1000),
+                                 ("d*1000", diff*1000), ("o/d", old/diff), ("1000t", 1000*new_ts)])
     return np.clip(new_ts, config.min_t, config.max_t)
 
 def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : AdaptiveSearchConfiguration = AdaptiveSearchConfiguration()) -> Prices:
     logging.info(f"starting adaptive search, with starting_t = {config.starting_t}")
     supply = one_iteration(participants, prices)
-    badness = relative_badness(supply)
-    ts = np.full_like(prices, config.starting_t)
+    badness = absolute_badness(supply)
+    stable_ts = np.full_like(prices, config.starting_t)
+    ts = stable_ts
     tl.log_values(logging.INFO, [("price*10",prices*10),("error*10", supply.value*10),
-                                 ("volume", supply.volume),("t",ts)])
+                                 ("volume", supply.volume),("t*10000",ts*10000)])
+    necessary_improvement = config.necessary_improvement
     while absolute_badness(supply) >= epsilon:
         logging.info(f"\n\nnext iteration because of badness: {absolute_badness(supply)}")
+        logging.info(f"real badness: {relative_badness(supply)}")
 
         increment_step()
         new_prices = broad_adapt_prices(prices, supply, ts, config.price_scaling)
         new_supply = one_iteration(participants, new_prices)
         ts = adapt_ts(config, ts, supply, new_supply)
-        new_badness = relative_badness(new_supply)
-        if config.necessary_improvement * new_badness <= badness:
+        new_badness = absolute_badness(new_supply)
+        if necessary_improvement * new_badness <= badness:
+            necessary_improvement = config.necessary_improvement
             supply = new_supply
             prices = new_prices
             badness = new_badness
+            stable_ts = config.t_mixing*stable_ts + config.t_mixing*ts
+            ts = stable_ts
         else:
             logging.warning(f"did not adapt prices because new badness {new_badness} is worse than previous badness {badness}")
             ts = config.backoff*ts
-        tl.log_values(logging.INFO, [("price",prices),("error", supply.value),
-                                     ("volume", supply.volume),("100t",100*ts)])
+            necessary_improvement *= 0.9
+            logging.info(f"necessary_improvement = {necessary_improvement}")
+        tl.log_values(logging.INFO, [("price*10",new_prices*10),("error*10", new_supply.value*10),
+                                     ("volume*10", new_supply.volume*10),("1000stabt",1000*stable_ts)])
     return prices
 
