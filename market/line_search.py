@@ -7,8 +7,8 @@ from market.base import *
 @dataclass(frozen=True)
 class LineSearchConfiguration:
     t : float = 0.6
-    alpha : float = 1
-    beta : float = 0.6
+    necessary_improvement : float = 1
+    backoff : float = 0.6
     price_scaling : Optional[ScalingConfiguration] = None
 
 def one_iteration(participants : Iterable[Participant], prices : Prices) -> VolumeBundle:
@@ -24,11 +24,11 @@ def line_search(participants : Iterable[Participant],
                 error : VolumeBundle,
                 config : LineSearchConfiguration) -> Tuple[Prices,VolumeBundle]:
     t = config.t
-    logging.debug(f"starting line search, with t = {t}, alpha = {config.alpha}")
+    logging.debug(f"starting line search, with t = {t}, necessary_improvement = {config.necessary_improvement}")
     logging.debug(f"at prices: {prices}")
     logging.debug(f"for error: {error.value}")
     logging.debug(f"with volume: {error.volume}")
-    logging.debug(f"with badness: {badness(error)}")
+    logging.debug(f"with badness: {relative_badness(error)}")
 
     next_prices = adapt_prices(prices, error, t, config.price_scaling)
     logging.debug(f"iterating for prices: {next_prices}")
@@ -36,11 +36,11 @@ def line_search(participants : Iterable[Participant],
     next_error = one_iteration(participants, next_prices)
     logging.debug(f"with error: {next_error.value}")
     logging.debug(f"with volume: {next_error.volume}")
-    logging.debug(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
-    while badness(next_error) >= config.alpha * badness(error):
-        t *= config.beta
+    logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
+    while config.necessary_improvement * relative_badness(next_error) >=  relative_badness(error):
+        t *= config.backoff
         if (t < 0.01):
-            logging.warning(f"giving up on line search at badness {badness(next_error)}")
+            logging.warning(f"giving up on line search at badness {relative_badness(next_error)}")
             break
         logging.info(f"next iteration of line search with t = {t}")
         next_prices = adapt_prices(prices, error, t, config.price_scaling)
@@ -49,7 +49,7 @@ def line_search(participants : Iterable[Participant],
         assert (next_prices > 0).all()
         logging.debug(f"with error: {next_error.value}")
         logging.debug(f"next volume: {next_error.volume}")
-        logging.debug(f"with badness: {badness(next_error)}, vs old: {badness(error)}")
+        logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
     logging.debug("\n")
     return (next_prices, next_error)
 

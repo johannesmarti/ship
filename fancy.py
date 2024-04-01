@@ -14,8 +14,8 @@ from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = TradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
@@ -70,7 +70,7 @@ econ = le.LaborEconomy.from_config(econfig)
 
 market_schema = econ.price_schema()
 p0 = np.full(market_schema.global_width(), 10.0)
-epsilon = 0.005
+epsilon = 0.01
 participants = list(econ.participants())
 
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
@@ -80,10 +80,11 @@ pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
 
 scaling = ScalingConfiguration(100)
 
-def run_ad(t: float):
+def run_ad():
     config = ad.AdaptiveSearchConfiguration(
-                    starting_t=t,
+                    starting_t=0.2,
                     max_change_factor=1.10,
+                    necessary_improvement=0.5,
                     price_scaling=scaling
              )
     p = ad.make_market(participants, p0, epsilon, config)
@@ -92,13 +93,17 @@ def run_ad(t: float):
     reset_iteration()
 
 
-def run_ls(t: float):
-    config = ls.LineSearchConfiguration(t=t, beta=0.3, price_scaling=scaling)
+def run_ls():
+    config = ls.LineSearchConfiguration(
+                t=0.2,
+                backoff=0.2,
+                necessary_improvement=0.9,
+                price_scaling=scaling)
     p = ls.make_market(participants, p0, epsilon, config)
-    print(f"lis iterations: {get_iteration()}    (t={t})")
+    print(f"lis iterations: {get_iteration()}")
     pt.pretty_table([("price", p)])
     reset_iteration()
 
-run_ad(0.2)
+run_ls()
 print()
-run_ls(0.2)
+run_ad()

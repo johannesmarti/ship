@@ -76,7 +76,7 @@ def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, pri
         new_price *= scaling_factor
     return np.maximum(new_price, MIN_PRICE)
 
-def badness(error : VolumeBundle) -> float:
+def relative_badness(error : VolumeBundle) -> float:
     #return norm(error)
     #return norm(error, ord=1)
     return norm(error.value/(error.volume + 0.0001), ord=1)
