@@ -10,7 +10,8 @@ class AdaptiveSearchConfiguration:
     starting_t: float = 0.4
     max_t: float = 100.0
     min_t: float = 0.0001
-    max_change_factor: float = 1.3
+    min_change_factor: float = 0.5
+    max_change_factor: float = 1.5
     necessary_improvement: float = 1
     backoff: float = 0.8
     t_mixing: float = 0.2
@@ -33,8 +34,8 @@ def adapt_ts(config: AdaptiveSearchConfiguration, ts: np.ndarray,
     #diff = old - new
     diff = np.maximum(old - new, 0.0001)
 
-    adaptation = crop(config.max_change_factor, old / diff)
-    new_ts = ts * adaptation
+    adaptation = np.clip(old / diff, config.min_change_factor, config.max_change_factor)
+    new_ts = ts * 0.9 * adaptation
     tl.log_values(logging.INFO, [("o*1000", old*1000), ("n*1000", new*1000),
                                  ("d*1000", diff*1000), ("o/d", old/diff), ("1000t", 1000*new_ts)])
     return np.clip(new_ts, config.min_t, config.max_t)
@@ -45,8 +46,8 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
     badness = absolute_badness(supply)
     stable_ts = np.full_like(prices, config.starting_t)
     ts = stable_ts
-    tl.log_values(logging.INFO, [("price*10",prices*10),("error*10", supply.value*10),
-                                 ("volume", supply.volume),("t*10000",ts*10000)])
+    tl.log_values(logging.INFO, [("price",prices),("error", supply.value),
+                                 ("volume", supply.volume),("t*1000",ts*1000)])
     necessary_improvement = config.necessary_improvement
     while absolute_badness(supply) >= epsilon:
         logging.info(f"\n\nnext iteration because of badness: {absolute_badness(supply)}")
@@ -69,7 +70,7 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
             ts = config.backoff*ts
             necessary_improvement *= 0.9
             logging.info(f"necessary_improvement = {necessary_improvement}")
-        tl.log_values(logging.INFO, [("price*10",new_prices*10),("error*10", new_supply.value*10),
-                                     ("volume*10", new_supply.volume*10),("1000stabt",1000*stable_ts)])
+        tl.log_values(logging.INFO, [("price",new_prices),("error", new_supply.value),
+                                     ("volume", new_supply.volume),("1000stabt",1000*stable_ts)])
     return prices
 

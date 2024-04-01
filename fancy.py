@@ -71,7 +71,7 @@ econ = le.LaborEconomy.from_config(econfig)
 
 market_schema = econ.price_schema()
 #p0 = np.array([70.0,100,60,200.0,15,70,110,60,200,11])
-p0 = np.full(market_schema.global_width(), 10.0)
+p0 = np.full(market_schema.global_width(), 100.0)
 epsilon = 0.05
 participants = list(econ.participants())
 
@@ -80,7 +80,7 @@ pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
         list_of_indices = list(range(market_schema.global_width()))
 ))
 
-scaling = ScalingConfiguration(set_to_price=10, norm_listing=market_schema.listing_of_good_in_province("labor", "Italy"))
+scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.listing_of_good_in_province("labor", "Italy"))
 
 def run_ls():
     config = ls.LineSearchConfiguration(
@@ -97,9 +97,10 @@ def run_ad():
     config = ad.AdaptiveSearchConfiguration(
                     starting_t=0.2,
                     backoff=0.6,
-                    max_t=1000,
-                    min_t=0.001,
-                    max_change_factor=50,
+                    max_t=10000,
+                    min_t=0.0001,
+                    min_change_factor=0.1,
+                    max_change_factor=10,
                     necessary_improvement=1.00,
                     price_scaling=scaling
              )
