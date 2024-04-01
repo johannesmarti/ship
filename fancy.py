@@ -5,15 +5,18 @@ import numpy as np
 import core.economy as economy
 import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
-from market.line_search import line_search_market, get_iteration, reset_iteration, LineSearchConfiguration, ScalingConfiguration
+import pretty_table as pt
+import market.line_search as ls
+import market.adaptive as ad
+from market.base import ScalingConfiguration,get_iteration,reset_iteration
 from core.schema import *
 from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = TradeGoodsSchema.from_lists(["food", "wood", "ore", "tools"],[])
 province_schema = ProvinceSchema(["Switzerland", "Italy"])
@@ -65,15 +68,37 @@ econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
 #econ = we.WageEconomy.from_config(econfig)
 econ = le.LaborEconomy.from_config(econfig)
 
-p0 = np.full(econ.price_schema().global_width(), 10)
-epsilon = 0.001
+market_schema = econ.price_schema()
+p0 = np.full(market_schema.global_width(), 10.0)
+epsilon = 0.005
 participants = list(econ.participants())
 
-def run_once(t : float):
-    config = LineSearchConfiguration(t=t, beta=0.3, price_scaling=ScalingConfiguration(100))
-    p = line_search_market(participants, p0, epsilon, config)
-    print(f"iterations: {get_iteration()}    (t={t})")
-    print(p)
+pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
+        schema = market_schema,
+        list_of_indices = list(range(market_schema.global_width()))
+))
+
+scaling = ScalingConfiguration(100)
+
+def run_ad(t: float):
+    config = ad.AdaptiveSearchConfiguration(
+                    starting_t=t,
+                    max_change_factor=1.10,
+                    price_scaling=scaling
+             )
+    p = ad.make_market(participants, p0, epsilon, config)
+    print(f"ads iterations: {get_iteration()}")
+    pt.pretty_table([("price", p)])
     reset_iteration()
 
-run_once(0.2)
+
+def run_ls(t: float):
+    config = ls.LineSearchConfiguration(t=t, beta=0.3, price_scaling=scaling)
+    p = ls.make_market(participants, p0, epsilon, config)
+    print(f"lis iterations: {get_iteration()}    (t={t})")
+    pt.pretty_table([("price", p)])
+    reset_iteration()
+
+run_ad(0.2)
+print()
+run_ls(0.2)

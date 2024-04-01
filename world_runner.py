@@ -73,8 +73,8 @@ epsilon = 0.1
 
 def run_once(t : float):
     config = LineSearchConfiguration(t=t, beta=0.3, price_scaling=ScalingConfiguration(100))
-    p = line_search_market(participants, p0, epsilon, config)
-    print(f"iterations: {get_iteration()}    (t={t})")
+    p = make_market(participants, p0, epsilon, config)
+    print(f"iterations: {get_iteration()}")
     print(p)
     reset_iteration()
 

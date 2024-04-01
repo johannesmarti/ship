@@ -11,24 +11,19 @@ class Schema(Protocol):
         pass
 
 @dataclass(frozen=True)
-class TableLoggingConfiguration:
+class PrettyTableConfiguration:
     schema: Schema
     list_of_indices: list[int]
     float_precision: int = 3
     column_width: int = 10 
     separator: str = "  "
 
-def set_global_table_logging_configuration(config: TableLoggingConfiguration):
+def set_global_table_logging_configuration(config: PrettyTableConfiguration):
     global global_table_logging_configuration
     global_table_logging_configuration = config
 
-def out(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-def log_values(log_level, value_list: list[str, np.ndarray]):
+def pretty_table(value_list: list[str, np.ndarray], file=sys.stdout):
     global global_table_logging_configuration
-    if not logging.getLogger(__name__).isEnabledFor(log_level):
-        return
 
     config = global_table_logging_configuration
     schema = config.schema
@@ -50,10 +45,14 @@ def log_values(log_level, value_list: list[str, np.ndarray]):
     fmt_headers = sep.join("{:<" + str(column_width) + "}"
                                            for _ in range(num_columns))
     
-    out(fmt_headers.format(*headers))
+    print(fmt_headers.format(*headers), file=file)
     for ix in list_of_indices:
         row = [v[ix] for v in values]
         line = fmt_floats.format(*(v[ix] for v in values)) + sep + schema.ix_to_str(ix)
-        out(line)
+        print(line, file=file)
 
 
+def log_values(log_level, value_list: list[str, np.ndarray]):
+    if not logging.getLogger(__name__).isEnabledFor(log_level):
+        return
+    pretty_table(value_list, file=sys.stderr)

@@ -53,7 +53,7 @@ def line_search(participants : Iterable[Participant],
     logging.debug("\n")
     return (next_prices, next_error)
 
-def line_search_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : LineSearchConfiguration = LineSearchConfiguration()) -> Prices:
+def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : LineSearchConfiguration = LineSearchConfiguration()) -> Prices:
     supply = one_iteration(participants, prices)
     while absolute_badness(supply) >= epsilon:
         increment_step()

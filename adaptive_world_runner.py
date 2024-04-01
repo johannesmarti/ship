@@ -6,7 +6,7 @@ from labor_economy.producer import *
 from market.adaptive import *
 from core.schema import *
 from itertools import chain
-import table_logger as tl
+import pretty_table as pt
 
 np.set_printoptions(precision=4,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
@@ -71,20 +71,20 @@ participants = swiss_participants + swiss_merchants + italian_participants + ita
 p0 = np.full((gs.global_width()), 10.0)
 epsilon = 0.01
 
-tl.set_global_table_logging_configuration(tl.TableLoggingConfiguration(
+tl.set_global_table_logging_configuration(tl.PrettyTableConfiguration(
         schema = gs,
         list_of_indices = list(range(gs.global_width()))
 ))
 
-def run_once(t : float):
+def run_once(t: float):
     config = AdaptiveSearchConfiguration(
                     starting_t=t,
                     max_change_factor=1.10,
                     price_scaling=ScalingConfiguration(100)
              )
-    p = adaptive_market(participants, p0, epsilon, config)
-    print(f"iterations: {get_iteration()}    (t={t})")
-    print(p)
+    p = make_market(participants, p0, epsilon, config)
+    print(f"iterations: {get_iteration()}")
+    pt.pretty_table([("price", p)])
     reset_iteration()
 
 run_once(0.2)

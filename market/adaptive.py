@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Tuple,Optional
 
 from market.base import *
-import table_logger as tl
+import pretty_table as tl
 
 @dataclass(frozen=True)
 class AdaptiveSearchConfiguration:
@@ -32,7 +32,7 @@ def adapt_ts(max_change_factor: float, ts: np.ndarray,
                                  ("d", diff), ("o/d", old/diff), ("ada", adaptation)])
     return ts * adaptation
 
-def adaptive_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : AdaptiveSearchConfiguration = AdaptiveSearchConfiguration()) -> Prices:
+def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : AdaptiveSearchConfiguration = AdaptiveSearchConfiguration()) -> Prices:
     logging.info(f"starting adaptive search, with starting_t = {config.starting_t}")
     supply = one_iteration(participants, prices)
     ts = np.full_like(prices, config.starting_t)
