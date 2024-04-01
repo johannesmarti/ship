@@ -63,7 +63,9 @@ def elasticity_adapt_prices(price: Prices, supply: VolumeBundle,
 def compute_elasticities(prices: Prices, supply: VolumeBundle,
                          new_prices: Prices, new_supply: VolumeBundle,
                          config: ElasticMarketConfiguration) -> Elasticities:
-    price_increase = new_prices - prices
+    # TODO: This use of minprice is ugly. The point is to make sure that we are alwasy non zero. Should use a more principled approach.
+    price_increase = new_prices - prices + MIN_PRICE
+    assert (np.abs(price_increase) > 0).all()
     esellers = (new_supply.sold() - supply.sold()) / price_increase
     ebuyers  = (supply.bought() - new_supply.bought()) / price_increase
     esellers = np.clip(esellers, MIN_ELASTICITY, MAX_ELASTICITY)
