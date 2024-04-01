@@ -19,24 +19,23 @@ np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-local_schema = TradeGoodsSchema.from_lists(["food", "drinks", "wood", "ore", "tools"],[])
-province_schema = ProvinceSchema(["Switzerland", "Italy", "France","Germany","Austria","Netherlands","England","Spain"])
+local_schema = TradeGoodsSchema.from_lists(["food", "alcohol", "wood", "ore", "tools"],[])
+province_schema = ProvinceSchema(["Switzerland", "Italy", "France","Germany","Austria","The Netherlands","England","Spain"])
 
 switzerland = province_schema.province_of_name("Switzerland")
 italy = province_schema.province_of_name("Italy")
 france = province_schema.province_of_name("France")
 germany = province_schema.province_of_name("Germany")
 austria = province_schema.province_of_name("Austria")
-netherlands = province_schema.province_of_name("Netherlands")
+netherlands = province_schema.province_of_name("The Netherlands")
 england = province_schema.province_of_name("England")
 spain = province_schema.province_of_name("Spain")
 
 def concat_map(func, it):
     return chain.from_iterable(map(func, it))
 
-#trade_factors = 4*np.array([2,1.5,4,2,1])
-#trade_factors = 2*np.array([3,,1.5,4,2,1])
-trade_factors = np.array([3,1.5,4,2,1])
+trade_factors = 4*np.array([3, 5, 2, 2, 4])
+#trade_factors = np.array([3, 5, 2, 2, 4])
 
 def set_up_merchants(home: int, foreign: int) -> Iterable[economy.TradeConfig]:
     def for_good(good: int) -> Iterable[economy.TradeConfig]:
@@ -213,8 +212,8 @@ def run_ad():
 def run_el():
     config = el.ElasticMarketConfiguration(
                     necessary_improvement_decay = 0.85,
-                    elasticity_mixing = 0.6,
-                    inner_elasticity_mixing = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
                     #price_scaling=scaling
                     price_scaling=None
              )

@@ -134,6 +134,7 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
         tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
                                      ("ebuyers", elasticities.buyers),
                                      ("price", prices),
-                                     ("error", supply.error)])
+                                     ("sold", supply.sold()),
+                                     ("bought", supply.bought()) ])
     return prices
 
