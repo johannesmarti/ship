@@ -49,9 +49,9 @@ def elasticity_adapt_prices(price: Prices, supply: VolumeBundle,
         new_price = apply_price_scaling(new_price, price_scaling)
     new_price = np.maximum(new_price, MIN_PRICE)
     even_smaller = 0.3 * MIN_PRICE
-    adjustments = np.random.uniform(low=-even_smaller, high=even_smaller,
-                                    size=new_price.shape)
-    new_price += adjustments
+    #adjustments = np.random.uniform(low=-even_smaller, high=even_smaller,
+    #                                size=new_price.shape)
+    #new_price += adjustments
     while True:
         # every price gets adjustment applied at least twice and thus stays above 0 because adjustments are smaller than a third of MIN_PRICE
         price_increase = new_price - price
