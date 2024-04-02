@@ -10,14 +10,14 @@ from core.placement import LaborPlacement
 def produce(name : str, production_coefficients : Bundle, wage_per_worker : float, prices : Prices) -> Tuple[float, VolumeBundle]:
     income_rate = production_coefficients @ prices
     if (income_rate <= 0):
-        logging.debug(f"{name}: income_rate: {income_rate}")
+        #logging.debug(f"{name}: income_rate: {income_rate}")
         return (0,VolumeBundle.zero(prices.shape))
     else:
         sqrt_workforce = income_rate / wage_per_worker
         supply = production_coefficients * sqrt_workforce
         workforce = sqrt_workforce**2
-        logging.debug(f"{name}: workforce: {workforce}")
-        logging.debug(f"{name}: production: {supply}")
+        #logging.debug(f"{name}: workforce: {workforce}")
+        #logging.debug(f"{name}: production: {supply}")
         return (workforce, VolumeBundle(supply, np.absolute(supply)))
 
 class Producer(Participant):

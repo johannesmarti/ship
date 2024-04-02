@@ -15,9 +15,9 @@ from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = TradeGoodsSchema.from_lists(["food", "alcohol", "wood", "ore", "tools"],[])
 province_schema = ProvinceSchema(["Switzerland", "Italy", "France","Germany","Austria","The Netherlands","England","Spain"])

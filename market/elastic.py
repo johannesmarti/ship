@@ -22,7 +22,7 @@ class ElasticMarketConfiguration:
     price_scaling : Optional[ScalingConfiguration] = None
 
 MIN_ELASTICITY = 0.0001
-MAX_ELASTICITY = 10000
+MAX_ELASTICITY = 100000
 
 class Elasticities:
     def __init__(self, seller_elasticity: np.ndarray,
@@ -111,7 +111,7 @@ def make_step(participants: Iterable[Participant],
         # Here we should maybe backoff with the elasticities a bit
         necessary_improvement *= config.necessary_improvement_decay
         backoff *= config.backoff_decay
-        logging.debug(f"necessary_improvement = {necessary_improvement}")
+        logging.info(f"necessary_improvement = {necessary_improvement}")
 
 
 def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : ElasticMarketConfiguration = ElasticMarketConfiguration()) -> Prices:

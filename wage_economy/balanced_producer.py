@@ -36,7 +36,7 @@ class BalancedProducer():
         tasks_to_cancel = payoff_one_unit < 0
         #logging.debug(f"{prices}: prices ")
         #logging.debug(f"{self.production_matrix}: pm ")
-        logging.info(f"{payoff_one_unit} productivity")
+        #logging.info(f"{payoff_one_unit} productivity")
         pm = self.production_matrix.copy()
         pm[tasks_to_cancel,] = 0
     
@@ -50,8 +50,8 @@ class BalancedProducer():
         real_allocation = allocation * self.workforce
         supply = self.supply(real_allocation)
         volume = self.volume(real_allocation)
-        logging.debug(f"{allocation} allocation from production")
-        logging.debug(f"{supply} supply from production")
-        logging.debug(f"{volume} volume from production")
+        #logging.debug(f"{allocation} allocation from production")
+        #logging.debug(f"{supply} supply from production")
+        #logging.debug(f"{volume} volume from production")
         return (self.wages(real_allocation, prices),
                 VolumeBundle(supply, volume))

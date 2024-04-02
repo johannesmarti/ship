@@ -11,7 +11,7 @@ def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
     # lambda can be interpreted as the price of 1 utility
     lambda_squared = budget / a
     solution = lambda_squared * utility / (prices * prices)
-    logging.debug(f"{-solution} consumption")
+    #logging.debug(f"{-solution} consumption")
     return VolumeBundle(-solution, solution)
 
 
