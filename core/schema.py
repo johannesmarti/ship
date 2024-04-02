@@ -158,6 +158,26 @@ class MarketPriceSchema:
         goodName = self.local_schema().name_of_good(goodId)
         return goodName + " in " + provinceName
 
+    def ix_list_goods_in_provinces(self,
+                                   goods: Iterable[str],
+                                   provinces: Iterable[str]) -> Iterable[ListingId]:
+        for province_name in provinces:
+            province_id = self.province_schema().province_of_name(province_name)
+            for good_name in goods:
+                good_id = self.local_schema().good_of_name(good_name)
+                yield self.good_in_province(good_id, province_id)
+
+    def ix_list_provinces_over_goods(self,
+                                     goods: Iterable[str],
+                                     provinces: Iterable[str]) -> Iterable[ListingId]:
+        for good_name in goods:
+            good_id = self.local_schema().good_of_name(good_name)
+            for province_name in provinces:
+                province_id = self.province_schema().province_of_name(province_name)
+                yield self.good_in_province(good_id, province_id)
+
+    #def ix_list_provinces_major():
+
 class LaborMarketPriceSchema(MarketPriceSchema):
     def __init__(self, local_schema : LaborTradeGoodsSchema, province_schema : ProvinceSchema):
         super().__init__(local_schema, province_schema)

@@ -15,8 +15,8 @@ from core.schema import *
 from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
-#logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
@@ -179,7 +179,10 @@ participants = list(econ.participants())
 
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
     schema = market_schema,
-    list_of_indices = list(range(market_schema.global_width()))
+    #list_of_indices = list(range(market_schema.global_width()))
+    list_of_indices = list(market_schema.ix_list_provinces_over_goods(
+        ["food", "alcohol", "labor"],
+        ["Switzerland", "The Netherlands"]))
 ))
 
 scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
@@ -241,5 +244,5 @@ def run_adam():
     reset_iteration()
 
 
-run_el() # 1714
+run_eva() # 1714
 
