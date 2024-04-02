@@ -7,12 +7,7 @@ import pretty_table as tl
 
 @dataclass(frozen=True)
 class ElasticMarketConfiguration:
-    #starting_t: float = 0.4
     initial_slowdown: float = 0.4
-    #max_t: float = 100.0
-    #min_t: float = 0.0001
-    #min_change_factor: float = 0.5
-    #max_change_factor: float = 1.5
     necessary_improvement: float = 1
     necessary_improvement_decay: float = 0.9
     initial_backoff: float = 0.8
@@ -51,20 +46,27 @@ def elasticity_adapt_prices(price: Prices, supply: VolumeBundle,
                             price_scaling: Optional[ScalingConfiguration]) -> Prices:
     new_price = price - backoff * supply.error/elasticities.total_elasticity()
     if (price_scaling != None):
-        leading = price_scaling.norm_listing
-        if (leading == None):
-            base = np.average(new_price)
-        else:
-            base = new_price[leading]
-        scaling_factor = price_scaling.set_to_price / base
-        new_price *= scaling_factor
-    return np.maximum(new_price, MIN_PRICE)
+        new_price = apply_price_scaling(new_price, price_scaling)
+    new_price = np.maximum(new_price, MIN_PRICE)
+    even_smaller = 0.3 * MIN_PRICE
+    adjustments = np.random.uniform(low=-even_smaller, high=even_smaller,
+                                    size=new_price.shape)
+    new_price += adjustments
+    while True:
+        # every price gets adjustment applied at least twice and thus stays above 0 because adjustments are smaller than a third of MIN_PRICE
+        price_increase = new_price - price
+        good_positions = price_increase != 0
+        if np.all(good_positions):
+            return new_price
+        logging.warning("found bad positions when adapting prices")
+        adjustments = np.random.uniform(low=-even_smaller, high=even_smaller,
+                                        size=new_price.shape)
+        new_price += adjustments * (~good_positions)
 
 def compute_elasticities(prices: Prices, supply: VolumeBundle,
                          new_prices: Prices, new_supply: VolumeBundle,
                          config: ElasticMarketConfiguration) -> Elasticities:
-    # TODO: This use of minprice is ugly. The point is to make sure that we are alwasy non zero. Should use a more principled approach.
-    price_increase = new_prices - prices + MIN_PRICE
+    price_increase = new_prices - prices
     assert (np.abs(price_increase) > 0).all()
     esellers = (new_supply.sold() - supply.sold()) / price_increase
     ebuyers  = (supply.bought() - new_supply.bought()) / price_increase
@@ -101,7 +103,7 @@ def make_step(participants: Iterable[Participant],
             tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
                                          ("ebuyers", elasticities.buyers)])
             return (new_supply, new_prices, elasticities)
-        logging.warning(f"did not adapt prices because new badness {new_badness} is worse than previous badness {badness}")
+        logging.warning(f"did not adapt prices because new badness {new_badness}\n is worse than previous badness {badness}")
         tl.log_values(logging.INFO, [("price",new_prices),
                                      ("sold", new_supply.sold()),
                                      ("bought", new_supply.bought()),
@@ -115,7 +117,7 @@ def make_step(participants: Iterable[Participant],
 
 
 def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : ElasticMarketConfiguration = ElasticMarketConfiguration()) -> Prices:
-    logging.info(f"starting elastic equivilibrium search")
+    logging.info(f"starting elastic equiuilibrium search")
     supply = one_iteration(participants, prices)
     badness = absolute_badness(supply)
     elasticities = estimate_initial_elasticities(prices, supply, config)

@@ -56,17 +56,22 @@ class ScalingConfiguration:
     set_to_price: float = 10
     norm_listing: Optional[int] = None
 
+def apply_price_scaling(price: Prices,
+                        price_scaling: ScalingConfiguration) -> Prices:
+    leading = price_scaling.norm_listing
+    if (leading == None):
+        base = np.average(price)
+    else:
+        base = price[leading]
+    scaling_factor = price_scaling.set_to_price / base
+    price *= scaling_factor
+    return price
+
 def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
     new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
-        leading = price_scaling.norm_listing
-        if (leading == None):
-            base = np.average(new_price)
-        else:
-            base = new_price[leading]
-        scaling_factor = price_scaling.set_to_price / base
-        new_price *= scaling_factor
+        new_price = apply_price_scaling(new_price, price_scaling)
     return np.maximum(new_price, MIN_PRICE)
 
 def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, price_scaling : Optional[ScalingConfiguration]) -> Prices:
@@ -74,13 +79,7 @@ def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, pri
     new_price = price * (1 - t * error.update_term())
     #assert (new_price > 0).all()
     if (price_scaling != None):
-        leading = price_scaling.norm_listing
-        if (leading == None):
-            base = np.average(new_price)
-        else:
-            base = new_price[leading]
-        scaling_factor = price_scaling.set_to_price / base
-        new_price *= scaling_factor
+        new_price = apply_price_scaling(new_price, price_scaling)
     return np.maximum(new_price, MIN_PRICE)
 
 def mixing(a: np.ndarray, b: np.ndarray, factor: float) -> np.ndarray:

@@ -34,8 +34,9 @@ spain = province_schema.province_of_name("Spain")
 def concat_map(func, it):
     return chain.from_iterable(map(func, it))
 
-trade_factors = 4*np.array([3, 5, 2, 2, 4])
-#trade_factors = np.array([3, 5, 2, 2, 4])
+#trade_factors = 4*np.array([3, 5, 2, 2, 4])
+#trade_factors = 2*np.array([3, 5, 2, 2, 4])
+trade_factors = np.array([3, 5, 2, 2, 4])
 
 def set_up_merchants(home: int, foreign: int) -> Iterable[economy.TradeConfig]:
     def for_good(good: int) -> Iterable[economy.TradeConfig]:
@@ -184,47 +185,288 @@ scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.list
 
 def run_ls():
     config = ls.LineSearchConfiguration(
-                t=0.2,
+                t=0.1,
                 backoff=0.2,
-                necessary_improvement=0.9,
+                necessary_improvement=0.8,
                 price_scaling=scaling)
     p = ls.make_market(participants, p0, epsilon, config)
     print(f"lis iterations: {get_iteration()}")
     pt.pretty_table([("price", p)])
     reset_iteration()
 
-def run_ad():
-    config = ad.AdaptiveSearchConfiguration(
-                    starting_t=0.2,
-                    backoff=0.6,
-                    max_t=100000,
-                    min_t=0.00001,
-                    min_change_factor=0.5,
-                    max_change_factor=2,
-                    necessary_improvement=0.8,
-                    price_scaling=scaling
-             )
-    p = ad.make_market(participants, p0, epsilon, config)
-    print(f"ads iterations: {get_iteration()}")
-    pt.pretty_table([("price", p)])
-    reset_iteration()
-
 def run_el():
     config = el.ElasticMarketConfiguration(
-                    necessary_improvement_decay = 0.85,
-                    elasticity_mixing = 0.3,
-                    inner_elasticity_mixing = 0.5,
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.87,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.30,
+                    inner_elasticity_mixing = 0.40,
                     #price_scaling=scaling
                     price_scaling=None
              )
     p = el.make_market(participants, p0, epsilon, config)
-    print(f"ads iterations: {get_iteration()}")
     pt.pretty_table([("price", p)])
+    print(f"ads iterations: {get_iteration()}")
     reset_iteration()
 
 
 #run_ls()
 #print()
-#run_ad()
-#print()
 run_el()
+
+"""
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.2,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    8055
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.85,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.2,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    6608
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.2,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    6237
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.2,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    5362
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    4560
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.4,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    4607
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.2,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    4702
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.6,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    timeout
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+    timeout
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.9,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4894
+
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.3,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4814
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.25,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             5154
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.35,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4394
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4097
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.45,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4684
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.90,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.5,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             timeout
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.95,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             5961
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.85,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             4028
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.80,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.4,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             timeout
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.85,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.3,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             timeout
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.85,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.5,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             timeout
+    config = el.ElasticMarketConfiguration(
+                    necessary_improvement = 1,
+                    necessary_improvement_decay = 0.85,
+                    initial_backoff = 0.8,
+                    backoff_decay = 0.4,
+                    elasticity_mixing = 0.3,
+                    inner_elasticity_mixing = 0.35,
+                    #price_scaling=scaling
+                    price_scaling=None
+             )
+             timeout
+    """
+
