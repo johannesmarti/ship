@@ -9,7 +9,6 @@ import pretty_table as pt
 import market.line_search as ls
 import market.elastic as el
 import market.eva as eva
-import market.susi as susi
 import market.adam as adam
 from market.base import *
 from core.schema import *
@@ -188,7 +187,7 @@ scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.list
 def run_ls():
     config = ls.LineSearchConfiguration(
                 epsilon=epsilon,
-                initial_backoff = 0.2,
+                initial_backoff = 0.005,
                 backoff_decay = 0.1,
                 necessary_improvement=1,
                 necessary_improvement_decay = 0.95,
@@ -203,9 +202,9 @@ def run_el():
                 epsilon=epsilon,
                 necessary_improvement = 1,
                 necessary_improvement_decay = 0.87,
-                initial_backoff = 0.8,
+                initial_backoff = 0.008,
                 backoff_decay = 0.1,
-                elasticity_mixing = 0.20,
+                elasticity_mixing = 0.05,
                 inner_elasticity_mixing = 0.40,
                 #price_scaling=scaling
                 price_scaling=None
@@ -216,23 +215,16 @@ def run_el():
     print(f"ads iterations: {get_iteration()}")
     reset_iteration()
 
-def run_eva(config):
+def run_eva():
+    config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate=0.03,
+             first_momentum_mixin = 0.025
+    )
     p = eva.make_market(participants, p0, config)
     p = apply_price_scaling(p, scaling)
     pt.pretty_table([("price", p)])
     print(f"eva iterations: {get_iteration()}")
-    reset_iteration()
-
-def run_susi():
-    config = susi.SusiConfiguration(
-                epsilon=epsilon,
-                rate=0.01,
-                first_momentum_mixin = 0.05
-             )
-    p = susi.make_market(participants, p0, config)
-    p = apply_price_scaling(p, scaling)
-    pt.pretty_table([("price", p)])
-    print(f"susi iterations: {get_iteration()}")
     reset_iteration()
 
 def run_adam():
@@ -249,53 +241,5 @@ def run_adam():
     reset_iteration()
 
 
-evaconfig = eva.EvaConfiguration(
-             epsilon=epsilon,
-             rate=0.013,
-             first_momentum_mixin = 0.025
-            )
+run_el() # 1714
 
-#run_eva(evaconfig) # 1714
-run_adam() # 1714
-
-"""
-rate=0.02,
-first_momentum_mixin = 0.01
-2666
-
-rate=0.01,
-first_momentum_mixin = 0.01
-2452
-
-rate=0.01,
-first_momentum_mixin = 0.02
-1318
-
-rate=0.01,
-first_momentum_mixin = 0.03
-1518
-
-rate=0.01,
-first_momentum_mixin = 0.025
-1378
-
-rate=0.01,
-first_momentum_mixin = 0.022
-1269
-
-rate=0.05,
-first_momentum_mixin = 0.022
-loop
-
-rate=0.005,
-first_momentum_mixin = 0.022
-3349
-
-rate=0.012,
-first_momentum_mixin = 0.022
-1262
-
-rate=0.013,
-first_momentum_mixin = 0.025
-1130
-"""

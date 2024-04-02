@@ -39,7 +39,7 @@ def line_search(participants: Iterable[Participant],
             logging.info(f"return from line search with badness {new_badness}")
             return (new_prices, new_supply)
         logging.warning(f"did not adapt prices because new badness {new_badness}\n is worse than previous badness {badness}")
-        tl.log_values(logging.INFO, [("price",new_prices),
+        tl.log_values(logging.DEBUG, [("price",new_prices),
                                      ("sold", new_supply.sold()),
                                      ("bought", new_supply.bought()),
                                      ("oprice", prices),
@@ -57,7 +57,7 @@ def make_market(participants : Iterable[Participant], prices : Prices, config : 
 
         (prices, supply) = line_search(participants, prices, supply, config)
         logging.info(f"at step {get_iteration()}:")
-        tl.log_values(logging.INFO, [("price", prices),
+        tl.log_values(logging.DEBUG, [("price", prices),
                                      ("sold", supply.sold()),
                                      ("bought", supply.bought()),
                                      ("error", supply.error),
