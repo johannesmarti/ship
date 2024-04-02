@@ -7,7 +7,6 @@ import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
 import pretty_table as pt
 import market.line_search as ls
-import market.adaptive as ad
 import market.elastic as el
 from market.base import ScalingConfiguration,get_iteration,reset_iteration
 from core.schema import *
@@ -15,8 +14,8 @@ from itertools import chain
 
 np.set_printoptions(precision=8,suppress=True,threshold=12)
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 local_schema = TradeGoodsSchema.from_lists(["food", "alcohol", "wood", "ore", "tools"],[])
@@ -177,43 +176,46 @@ epsilon = 0.1
 participants = list(econ.participants())
 
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
-        schema = market_schema,
-        list_of_indices = list(range(market_schema.global_width()))
+    schema = market_schema,
+    list_of_indices = list(range(market_schema.global_width()))
 ))
 
-scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.listing_of_good_in_province("labor", "Italy"))
+scaling = ScalingConfiguration(set_to_price=100, norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
 
 def run_ls():
     config = ls.LineSearchConfiguration(
-                t=0.1,
-                backoff=0.2,
-                necessary_improvement=0.8,
+                epsilon=epsilon,
+                initial_backoff = 0.2,
+                backoff_decay = 0.1,
+                necessary_improvement=1,
+                necessary_improvement_decay = 0.95,
                 price_scaling=scaling)
-    p = ls.make_market(participants, p0, epsilon, config)
+    p = ls.make_market(participants, p0, config)
     print(f"lis iterations: {get_iteration()}")
     pt.pretty_table([("price", p)])
     reset_iteration()
 
 def run_el():
     config = el.ElasticMarketConfiguration(
-                    necessary_improvement = 1,
-                    necessary_improvement_decay = 0.87,
-                    initial_backoff = 0.8,
-                    backoff_decay = 0.3,
-                    elasticity_mixing = 0.30,
-                    inner_elasticity_mixing = 0.40,
-                    #price_scaling=scaling
-                    price_scaling=None
+                epsilon=epsilon,
+                necessary_improvement = 1,
+                necessary_improvement_decay = 0.87,
+                initial_backoff = 0.8,
+                backoff_decay = 0.3,
+                elasticity_mixing = 0.30,
+                inner_elasticity_mixing = 0.40,
+                #price_scaling=scaling
+                price_scaling=None
              )
-    p = el.make_market(participants, p0, epsilon, config)
+    p = el.make_market(participants, p0, config)
     pt.pretty_table([("price", p)])
     print(f"ads iterations: {get_iteration()}")
     reset_iteration()
 
 
-#run_ls()
+run_ls()
 #print()
-run_el()
+#run_el()
 
 """
 

@@ -67,21 +67,6 @@ def apply_price_scaling(price: Prices,
     price *= scaling_factor
     return price
 
-def adapt_prices(price : Prices, error : VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
-    new_price = price * (1 - t * error.update_term())
-    #assert (new_price > 0).all()
-    if (price_scaling != None):
-        new_price = apply_price_scaling(new_price, price_scaling)
-    return np.maximum(new_price, MIN_PRICE)
-
-def broad_adapt_prices(price : Prices, error : VolumeBundle, t : np.ndarray, price_scaling : Optional[ScalingConfiguration]) -> Prices:
-    assert t.shape == price.shape
-    new_price = price * (1 - t * error.update_term())
-    #assert (new_price > 0).all()
-    if (price_scaling != None):
-        new_price = apply_price_scaling(new_price, price_scaling)
-    return np.maximum(new_price, MIN_PRICE)
-
 def mixing(a: np.ndarray, b: np.ndarray, factor: float) -> np.ndarray:
     assert a.shape == b.shape
     return (1 - factor)*a + factor*b

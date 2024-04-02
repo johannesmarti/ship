@@ -3,64 +3,63 @@ from dataclasses import dataclass
 from typing import Tuple,Optional
 
 from market.base import *
+import pretty_table as tl
+
+def adapt_prices(price : Prices, supply: VolumeBundle, t : float, price_scaling : Optional[ScalingConfiguration]) -> Prices:
+    new_price = price * (1 - t * supply.update_term())
+    if (price_scaling != None):
+        new_price = apply_price_scaling(new_price, price_scaling)
+    return np.maximum(new_price, MIN_PRICE)
 
 @dataclass(frozen=True)
 class LineSearchConfiguration:
-    t : float = 0.6
-    necessary_improvement : float = 1
-    backoff : float = 0.6
-    price_scaling : Optional[ScalingConfiguration] = None
+    epsilon: float = 0.1
+    necessary_improvement: float = 1
+    necessary_improvement_decay: float = 0.9
+    initial_backoff: float = 0.8
+    backoff_decay: float = 0.2
+    necessary_improvement: float = 1
+    price_scaling: Optional[ScalingConfiguration] = None
 
-def one_iteration(participants : Iterable[Participant], prices : Prices) -> VolumeBundle:
-    increment_iteration()
-    logging.debug(f"at iteration {get_iteration()}")
-    eb = VolumeBundle.zero(prices.shape)
-    for p in participants:
-        eb += p.participate(prices)
-    return eb
-
-def line_search(participants : Iterable[Participant],
-                prices : Prices,
-                error : VolumeBundle,
-                config : LineSearchConfiguration) -> Tuple[Prices,VolumeBundle]:
-    t = config.t
-    logging.debug(f"starting line search, with t = {t}, necessary_improvement = {config.necessary_improvement}")
-    logging.debug(f"at prices: {prices}")
-    logging.debug(f"for error: {error.error}")
-    logging.debug(f"with volume: {error.volume}")
-    logging.debug(f"with badness: {relative_badness(error)}")
-
-    next_prices = adapt_prices(prices, error, t, config.price_scaling)
-    logging.debug(f"iterating for prices: {next_prices}")
-    assert (next_prices > 0).all()
-    next_error = one_iteration(participants, next_prices)
-    logging.debug(f"with error: {next_error.error}")
-    logging.debug(f"with volume: {next_error.volume}")
-    logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
-    while config.necessary_improvement * relative_badness(next_error) >=  relative_badness(error):
-        t *= config.backoff
-        if (t < 0.01):
-            logging.warning(f"giving up on line search at badness {relative_badness(next_error)}")
-            break
-        logging.info(f"next iteration of line search with t = {t}")
-        next_prices = adapt_prices(prices, error, t, config.price_scaling)
-        logging.debug(f"iterating for prices: {next_prices}")
-        next_error = one_iteration(participants, next_prices)
-        assert (next_prices > 0).all()
-        logging.debug(f"with error: {next_error.error}")
-        logging.debug(f"next volume: {next_error.volume}")
-        logging.debug(f"with badness: {relative_badness(next_error)}, vs old: {relative_badness(error)}")
-    logging.debug("\n")
-    return (next_prices, next_error)
-
-def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : LineSearchConfiguration = LineSearchConfiguration()) -> Prices:
-    supply = one_iteration(participants, prices)
-    while absolute_badness(supply) >= epsilon:
+def line_search(participants: Iterable[Participant],
+                prices: Prices,
+                supply: VolumeBundle,
+                config: LineSearchConfiguration) -> Tuple[Prices,VolumeBundle]:
+    logging.debug(f"\nstarting line search")
+    backoff = config.initial_backoff
+    badness = absolute_badness(supply)
+    necessary_improvement = config.necessary_improvement
+    backoff = config.initial_backoff
+    while True:
         increment_step()
-        #print(supply.volume)
-        #print(supply.volume)
-        #print(supply.error, absolute_badness(supply))
-        #print(supply.error, badness(supply))
-        #print(prices, absolute_badness(supply))
+        new_prices = adapt_prices(prices, supply, backoff, config.price_scaling)
+        new_supply = one_iteration(participants, new_prices)
+        new_badness = absolute_badness(new_supply)
+        if necessary_improvement * new_badness <= badness:
+            logging.info(f"return from line search with badness {new_badness}")
+            return (new_prices, new_supply)
+        logging.warning(f"did not adapt prices because new badness {new_badness}\n is worse than previous badness {badness}")
+        tl.log_values(logging.INFO, [("price",new_prices),
+                                     ("sold", new_supply.sold()),
+                                     ("bought", new_supply.bought()),
+                                     ("oprice", prices),
+                                     ("osold", supply.sold()),
+                                     ("obought", supply.bought())])
+        necessary_improvement *= config.necessary_improvement_decay
+        backoff *= config.backoff_decay
+        logging.info(f"necessary_improvement = {necessary_improvement}")
+
+def make_market(participants : Iterable[Participant], prices : Prices, config : LineSearchConfiguration = LineSearchConfiguration()) -> Prices:
+    logging.info(f"starting equiuilibrium search")
+    supply = one_iteration(participants, prices)
+    while absolute_badness(supply) >= config.epsilon:
+        logging.info(f"\n\nnext iteration because of badness: {absolute_badness(supply)}")
+
         (prices, supply) = line_search(participants, prices, supply, config)
+        logging.info(f"at step {get_iteration()}:")
+        tl.log_values(logging.INFO, [("price", prices),
+                                     ("sold", supply.sold()),
+                                     ("bought", supply.bought()),
+                                     ("error", supply.error),
+                                    ])
     return prices

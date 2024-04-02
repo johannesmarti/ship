@@ -7,6 +7,7 @@ import pretty_table as tl
 
 @dataclass(frozen=True)
 class ElasticMarketConfiguration:
+    epsilon: float = 0.1
     initial_slowdown: float = 0.4
     necessary_improvement: float = 1
     necessary_improvement_decay: float = 0.9
@@ -80,10 +81,10 @@ def elasticity_mixing(a: Elasticities, b: Elasticities, factor: float) -> Elasti
     return Elasticities(es, eb)
 
 def make_step(participants: Iterable[Participant],
-              supply: VolumeBundle,
               prices: Prices,
+              supply: VolumeBundle,
               elasticities: Elasticities,
-              config: ElasticMarketConfiguration) -> tuple[VolumeBundle,Prices,Elasticities]:
+              config: ElasticMarketConfiguration) -> tuple[Prices,VolumeBundle,Elasticities]:
     logging.info(f"\nstarting next step")
     badness = absolute_badness(supply)
     necessary_improvement = config.necessary_improvement
@@ -102,7 +103,7 @@ def make_step(participants: Iterable[Participant],
             logging.info(f"return new elasticities with badness {new_badness}")
             tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
                                          ("ebuyers", elasticities.buyers)])
-            return (new_supply, new_prices, elasticities)
+            return (new_prices, new_supply, elasticities)
         logging.warning(f"did not adapt prices because new badness {new_badness}\n is worse than previous badness {badness}")
         tl.log_values(logging.INFO, [("price",new_prices),
                                      ("sold", new_supply.sold()),
@@ -116,7 +117,8 @@ def make_step(participants: Iterable[Participant],
         logging.info(f"necessary_improvement = {necessary_improvement}")
 
 
-def make_market(participants : Iterable[Participant], prices : Prices, epsilon : float = 0.001, config : ElasticMarketConfiguration = ElasticMarketConfiguration()) -> Prices:
+def make_market(participants : Iterable[Participant], prices : Prices,
+                config : ElasticMarketConfiguration = ElasticMarketConfiguration()) -> Prices:
     logging.info(f"starting elastic equiuilibrium search")
     supply = one_iteration(participants, prices)
     badness = absolute_badness(supply)
@@ -126,10 +128,10 @@ def make_market(participants : Iterable[Participant], prices : Prices, epsilon :
                                  ("ebuyers", elasticities.buyers),
                                  ("price", prices),
                                  ("error", supply.error)])
-    while absolute_badness(supply) >= epsilon:
+    while absolute_badness(supply) >= config.epsilon:
         logging.info(f"\n\nnext iteration because of badness: {absolute_badness(supply)}")
 
-        (supply,prices,final_elasticities) = make_step(participants, supply, prices, elasticities, config)
+        (prices,supply,final_elasticities) = make_step(participants, prices, supply, elasticities, config)
         elasticities = elasticity_mixing(elasticities, final_elasticities,
                                          config.elasticity_mixing)
         logging.info(f"new longterm-elasticities:")
