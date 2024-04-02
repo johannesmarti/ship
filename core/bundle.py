@@ -4,7 +4,6 @@ Bundle = np.ndarray
 
 class VolumeBundle:
     def __init__(self, error, volume):
-        assert np.all(volume>= 0)
         assert np.shape(error) == np.shape(volume)
         self.error = error
         self.volume = volume

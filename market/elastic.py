@@ -101,11 +101,11 @@ def make_step(participants: Iterable[Participant],
         elasticities = elasticity_mixing(elasticities, new_elasticities, config.inner_elasticity_mixing)
         if necessary_improvement * new_badness <= badness:
             logging.info(f"return new elasticities with badness {new_badness}")
-            tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
+            tl.log_values(logging.DEBUG, [("esellers",elasticities.sellers),
                                          ("ebuyers", elasticities.buyers)])
             return (new_prices, new_supply, elasticities)
         logging.warning(f"did not adapt prices because new badness {new_badness}\n is worse than previous badness {badness}")
-        tl.log_values(logging.INFO, [("price",new_prices),
+        tl.log_values(logging.DEBUG, [("price",new_prices),
                                      ("sold", new_supply.sold()),
                                      ("bought", new_supply.bought()),
                                      ("oprice", prices),
@@ -124,7 +124,7 @@ def make_market(participants : Iterable[Participant], prices : Prices,
     badness = absolute_badness(supply)
     elasticities = estimate_initial_elasticities(prices, supply, config)
     logging.info(f"initial elasticities:")
-    tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
+    tl.log_values(logging.DEBUG, [("esellers",elasticities.sellers),
                                  ("ebuyers", elasticities.buyers),
                                  ("price", prices),
                                  ("error", supply.error)])
@@ -135,7 +135,7 @@ def make_market(participants : Iterable[Participant], prices : Prices,
         elasticities = elasticity_mixing(elasticities, final_elasticities,
                                          config.elasticity_mixing)
         logging.info(f"new longterm-elasticities:")
-        tl.log_values(logging.INFO, [("esellers",elasticities.sellers),
+        tl.log_values(logging.DEBUG, [("esellers",elasticities.sellers),
                                      ("ebuyers", elasticities.buyers),
                                      ("price", prices),
                                      ("sold", supply.sold()),
