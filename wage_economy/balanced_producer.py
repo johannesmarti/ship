@@ -27,6 +27,8 @@ class BalancedProducer():
     def produce(self, prices : Prices) -> Tuple[float, VolumeBundle]:
         assert(prices.size == self.production_matrix.shape[1])
 
+        # This is all computed in a per_worker basis
+
         # we first remove all tasks which result in negative income if all the necessary goods are bought at current prices
     
         # compute for each task how much money it makes
@@ -47,11 +49,12 @@ class BalancedProducer():
     
         assert (allocation >= 0).all()
         assert (allocation <= 1).all()
-        real_allocation = allocation * self.workforce
-        supply = self.supply(real_allocation)
-        volume = self.volume(real_allocation)
+        supply = self.supply(allocation)
+        volume = self.volume(allocation)
         #logging.debug(f"{allocation} allocation from production")
         #logging.debug(f"{supply} supply from production")
         #logging.debug(f"{volume} volume from production")
-        return (self.wages(real_allocation, prices),
-                VolumeBundle(supply, volume))
+
+        # to get the final result we need to scale with the workforce
+        return (self.workforce * self.wages(allocation, prices),
+                self.workforce * VolumeBundle(supply, volume))

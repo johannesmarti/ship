@@ -1,5 +1,6 @@
 from typing import List, Iterable, Callable
 from itertools import chain
+import math
 
 import consumer as c
 import labor_economy.producer as p
@@ -37,25 +38,33 @@ class LaborEconomy(economy.Economy):
         def create_factories(province: ProvinceId,
                              config: economy.ProvinceConfig
                             ) -> Iterable[p.Producer]:
+            
+            sqrt_population = math.sqrt(config.population)
             def create_factory(factory_config: economy.FactoryConfig) -> p.Producer:
                 labor_index = market_schema.labor_placement_of_province(province)
+                # need to scale the production coefficients such that factories
+                # in big provinces can produce with the same efficiency per
+                # worker as factories in small provinces. We can think of this
+                # as meaning that big provinces have larger factories.
+                coefficients = sqrt_population * factory_config.production_coefficients
                 return p.Producer.factory("factory without name",
-                                          factory_config.production_coefficients,
-                                          labor_index)
+                                          coefficients, labor_index)
             return map(create_factory, config.factories)
         nested_factories = map(uncurry(create_factories), enumerate(config.province_configs))
         factories = list(chain(*nested_factories))
 
         def create_traders(province: ProvinceId, config: economy.ProvinceConfig
                           ) -> Iterable[p.Producer]:
+            sqrt_population = math.sqrt(config.population)
             def create_trader(trade_config: economy.TradeConfig) -> p.Producer:
                 from_listing = market_schema.good_in_province(trade_config.good, trade_config.from_province)
                 to_listing = market_schema.good_in_province(trade_config.good,
                                                             trade_config.to_province)
+                trade_efficiency = sqrt_population * trade_config.trade_factor
                 return p.Producer.trader("trader without name",
                                          market_schema.labour_in_province(province),
                                          from_listing, to_listing,
-                                         trade_config.trade_factor,
+                                         trade_efficiency,
                                          market_schema.global_width())
             return map(create_trader, config.merchants)
         nested_traders = map(uncurry(create_traders), enumerate(config.province_configs))

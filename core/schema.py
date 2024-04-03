@@ -1,4 +1,4 @@
-from typing import Iterable, cast
+from typing import Iterable, Optional, cast
 
 from core.placement import Placement, LaborPlacement
 
@@ -9,7 +9,7 @@ GoodId = int
 
 class GoodsSchema:
     def __init__(self, good_names : list[str]):
-        self._good_names = list(good_names)
+        self._good_names = good_names
         self._num_goods = len(self._good_names)
 
     def valid_id(self, good_id: GoodId) -> bool:
@@ -159,8 +159,12 @@ class MarketPriceSchema:
         return goodName + " in " + provinceName
 
     def ix_list_goods_in_provinces(self,
-                                   goods: Iterable[str],
-                                   provinces: Iterable[str]) -> Iterable[ListingId]:
+                                   goods: Optional[Iterable[str]],
+                                   provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
+        if goods == None:
+            goods = self.local_schema()._good_names
+        if provinces == None:
+            provinces = self.province_schema()._province_names
         for province_name in provinces:
             province_id = self.province_schema().province_of_name(province_name)
             for good_name in goods:
@@ -168,8 +172,12 @@ class MarketPriceSchema:
                 yield self.good_in_province(good_id, province_id)
 
     def ix_list_provinces_over_goods(self,
-                                     goods: Iterable[str],
-                                     provinces: Iterable[str]) -> Iterable[ListingId]:
+                                     goods: Optional[Iterable[str]],
+                                     provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
+        if goods == None:
+            goods = self.local_schema()._good_names
+        if provinces == None:
+            provinces = self.province_schema()._province_names
         for good_name in goods:
             good_id = self.local_schema().good_of_name(good_name)
             for province_name in provinces:

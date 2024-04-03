@@ -1,4 +1,3 @@
-import logging
 import numpy as np
 
 from core.bundle import *
@@ -11,7 +10,6 @@ def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
     # lambda can be interpreted as the price of 1 utility
     lambda_squared = budget / a
     solution = lambda_squared * utility / (prices * prices)
-    #logging.debug(f"{-solution} consumption")
     return VolumeBundle(-solution, solution)
 
 
@@ -33,17 +31,17 @@ class LaborerConsumer(Participant):
                  placement : LaborPlacement):
         self.utilities = utilities
         self._population = population 
-        self.labour_index = placement.labour_index
+        self.labor_index = placement.labor_index
         self.goods_slice = placement.production_slice
 
     def population(self) -> int:
         return self._population
 
     def participate(self, prices : Prices) -> VolumeBundle:
-        salary = self._population * prices[self.labour_index]
-        consumption_of_goods = consume(self.utilities, salary,
-                                       prices[self.goods_slice])
+        consumption_per_pop = consume(self.utilities, prices[self.labor_index],
+                                      prices[self.goods_slice])
+        consumption = self._population * consumption_per_pop
         total_consumption = VolumeBundle.zero(prices.shape)
-        total_consumption.add_at_ix(self.labour_index, self._population)
-        total_consumption.add_at_slice(self.goods_slice, consumption_of_goods)
+        total_consumption.add_at_ix(self.labor_index, self._population)
+        total_consumption.add_at_slice(self.goods_slice, consumption)
         return total_consumption

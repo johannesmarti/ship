@@ -28,6 +28,20 @@ class VolumeBundle:
         self.volume += other.volume
         return self
 
+    def __mul__(self, other):
+        assert isinstance(other, (int,float))
+        return VolumeBundle(other * self.error, other * self.volume)
+
+    def __rmul__(self, other):
+        assert isinstance(other, (int,float))
+        return VolumeBundle(other * self.error, other * self.volume)
+
+    def __imul__(self, other):
+        assert isinstance(other, (int,float))
+        self.error *= other
+        self.volume *= other
+        return self
+
     def add_at_ix(self, ix : int, error : float):   
         self.error[ix] += error
         self.volume[ix] += abs(error)

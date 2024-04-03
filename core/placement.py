@@ -7,4 +7,4 @@ class Placement:
 
 @dataclass
 class LaborPlacement(Placement):
-    labour_index : int
+    labor_index : int

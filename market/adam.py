@@ -12,7 +12,7 @@ class AdamConfiguration:
     initial_backoff: float = 0.01
     first_momentum_mixin: float = 0.1
     second_momentum_mixin: float = 0.01
-    price_scaling: Optional[ScalingConfiguration] = None
+    #price_scaling: Optional[ScalingConfiguration] = None
 
 def make_market(participants : Iterable[Participant], price : Prices,
                 config : AdamConfiguration = AdamConfiguration()) -> Prices:
