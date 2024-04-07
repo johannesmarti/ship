@@ -28,11 +28,17 @@ class GoodsSchema:
     def good_of_name(self, name : str) -> GoodId:
         return self._good_names.index(name)
 
-    def placement(self) -> Placement:
-        return Placement(self.__num_goods, slice(0, self._num_goods))
+    #def placement(self) -> Placement:
+    #    return Placement(self.__num_goods, slice(0, self._num_goods))
+
+    def production_width(self) -> int:
+        return self.width()
+
+    def production_slice(self) -> slice:
+        return slice(0,self.production_width())
 
     def dict_to_vector(self, dictionary: dict[str ,float]) -> np.ndarray:
-        v = np.zeros(self.num_goods)
+        v = np.zeros(self.production_width())
         for name, value in dictionary.items():
             v[self._good_names.index(name)] = value
         return v
@@ -61,8 +67,6 @@ class TradeGoodsSchema(GoodsSchema):
         ts = self.trade_slice()
         return range(ts.start, ts.stop)
 
-    def production_slice(self) -> slice:
-        return slice(0,self.width())
 
 class LaborTradeGoodsSchema(TradeGoodsSchema):
     def __init__(self, base: TradeGoodsSchema):
@@ -77,12 +81,12 @@ class LaborTradeGoodsSchema(TradeGoodsSchema):
     def labour(self) -> GoodId:
         return self.width() - 1
 
-    def production_slice(self) -> slice:
-        return slice(0,self.width() - 1)
-    
+    def production_width(self) -> int:
+        return self.width() - 1
+
     def labour_placement(self) -> LaborPlacement:
         return LaborPlacement(self.width(), self.production_slice(),
-                               self.labour())
+                              self.labour())
 
 ProvinceId = int
 
@@ -116,14 +120,14 @@ class MarketPriceSchema:
 
     def global_width(self) -> int:
         return self.local_width() * self._province_schema.num_provinces()
-    
+
     def province_schema(self) -> ProvinceSchema:
         return self._province_schema
 
     def start_of_province(self, province : ProvinceId) -> int:
         assert province < self._province_schema.num_provinces()
         return province * self.local_width()
-    
+
     def slice_of_province(self, province : ProvinceId) -> slice:
         offset = self.start_of_province(province)
         return slice(offset,offset + self.local_width())
