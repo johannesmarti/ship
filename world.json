@@ -1,13 +1,13 @@
 {
   "provinces": [
     {
-      "balance": 10,
       "name": "Switzerland",
-      "population": 8,
+      "population": 800,
       "production": [
         {
-          "food": 2,
-          "wood": 1
+          "food": 5,
+          "alcohol": 0.5,
+          "wood": 1.5
         },
         {
           "gold": 8,
@@ -94,13 +94,10 @@
   ],
   "tradable_goods": [
     "food",
+    "alcohol",
     "wood",
-    "weapons"
+    "ore",
+    "tools",
   ],
   "untradable_goods": [],
-  "utility_coefficients": {
-    "food": 2,
-    "weapons": 0.5,
-    "wood": 1
-  }
 }

@@ -15,6 +15,7 @@ import schema as schema
 logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
+
 def read_world(parsed_json: Any) -> economy.EconomyConfig:
     provinces_json = parsed_json['provinces']
     province_names = list(map(lambda h : h['name'], provinces_json))
@@ -22,6 +23,21 @@ def read_world(parsed_json: Any) -> economy.EconomyConfig:
     tradable_goods_json = parsed_json['tradable_goods']
     fixed_goods_json = parsed_json['fixed_goods']
     local_schema = TradeGoodsSchema.from_list(tradable_goods, fixed_goods)
+    global_utilities = parsed_json.get('global_utilities', {})
+
+    province_configs = list(map(province_config, provinces_json))
+    def province_config(json_province: Any) -> economy.ProvinceConfig:
+        population = json_province['population']
+        local_utilities = json_province['utilities']
+        utilities_dict = gobal_utilities | local_utilities
+        utilities = local_schema.dict_to_vector(utilities_dict)
+
+        factories = None
+        merchants = None
+
+        config = economy.ProvinceConfig(population, utilities,
+                                        factories, merchants)
+        return config
 
     econfig = economy.EconomyConfig(local_schema, province_schema,
                                     province_configs)

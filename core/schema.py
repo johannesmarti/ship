@@ -1,3 +1,4 @@
+import numpy as np
 from typing import Iterable, Optional, cast
 
 from core.placement import Placement, LaborPlacement
@@ -29,6 +30,12 @@ class GoodsSchema:
 
     def placement(self) -> Placement:
         return Placement(self.__num_goods, slice(0, self._num_goods))
+
+    def dict_to_vector(self, dictionary: dict[str ,float]) -> np.ndarray:
+        v = np.zeros(self.num_goods)
+        for name, value in dictionary.items():
+            v[self._good_names.index(name)] = value
+        return v
 
 
 class TradeGoodsSchema(GoodsSchema):
