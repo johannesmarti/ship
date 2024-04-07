@@ -158,9 +158,9 @@ class MarketPriceSchema:
         goodName = self.local_schema().name_of_good(goodId)
         return goodName + " in " + provinceName
 
-    def ix_list_goods_in_provinces(self,
-                                   goods: Optional[Iterable[str]],
-                                   provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
+    def list_goods_in_provinces(self,
+                                goods: Optional[Iterable[str]],
+                                provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
         if goods == None:
             goods = self.local_schema()._good_names
         if provinces == None:
@@ -171,9 +171,9 @@ class MarketPriceSchema:
                 good_id = self.local_schema().good_of_name(good_name)
                 yield self.good_in_province(good_id, province_id)
 
-    def ix_list_provinces_over_goods(self,
-                                     goods: Optional[Iterable[str]],
-                                     provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
+    def list_provinces_over_goods(self,
+                                  goods: Optional[Iterable[str]],
+                                  provinces: Optional[Iterable[str]]) -> Iterable[ListingId]:
         if goods == None:
             goods = self.local_schema()._good_names
         if provinces == None:

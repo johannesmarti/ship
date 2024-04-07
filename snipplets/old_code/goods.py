@@ -26,7 +26,7 @@ class GoodsConfig:
         for name, value in dictionary.items():
             v[self.index_of_name(name)] = value
         return v
-        
+
     def gold_dict_to_vector(self, dictionary):
         v = np.zeros(self.num_goods + 1)
         for name, value in dictionary.items():
@@ -35,4 +35,4 @@ class GoodsConfig:
             else:
                 v[self.index_of_name(name)] = value
         return v
-        
+

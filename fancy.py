@@ -178,7 +178,7 @@ participants = list(econ.participants())
 pt.set_global_table_logging_configuration(pt.PrettyTableConfiguration(
     schema = market_schema,
     #list_of_indices = list(range(market_schema.global_width()))
-    list_of_indices = list(market_schema.ix_list_provinces_over_goods(
+    list_of_indices = list(market_schema.list_provinces_over_goods(
         None, None))
     #    ["food", "alcohol", "ore"],
     #    ["Switzerland", "Spain"]))
