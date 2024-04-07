@@ -3,7 +3,13 @@
     {
       "name": "Switzerland",
       "population": 800,
-      "production": [
+      "utilities": {
+        "food": 2,
+        "alcohol": 0.5,
+        "wood": 1.2,
+        "tools": 0.7
+      },
+      "producers": [
         {
           "food": 5,
           "alcohol": 0.5,
@@ -21,8 +27,14 @@
     },
     {
       "name": "Italy",
-      "population": 6000,
-      "production": [
+      "population": 5800,
+      "utilities": {
+        "food": 2.05,
+        "alcohol": 0.5,
+        "wood": 0.8,
+        "tools": 0.5
+      },
+      "producers": [
         {
           "food": 8
         },
@@ -46,35 +58,43 @@
       ]
     },
     {
-      "balance": 80,
       "name": "France",
-      "population": 50,
-      "production": [
+      "population": 6700,
+      "utilities": {
+        "food": 2.02,
+        "alcohol": 0.6,
+        "wood": 1,
+        "ore": 0.1,
+        "tools": 0.5
+      },
+      "producers": [
         {
-          "food": 7,
-          "wood": 1
+          "food": 8
+        },
+        {
+          "alcohol": 1.2,
+	  "tools": -0.1
         },
         {
           "wood": 3
         },
         {
-          "gold": 5,
-          "wood": -1
+          "wood": 5,
+          "tools": -0.3
         },
         {
-          "food": -1,
-          "gold": -0.2,
-          "weapons": 4,
-          "wood": -1
+          "wood": -0.5,
+          "ore": 1.7
+        },
+        {
+          "wood": -1.9,
+          "ore": -1.3,
+          "tools": 1.9
         }
       ],
-      "spending_distribution": {
-        "weapons": 1
-      },
-      "spending_rate": 1.1,
-      "tax_rate": 0.0008,
       "trade_partners": [
-        "Switzerland"
+        "Switzerland",
+        "Italy"
       ]
     }
   ],
@@ -83,7 +103,14 @@
     "alcohol",
     "wood",
     "ore",
-    "tools",
+    "tools"
   ],
-  "untradable_goods": [],
+  "fixed_goods": [],
+  "trade_factors": {
+    "food": 3,
+    "alcohol": 3.5,
+    "wood": 1.5,
+    "ore": 2,
+    "tools": 3
+  }
 }

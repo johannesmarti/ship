@@ -47,7 +47,7 @@ class Economy(ABC):
         pass
 
     @abstractmethod
-    def price_schema(self) -> MarketPriceSchema:
+    def market_schema(self) -> MarketPriceSchema:
         pass
 
     @abstractmethod

@@ -170,7 +170,7 @@ econfig = economy.EconomyConfig(local_schema, province_schema, province_configs)
 econ = we.WageEconomy.from_config(econfig)
 #econ = le.LaborEconomy.from_config(econfig)
 
-market_schema = econ.price_schema()
+market_schema = econ.market_schema()
 p0 = np.full(market_schema.global_width(), 100.0)
 epsilon = 0.1
 participants = list(econ.participants())

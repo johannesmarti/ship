@@ -20,7 +20,7 @@ class PrettyTableConfiguration:
 
 def set_global_table_logging_from_schema(schema: Schema):
     global global_table_logging_configuration
-    list_of_indices = schema.list_provinces_over_goods(None, None)
+    list_of_indices = list(schema.list_provinces_over_goods(None, None))
     config = PrettyTableConfiguration(schema, list_of_indices)
     global_table_logging_configuration = config
 
@@ -41,7 +41,6 @@ def pretty_table(value_list: list[str, np.ndarray], file=sys.stdout):
     num_columns = len(value_list)
     headers = (v[0] for v in value_list)
     values = [v[1] for v in value_list]
-
 
     row_names = (schema.ix_to_str(ix) for ix in list_of_indices)
     first_column_width = max(len(s) for s in row_names)
