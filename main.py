@@ -56,14 +56,14 @@ def main():
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
-             rate=0.03,
-             first_momentum_mixin = 0.025
+             rate=0.1,
+             first_momentum_mixin = 0.1
     )
-    #p = eva.make_market(participants, p0, config)
-    #p = mb.apply_price_scaling(p, scaling)
-    #pt.pretty_table([("price", p)])
-    #print(f"eva iterations: {mb.get_iteration()}")
-    #mb.reset_iteration()
+    p = eva.make_market(participants, p0, config)
+    p = mb.apply_price_scaling(p, scaling)
+    pt.pretty_table([("price", p)])
+    print(f"eva iterations: {mb.get_iteration()}")
+    mb.reset_iteration()
 
     def evaluator(x: float, y: float) -> int:
         config = eva.EvaConfiguration(
@@ -80,10 +80,10 @@ def main():
         mb.reset_iteration()
         return num_iters
 
-    x_points = np.arange(0.1, 0.17, 0.01)
-    y_points = np.arange(0.1, 0.21, 0.02)
-    result = grid_search(evaluator, x_points, y_points)
-    print(result)
+    #x_points = np.arange(0.10, 0.16, 0.01)
+    #y_points = np.arange(0.08, 0.16, 0.02)
+    #result = grid_search(evaluator, x_points, y_points)
+    #print(result)
 
 
     return 0
