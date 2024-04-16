@@ -1,19 +1,15 @@
-from itertools import chain
 import json
 import logging
 import numpy as np
 import sys
-from typing import Callable, Iterable
-from functools import partial
+from typing import Any, Callable
 
-import core.economy as economy
-import core.schema as schema
-from core.schema import GoodId, ProvinceId
 import labor_economy.labor_economy as le
 import market.base as mb
 import market.eva as eva
 import pretty_table as pt
 import wage_economy.wage_economy as we
+from read_world import read_world
 
 #np.set_printoptions(precision=3,suppress=True,threshold=12)
 
@@ -22,62 +18,18 @@ import wage_economy.wage_economy as we
 logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-def read_world(json_world: any) -> economy.EconomyConfig:
-    json_provinces = json_world['provinces']
-    province_names = list(map(lambda h : h['name'], json_provinces))
-    province_schema = schema.ProvinceSchema(province_names)
-    tradable_goods = json_world['tradable_goods']
-    fixed_goods = json_world['fixed_goods']
-    local_schema = schema.TradeGoodsSchema.from_lists(tradable_goods,
-                                                      fixed_goods)
-    global_utilities = json_world.get('global_utilities', {})
-    trade_factor_dict = json_world['trade_factors']
-    trade_factors = local_schema.dict_to_vector(trade_factor_dict)
+ 
 
-    def read_province(json_province: any) -> economy.ProvinceConfig:
-        population = json_province['population']
-        local_utilities = json_province['utilities']
-        utilities_dict = global_utilities | local_utilities
-        utilities = local_schema.dict_to_vector(utilities_dict)
+def grid_search(func: Callable[[float, float], int], x_values: np.ndarray, y_values: np.ndarray) -> np.ndarray:
+    # Initialize the result array
+    results = np.empty((len(x_values), len(y_values)), dtype=int)
 
-        factories = list(map(partial(read_factory, local_schema),
-                             json_province['producers']))
+    # Use nested loops to compute the function over the grid
+    for i, x in enumerate(x_values):
+        for j, y in enumerate(y_values):
+            results[i, j] = func(x, y)
 
-        def get_province_id(name: str) -> ProvinceId:
-            return province_schema.province_of_name(name)
-        local_id = get_province_id(json_province['name'])
-        other_ids = map(get_province_id, json_province['trade_partners'])
-        merchants = list(set_up_trade(local_schema.trade_goods(),
-                                      trade_factors, local_id, other_ids))
-
-        config = economy.ProvinceConfig(population, utilities,
-                                        factories, merchants)
-        return config
-
-    province_configs = list(map(read_province, json_provinces))
-    econfig = economy.EconomyConfig(local_schema, province_schema,
-                                    province_configs)
-    return econfig
-
-def read_factory(local_schema: economy.TradeGoodsSchema,
-                 json_factory: any) -> economy.FactoryConfig:
-    production_coefficients = local_schema.dict_to_vector(json_factory)
-    return economy.FactoryConfig(production_coefficients)
-
-def concat_map(func: Callable[[any], Iterable[any]], it: any) -> Iterable[any]:
-    return chain.from_iterable(map(func, it))
-
-def set_up_trade(trade_goods: Iterable[GoodId], trade_factors: np.ndarray,
-                 home: ProvinceId, trade_partners: Iterable[ProvinceId]
-                ) -> Iterable[economy.TradeConfig]:
-    def set_up_merchants(foreign: ProvinceId) -> Iterable[economy.TradeConfig]:
-        def for_good(good: GoodId) -> Iterable[economy.TradeConfig]:
-            factor = trade_factors[good]
-            return [economy.TradeConfig(good, home, foreign, factor),
-                    economy.TradeConfig(good, foreign, home, factor)]
-        return concat_map(for_good, trade_goods)
-    return concat_map(set_up_merchants, trade_partners)
-
+    return results
 
 def main():
     if len(sys.argv) >= 2:
@@ -98,18 +50,41 @@ def main():
     epsilon = 0.1
     participants = list(economy.participants())
 
-    scaling = mb.ScalingConfiguration(set_to_price=10, norm_listing=market_schema.listing_of_good_in_province("food", "France"))
+    scaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
              rate=0.03,
              first_momentum_mixin = 0.025
     )
-    p = eva.make_market(participants, p0, config)
-    p = mb.apply_price_scaling(p, scaling)
-    pt.pretty_table([("price", p)])
-    print(f"eva iterations: {mb.get_iteration()}")
-    mb.reset_iteration()
+    #p = eva.make_market(participants, p0, config)
+    #p = mb.apply_price_scaling(p, scaling)
+    #pt.pretty_table([("price", p)])
+    #print(f"eva iterations: {mb.get_iteration()}")
+    #mb.reset_iteration()
+
+    def evaluator(x: float, y: float) -> int:
+        config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate=x,
+             first_momentum_mixin = y 
+        )
+        mb.reset_iteration()
+        print(f"starting eva with rate={x}, first_momentum_mixin={y}")
+        p = eva.make_market(participants, p0, config)
+        #p = mb.apply_price_scaling(p, scaling)
+        num_iters = mb.get_iteration()
+        print(f"eva iterations: {num_iters}")
+        mb.reset_iteration()
+        return num_iters
+
+    x_points = np.arange(0.1, 0.17, 0.01)
+    y_points = np.arange(0.1, 0.21, 0.02)
+    result = grid_search(evaluator, x_points, y_points)
+    print(result)
+
 
     return 0
 

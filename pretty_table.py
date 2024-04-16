@@ -8,7 +8,7 @@ import core.schema as schema
 
 class Schema(Protocol):
     def ix_to_str(self, ix: int) -> str:
-        pass
+        ...
 
 @dataclass(frozen=True)
 class PrettyTableConfiguration:
@@ -28,7 +28,7 @@ def set_global_table_logging_configuration(config: PrettyTableConfiguration):
     global global_table_logging_configuration
     global_table_logging_configuration = config
 
-def pretty_table(value_list: list[str, np.ndarray], file=sys.stdout):
+def pretty_table(value_list: list[tuple[str, np.ndarray]], file=sys.stdout):
     global global_table_logging_configuration
 
     config = global_table_logging_configuration
@@ -57,7 +57,7 @@ def pretty_table(value_list: list[str, np.ndarray], file=sys.stdout):
         print(line, file=file)
 
 
-def log_values(log_level, value_list: list[str, np.ndarray]):
+def log_values(log_level, value_list: list[tuple[str, np.ndarray]]):
     if not logging.getLogger(__name__).isEnabledFor(log_level):
         return
     pretty_table(value_list, file=sys.stderr)
