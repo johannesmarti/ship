@@ -28,8 +28,8 @@ def make_market(participants : Iterable[Participant], price : Prices,
         first_momentum = mixing(first_momentum, supply.update_term(),
                                 config.first_momentum_mixin)
         tl.log_values(logging.DEBUG, [("price", price),
-                                     ("sold", supply.sold()),
-                                     ("bought", supply.bought()),
-                                     ("fm*1000", first_momentum*1000)
+                                      ("sold", supply.sold()),
+                                      ("bought", supply.bought()),
+                                      ("fm*1000", first_momentum*1000)
                                     ])
     return price

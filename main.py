@@ -2,7 +2,7 @@ import json
 import logging
 import numpy as np
 import sys
-from typing import Any, Callable
+from typing import Callable
 
 import labor_economy.labor_economy as le
 import market.base as mb
@@ -47,7 +47,7 @@ def main():
     market_schema = economy.market_schema()
     pt.set_global_table_logging_from_schema(market_schema)
     p0 = np.full(market_schema.global_width(), 100.0)
-    epsilon = 0.1
+    epsilon = 0.001
     participants = list(economy.participants())
 
     scaling = mb.ScalingConfiguration(
@@ -56,8 +56,8 @@ def main():
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
-             rate=0.1,
-             first_momentum_mixin = 0.1
+             rate=0.07,
+             first_momentum_mixin = 0.07
     )
     p = eva.make_market(participants, p0, config)
     p = mb.apply_price_scaling(p, scaling)
@@ -69,7 +69,7 @@ def main():
         config = eva.EvaConfiguration(
              epsilon=epsilon,
              rate=x,
-             first_momentum_mixin = y 
+             first_momentum_mixin = y
         )
         mb.reset_iteration()
         print(f"starting eva with rate={x}, first_momentum_mixin={y}")
@@ -84,7 +84,6 @@ def main():
     #y_points = np.arange(0.08, 0.16, 0.02)
     #result = grid_search(evaluator, x_points, y_points)
     #print(result)
-
 
     return 0
 
