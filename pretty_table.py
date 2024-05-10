@@ -1,3 +1,11 @@
+"""
+This module contains some functions that allow for the pretty printing
+of tables, where the rows are listings of goods at markets as described
+by schema classes in core.schema. The columns of such tables are numpy
+vectors whose entries are interpreted according to the schema. The most
+important example is a vector of prices.
+"""
+
 from dataclasses import dataclass
 from typing import Protocol
 import numpy as np
