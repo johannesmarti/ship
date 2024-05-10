@@ -5,6 +5,7 @@ import numpy as np
 import core.economy as economy
 import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
+import new_labor_economy.labor_economy as ne
 from market.eva import *
 import market.base as mb
 from core.schema import ProvinceSchema, TradeGoodsSchema
@@ -64,9 +65,7 @@ def config():
     return config
 
 
-def test_line_searches(config):
-
-    logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
+def test_labor_against_wages(config):
     wecon = we.WageEconomy.from_config(config)
     wpart = list(wecon.participants())
     wschema = wecon.market_schema()
@@ -95,4 +94,34 @@ def test_line_searches(config):
 
     assert np.isclose(pw[wschema.production_slice_in_province(0)], pl[lschema.production_slice_in_province(0)]).all()
     assert np.isclose(pw[wschema.production_slice_in_province(1)], pl[lschema.production_slice_in_province(1)]).all()
+
+def test_vectorized_labor(config):
+    lecon = le.LaborEconomy.from_config(config)
+    lpart = list(lecon.participants())
+    lschema = lecon.market_schema()
+    necon = ne.LaborEconomy.from_config(config)
+    npart = list(necon.participants())
+    nschema = necon.market_schema()
+
+    p0 = np.full(lschema.global_width(), 10)
+    pl = make_market(lpart, p0)
+
+    reset_iteration()
+
+    p0 = np.full(nschema.global_width(), 10)
+    pn = make_market(npart, p0)
+
+    lscaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=lschema.listing_of_good_in_province("food", "Italy"))
+
+    nscaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=nschema.listing_of_good_in_province("food", "Italy"))
+
+    pl = mb.apply_price_scaling(pl, lscaling)
+    pn = mb.apply_price_scaling(pn, nscaling)
+
+    assert np.isclose(pl[lschema.production_slice_in_province(0)], pn[nschema.production_slice_in_province(0)]).all()
+    assert np.isclose(pl[lschema.production_slice_in_province(1)], pn[nschema.production_slice_in_province(1)]).all()
 
