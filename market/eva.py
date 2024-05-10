@@ -11,7 +11,6 @@ class EvaConfiguration:
     rate: float = 0.2
     initial_backoff: float = 0.1
     first_momentum_mixin: float = 0.1
-    #price_scaling: Optional[ScalingConfiguration] = None
 
 def make_market(participants : Iterable[Participant], price : Prices,
                 config : EvaConfiguration = EvaConfiguration()) -> Prices:

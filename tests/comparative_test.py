@@ -5,9 +5,12 @@ import numpy as np
 import core.economy as economy
 import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
-from market.line_search import *
+from market.eva import *
+import market.base as mb
 from core.schema import ProvinceSchema, TradeGoodsSchema
 from itertools import chain
+
+import logging
 
 @pytest.fixture
 def config():
@@ -61,24 +64,34 @@ def config():
     return config
 
 
-def test_global(config):
+def test_line_searches(config):
+
+    logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
     wecon = we.WageEconomy.from_config(config)
     wpart = list(wecon.participants())
-    wschema = wecon.price_schema()
+    wschema = wecon.market_schema()
     lecon = le.LaborEconomy.from_config(config)
     lpart = list(lecon.participants())
-    lschema = lecon.price_schema()
-    epsilon = 0.001
+    lschema = lecon.market_schema()
 
     p0 = np.full(wschema.global_width(), 10)
-    search_config = LineSearchConfiguration(t=0.2, beta=0.3, price_scaling=ScalingConfiguration(10))
-    pw = line_search_market(wpart, p0, epsilon, search_config)
+    pw = make_market(wpart, p0)
 
     reset_iteration()
 
     p0 = np.full(lschema.global_width(), 10)
-    search_config = LineSearchConfiguration(t=0.2, beta=0.3, price_scaling=ScalingConfiguration(10))
-    pl = line_search_market(lpart, p0, epsilon, search_config)
+    pl = make_market(lpart, p0)
+
+    wscaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=wschema.listing_of_good_in_province("food", "Italy"))
+
+    lscaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=lschema.listing_of_good_in_province("food", "Italy"))
+
+    pw = mb.apply_price_scaling(pw, wscaling)
+    pl = mb.apply_price_scaling(pl, lscaling)
 
     assert np.isclose(pw[wschema.production_slice_in_province(0)], pl[lschema.production_slice_in_province(0)]).all()
     assert np.isclose(pw[wschema.production_slice_in_province(1)], pl[lschema.production_slice_in_province(1)]).all()

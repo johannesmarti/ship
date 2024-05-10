@@ -4,7 +4,7 @@ from core.bundle import *
 from core.participant import *
 from core.placement import Placement, LaborPlacement
 
-def consume(utility : Bundle, budget : float, prices : Prices) -> VolumeBundle:
+def consume(utility: Bundle, budget: float, prices: Prices) -> VolumeBundle:
     assert prices.shape == utility.shape
     a = np.sum(utility / prices)
     # lambda can be interpreted as the price of 1 utility

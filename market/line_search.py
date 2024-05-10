@@ -16,9 +16,8 @@ class LineSearchConfiguration:
     epsilon: float = 0.1
     necessary_improvement: float = 1
     necessary_improvement_decay: float = 0.9
-    initial_backoff: float = 0.8
-    backoff_decay: float = 0.2
-    necessary_improvement: float = 1
+    initial_backoff: float = 0.7
+    backoff_decay: float = 0.4
     price_scaling: Optional[ScalingConfiguration] = None
 
 def line_search(participants: Iterable[Participant],
