@@ -10,7 +10,9 @@ from typing import Callable
 
 import numpy as np
 
+import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
+import new_labor_economy.labor_economy as ne
 import market.base as mb
 import market.eva as eva
 import pretty_table as pt
@@ -48,7 +50,8 @@ def main():
 
     economy_config = read_world(parsed_json)
     #economy = we.WageEconomy.from_config(economy_config)
-    economy = le.LaborEconomy.from_config(economy_config)
+    #economy = le.LaborEconomy.from_config(economy_config)
+    economy = ne.LaborEconomy.from_config(economy_config)
 
     market_schema = economy.market_schema()
     pt.set_global_table_logging_from_schema(market_schema)

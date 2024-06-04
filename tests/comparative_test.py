@@ -5,7 +5,7 @@ import numpy as np
 import core.economy as economy
 import wage_economy.wage_economy as we
 import labor_economy.labor_economy as le
-import new_labor_economy.labor_economy as ne
+import fast_labor_economy.labor_economy as ne
 from market.eva import *
 import market.base as mb
 from core.schema import ProvinceSchema, TradeGoodsSchema

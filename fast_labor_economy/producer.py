@@ -6,21 +6,6 @@ from core.bundle import *
 from core.participant import *
 from core.placement import LaborPlacement
 
-# helper function used further below
-def produce(name: str, production_coefficients: Bundle, wage_per_worker: float,
-            prices: Prices) -> Tuple[float, VolumeBundle]:
-    income_rate = production_coefficients @ prices
-    if (income_rate <= 0):
-        #logging.debug(f"{name}: income_rate: {income_rate}")
-        return (0,VolumeBundle.zero(prices.shape))
-    else:
-        sqrt_workforce = income_rate / wage_per_worker
-        supply = production_coefficients * sqrt_workforce
-        workforce = sqrt_workforce**2
-        #logging.debug(f"{name}: workforce: {workforce}")
-        #logging.debug(f"{name}: production: {supply}")
-        return (workforce, VolumeBundle(supply, np.absolute(supply)))
-
 class Producer(Participant):
     @classmethod
     def factory(cls, name : str, production_coefficients : Bundle,
@@ -51,3 +36,32 @@ class Producer(Participant):
                                          prices)
         production.add_at_ix(self.labor_index, -workforce)
         return production
+
+class Producers(Participant):
+    """
+    Implements a Participant for a setting where all the produces in all
+    the provinces are treated as one big matrix/vector. This is hopefully
+    more efficient than having a seperate participant for every work task.
+    """
+
+    def __init__(self, production_matrix: np.ndarray,
+                       labor_indices: np.ndarray):
+        self._production_matrix = production_matrix
+        self._labor_indices = labor_indices
+
+    def participate(self, prices: Prices) -> VolumeBundle:
+        income_rate = self._production_matrix @ prices
+        # set entries with negative income to 0
+        income_rate[income_rate < 0] = 0
+        wage_per_worker = prices[self._labor_indices]
+
+        sqrt_workforce = income_rate / wage_per_worker
+        goods_supply = self._production_matrix.T @ sqrt_workforce
+        goods_supply_abs = np.abs(self._production_matrix).T @ sqrt_workforce
+        workforce = sqrt_workforce**2
+        labor_supply = np.bincount(self._labor_indices,
+                                   weights=workforce,
+                                   minlength=prices.shape[0])
+        supply = goods_supply - labor_supply
+        supply_abs = goods_supply_abs + labor_supply
+        return VolumeBundle(supply, supply_abs)

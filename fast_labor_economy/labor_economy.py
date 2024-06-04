@@ -12,8 +12,10 @@ def uncurry(function: Callable):
     return lambda args: function(*args)
 
 class LaborEconomy(economy.Economy):
-    """Implements the economy interface for algorithms in which labor is one of
-    the goods that is priced by the market."""
+    """
+    Implements the economy interface for algorithms in which labor is one of
+    the goods that is priced by the market.
+    """
 
     def __init__(self, market_schema: LaborMarketPriceSchema, consumers: List[c.LaborerConsumer],
                  factories: List[p.Producer], traders: List[p.Producer]):
