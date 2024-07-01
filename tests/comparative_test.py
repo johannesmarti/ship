@@ -103,6 +103,7 @@ def test_vectorized_labor(config):
     npart = list(necon.participants())
     nschema = necon.market_schema()
 
+
     p0 = np.full(lschema.global_width(), 10)
     pl = make_market(lpart, p0)
 

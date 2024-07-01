@@ -39,7 +39,7 @@ class Producer(Participant):
 
 class Producers(Participant):
     """
-    Implements a Participant for a setting where all the produces in all
+    Implements a Participant for a setting where all the producers in all
     the provinces are treated as one big matrix/vector. This is hopefully
     more efficient than having a seperate participant for every work task.
     """

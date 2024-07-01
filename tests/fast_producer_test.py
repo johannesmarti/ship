@@ -10,9 +10,7 @@ def producers():
     pm = np.array([[ 1, 0, 0, 0], 
                    [ 0, 0, 1, 0], 
                    [-1, 0, 1, 0]])
-
     li = np.array([1, 3, 3])
-
     producer = p.Producers(pm, li)
     return producer
 
