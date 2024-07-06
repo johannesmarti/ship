@@ -45,3 +45,25 @@ class LaborerConsumer(Participant):
         total_consumption.add_at_ix(self.labor_index, self._population)
         total_consumption.add_at_slice(self.goods_slice, consumption)
         return total_consumption
+
+class Consumers(Participant):
+    def __init__(self, populations: np.ndarray, coefficient_matrix: np.ndarray,
+                       labor_indices: np.ndarray):
+        self._populations = populations
+        self._coefficient_matrix = coefficient_matrix
+        self._labor_indices = labor_indices
+
+    def participate(self, prices: Prices) -> VolumeBundle:
+        incomes_per_pop = prices[self._labor_indices]
+        # this will broadcast the vector along the rows:
+        preas = self._coefficient_matrix / prices
+        a = np.sum(preas, axis=1)
+        lambda_squared = incomes_per_pop / a
+        # this will broadcast the vector along the rows:
+        pre_div = self._coefficient_matrix / (prices * prices)
+        pre_solution = pre_div * lambda_squared[:, np.newaxis]
+        solution = np.sum(pre_solution * self._populations[:, np.newaxis], axis=0)
+        labor_supply = np.zeros(prices.shape)
+        labor_supply[self._labor_indices] = self._populations
+
+        return VolumeBundle(-solution + labor_supply, solution + labor_supply)
