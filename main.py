@@ -50,8 +50,8 @@ def main():
 
     economy_config = read_world(parsed_json)
     #economy = we.WageEconomy.from_config(economy_config)
-    economy = le.LaborEconomy.from_config(economy_config)
-    #economy = ne.LaborEconomy.from_config(economy_config)
+    #economy = le.LaborEconomy.from_config(economy_config)
+    economy = ne.LaborEconomy.from_config(economy_config)
 
     market_schema = economy.market_schema()
     pt.set_global_table_logging_from_schema(market_schema)

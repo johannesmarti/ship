@@ -41,7 +41,7 @@ def get_step() -> int:
     global step
     return step
 
-def one_iteration(participants : Iterable[Participant], prices : Prices) -> VolumeBundle:
+def one_iteration(participants: Iterable[Participant], prices : Prices) -> VolumeBundle:
     increment_iteration()
     logging.debug(f"at iteration {get_iteration()}")
     eb = VolumeBundle.zero(prices.shape)

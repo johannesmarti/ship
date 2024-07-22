@@ -5,6 +5,7 @@ Bundle = np.ndarray
 class VolumeBundle:
     def __init__(self, error, volume):
         assert np.shape(error) == np.shape(volume)
+        # TODO: assert that volume is positive
         self.error = error
         self.volume = volume
 

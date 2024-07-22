@@ -37,7 +37,7 @@ class LaborerConsumer(Participant):
     def population(self) -> int:
         return self._population
 
-    def participate(self, prices : Prices) -> VolumeBundle:
+    def participate(self, prices: Prices) -> VolumeBundle:
         consumption_per_pop = consume(self.utilities, prices[self.labor_index],
                                       prices[self.goods_slice])
         consumption = self._population * consumption_per_pop

@@ -19,7 +19,7 @@ class LaborEconomy(economy.Economy):
     """
 
     def __init__(self, market_schema: LaborMarketPriceSchema,
-                       consumers: List[c.LaborerConsumer],
+                       consumers: c.Consumers,
                        producers: p.Producers):
         self._market_schema = market_schema
         self._consumers = consumers
@@ -31,11 +31,42 @@ class LaborEconomy(economy.Economy):
             LaborTradeGoodsSchema(config.goods_schema),
             config.province_schema)
 
-        def create_consumer(province: ProvinceId,
-                            config: economy.ProvinceConfig) -> c.LaborerConsumer:
-            return c.LaborerConsumer(config.utilities, config.population,
-                                     market_schema.labor_placement_of_province(province))
-        consumers = list(map(uncurry(create_consumer), enumerate(config.province_configs)))
+#"""
+#        def create_consumer(province: ProvinceId,
+#                            config: economy.ProvinceConfig) -> c.LaborerConsumer:
+#            return c.LaborerConsumer(config.utilities, config.population,
+#                                     market_schema.labor_placement_of_province(province))
+#        consumers = list(map(uncurry(create_consumer), enumerate(config.province_configs)))
+#"""
+
+        def population_for_province(province: ProvinceId,
+                                    province_config: economy.ProvinceConfig) -> Iterable[int]:
+            return province_config.population
+        population_iter = map(uncurry(population_for_province),
+                              enumerate(config.province_configs))
+        populations = np.fromiter(population_iter, int)
+
+        def utilities_for_province(province: ProvinceId,
+                                   province_config: economy.ProvinceConfig
+                                   ) -> Iterable[np.ndarray]:
+            row = np.zeros(market_schema.global_width())
+            sl = market_schema.labor_placement_of_province(province).production_slice
+            row[sl] += province_config.utilities
+            return row
+        utilities_iter = map(uncurry(utilities_for_province),
+                              enumerate(config.province_configs))
+        utilities = np.fromiter(utilities_iter, (float, market_schema.global_width()))
+
+        def labor_index_for_province(province: ProvinceId,
+                                     province_config: economy.ProvinceConfig
+                                     ) -> Iterable[int]:
+            labor_index = market_schema.labor_placement_of_province(province).labor_index
+            return labor_index
+        index_iter = map(uncurry(labor_index_for_province),
+                         enumerate(config.province_configs))
+        labor_indices = np.fromiter(index_iter, int)
+
+        consumers = c.Consumers(populations, utilities, labor_indices)
 
         def production_rows_for_province(province: ProvinceId,
                                          province_config: economy.ProvinceConfig
@@ -100,4 +131,4 @@ class LaborEconomy(economy.Economy):
         return self._market_schema
 
     def participants(self) -> Iterable[Participant]:
-        return chain(self._consumers, [self._producers])
+        return chain([self._consumers, self._producers])
