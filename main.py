@@ -49,9 +49,9 @@ def main():
         parsed_json = json.load(input_stream)
 
     economy_config = read_world(parsed_json)
-    #economy = we.WageEconomy.from_config(economy_config)
+    economy = we.WageEconomy.from_config(economy_config)
     #economy = le.LaborEconomy.from_config(economy_config)
-    economy = ne.LaborEconomy.from_config(economy_config)
+    #economy = ne.LaborEconomy.from_config(economy_config)
 
     market_schema = economy.market_schema()
     pt.set_global_table_logging_from_schema(market_schema)
@@ -59,21 +59,22 @@ def main():
     epsilon = 0.001
     participants = list(economy.participants())
 
-    #scaling = mb.ScalingConfiguration(
-    #    set_to_price=10,
-    #    norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
+    scaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
 
-    #config = eva.EvaConfiguration(
-    #         epsilon=epsilon,
-    #         rate=0.07,
-    #         first_momentum_mixin = 0.07
-    #)
-    #p = eva.make_market(participants, p0, config)
-    #p = mb.apply_price_scaling(p, scaling)
-    #pt.pretty_table([("price", p)])
-    #print(f"eva iterations: {mb.get_iteration()}")
-    #mb.reset_iteration()
+    config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate=0.07,
+             first_momentum_mixin = 0.07
+    )
+    p = eva.make_market(participants, p0, config)
+    p = mb.apply_price_scaling(p, scaling)
+    pt.pretty_table([("price", p)])
+    print(f"eva iterations: {mb.get_iteration()}")
+    mb.reset_iteration()
 
+    """
     def evaluator(x: float, y: float) -> int:
         config = eva.EvaConfiguration(
              epsilon=epsilon,
@@ -92,7 +93,7 @@ def main():
     y_points = np.arange(0.05, 0.10, 0.01)
     result = grid_search(evaluator, x_points, y_points)
     print(result)
-
+    """
     return 0
 
 if __name__ == '__main__':
