@@ -20,9 +20,9 @@ from read_world import read_world
 
 #np.set_printoptions(precision=3,suppress=True,threshold=12)
 
-#logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 
