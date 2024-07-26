@@ -20,12 +20,30 @@ from read_world import read_world
 
 #np.set_printoptions(precision=3,suppress=True,threshold=12)
 
-logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 
+def simple_run(market_schema, p0, participants, epsilon):
+    scaling = mb.ScalingConfiguration(
+        set_to_price=10,
+        norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
+
+    config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate=0.07,
+             first_momentum_mixin = 0.07,
+             keep_history = False
+    )
+    r = eva.make_market(participants, p0, config)
+    p = r.price
+    p = mb.apply_price_scaling(p, scaling)
+    pt.pretty_table([("price", p)])
+    #print(r.history)
+    print(f"eva iterations: {r.iterations}")
+    
 def grid_search(func: Callable[[float, float], int],
                 x_values: np.ndarray,
                 y_values: np.ndarray) -> np.ndarray:
@@ -39,6 +57,25 @@ def grid_search(func: Callable[[float, float], int],
 
     return results
 
+def grid_run(market_schema, p0, participants, epsilon):
+    def evaluator(x: float, y: float) -> int:
+        config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate=x,
+             first_momentum_mixin = y,
+             max_iterations = 2000
+        )
+        print(f"starting eva with rate={x}, first_momentum_mixin={y}")
+        r = eva.make_market(participants, p0, config)
+        num_iters = r.iterations
+        print(f"eva iterations: {num_iters}")
+        return num_iters
+
+    x_points = np.arange(0.06, 0.13, 0.005)
+    y_points = np.arange(0.06, 0.12, 0.005)
+    result = grid_search(evaluator, x_points, y_points)
+    print(result)
+
 def main():
     if len(sys.argv) >= 2:
         filename = sys.argv[1]
@@ -49,51 +86,20 @@ def main():
         parsed_json = json.load(input_stream)
 
     economy_config = read_world(parsed_json)
-    economy = we.WageEconomy.from_config(economy_config)
+    #economy = we.WageEconomy.from_config(economy_config)
     #economy = le.LaborEconomy.from_config(economy_config)
-    #economy = ne.LaborEconomy.from_config(economy_config)
+    economy = ne.LaborEconomy.from_config(economy_config)
 
     market_schema = economy.market_schema()
     pt.set_global_table_logging_from_schema(market_schema)
+
     p0 = np.full(market_schema.global_width(), 100.0)
     epsilon = 0.001
     participants = list(economy.participants())
 
-    scaling = mb.ScalingConfiguration(
-        set_to_price=10,
-        norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
+    simple_run(market_schema, p0, participants, epsilon)
+    #grid_run(market_schema, p0, participants, epsilon)
 
-    config = eva.EvaConfiguration(
-             epsilon=epsilon,
-             rate=0.07,
-             first_momentum_mixin = 0.07
-    )
-    p = eva.make_market(participants, p0, config)
-    p = mb.apply_price_scaling(p, scaling)
-    pt.pretty_table([("price", p)])
-    print(f"eva iterations: {mb.get_iteration()}")
-    mb.reset_iteration()
-
-    """
-    def evaluator(x: float, y: float) -> int:
-        config = eva.EvaConfiguration(
-             epsilon=epsilon,
-             rate=x,
-             first_momentum_mixin = y
-        )
-        mb.reset_iteration()
-        print(f"starting eva with rate={x}, first_momentum_mixin={y}")
-        eva.make_market(participants, p0, config)
-        num_iters = mb.get_iteration()
-        print(f"eva iterations: {num_iters}")
-        mb.reset_iteration()
-        return num_iters
-
-    x_points = np.arange(0.08, 0.11, 0.01)
-    y_points = np.arange(0.05, 0.10, 0.01)
-    result = grid_search(evaluator, x_points, y_points)
-    print(result)
-    """
     return 0
 
 if __name__ == '__main__':

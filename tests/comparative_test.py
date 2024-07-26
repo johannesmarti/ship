@@ -74,12 +74,12 @@ def test_labor_against_wages(config):
     lschema = lecon.market_schema()
 
     p0 = np.full(wschema.global_width(), 10)
-    pw = make_market(wpart, p0)
+    pw = make_market(wpart, p0).price
 
     reset_iteration()
 
     p0 = np.full(lschema.global_width(), 10)
-    pl = make_market(lpart, p0)
+    pl = make_market(lpart, p0).price
 
     wscaling = mb.ScalingConfiguration(
         set_to_price=10,
@@ -105,12 +105,10 @@ def test_vectorized_labor(config):
 
 
     p0 = np.full(lschema.global_width(), 10)
-    pl = make_market(lpart, p0)
-
-    reset_iteration()
+    pl = make_market(lpart, p0).price
 
     p0 = np.full(nschema.global_width(), 10)
-    pn = make_market(npart, p0)
+    pn = make_market(npart, p0).price
 
     lscaling = mb.ScalingConfiguration(
         set_to_price=10,
