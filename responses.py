@@ -67,12 +67,12 @@ def base_data() -> any:
     datalist = [1,2,3,1,2,2]
     response = {
         "schema": [
-           { "name": "good",
-             "indices": schema.local_schema().list_of_names() },
+           { "name": "datatype",
+             "indices": ["price", "sold", "bought"] },
            { "name": "province",
              "indices": schema.province_schema().list_of_names() },
-           { "name": "datatype",
-             "indices": ["price", "sold", "bought"] }],
-        "data": list(itertools.chain(iter(p), iter(sold), iter(bought)))
+           { "name": "good",
+             "indices": schema.local_schema().list_of_names() } ],
+        "raw_data": list(itertools.chain(iter(p), iter(sold), iter(bought)))
     }
     return response

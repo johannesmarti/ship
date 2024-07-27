@@ -3,13 +3,15 @@ import json
 
 import responses
 
+response = responses.base_data()
+
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/data':
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            response = responses.base_data()
+            #response = responses.base_data()
             self.wfile.write(json.dumps(response).encode())
         elif self.path == '/' or self.path == '/index.html':
             self.send_response(200)

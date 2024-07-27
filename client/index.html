@@ -4,7 +4,28 @@
   <meta charset="utf-8">
   <title>Big Table</title>
 
-  <script src="bigTable.js"></script>
+  <style>
+    html {
+      font-size: 36px;
+    }
+    body {
+      font-size: 16px;
+      line-height: 1rem;
+    }
+    * {
+      line-height: 1rem;
+    }
+    table {
+      border-collapse: collapse;
+    }
+    td,th {
+      border: 1px solid #ccc;
+      padding: 0 1em;
+      text-align: right;
+    }
+  </style>
+
+  <script src="scripts/bigTable.js"></script>
 </head>
 
 <body>
@@ -33,35 +54,17 @@ async function main() {
   console.log("starting with body script");
   data = await fetchData();
   if (data !== null) {
-    const table = createBigTable(data);
-    table.render();
+    const bigTable = new BigTable(data);
+
+    const heading = h("h1", "Big Table");
+    const domTable = bigTable.render();
+    document.body.append(heading, domTable);
   }
 }
 
 main();
 
-
-  spec = [{name: "location", indices: ["CH", "F", "DE", "NL"]},
-          {name: "good", indices: ["food", "alcohol", "wool"]},
-          {name: "datatype", indices: ["price", "volume"]}];
-  
-  schema = createSchema(spec);
-
-
-  for (const o of schema.orders()) {
-    const category = schema.categoryOfOrder(o);
-    console.log(category.name());
-    for (const i of category.indices()) {
-      console.log("  ", category.nameOfIndex(i));
-    }
-  }
-
-// Hierarchies are arrays of orders in the schema. It is assumed that
-// all elements in the arrays are distinct, that the two arrays are
-// disjoint and that together they include all orders in the schema. It
-// is also assumed that they are not empty.
-let rowHierarchy = [0, 2];
-let columnHierarchy = [1];
+/*
 
 function absoluteAddress(rowAddress, columnAddress) {
   console.assert(rowAddress.length === rowHierarchy.length,
@@ -128,7 +131,7 @@ console.log(a);
 
 console.log(absoluteAddress([3, 1], [0]));
 
-
+*/
 
 //  const heading = h("h1", "Big Table");
   //const table = renderAsTable(data);
