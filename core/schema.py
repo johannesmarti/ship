@@ -43,6 +43,9 @@ class GoodsSchema:
             v[self._good_names.index(name)] = value
         return v
 
+    def list_of_names(self) -> list[str]:
+        return self._good_names
+
 
 class TradeGoodsSchema(GoodsSchema):
     def __init__(self, num_trade_goods: int, num_fixed_goods: int, good_names: list[str]):
@@ -108,6 +111,9 @@ class ProvinceSchema:
     def province_of_name(self, name : str) -> ProvinceId:
         return self._province_names.index(name)
 
+    def list_of_names(self) -> list[str]:
+        return self._province_names
+
 ListingId = int
 
 class MarketPriceSchema:
@@ -144,7 +150,6 @@ class MarketPriceSchema:
         good_id = self.local_schema().good_of_name(good)
         province_id = self.province_schema().province_of_name(province)
         return self.good_in_province(good_id, province_id)
-
     
     def slice_in_province(self, province : ProvinceId, sl : slice) -> slice:
         offset = self.start_of_province(province)

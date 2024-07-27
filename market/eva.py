@@ -25,6 +25,7 @@ class Iteration:
 @dataclass(frozen=True)
 class Result:
     price: Prices
+    supply: Bundle
     timeout: bool
     iterations: int 
     history: list[Iteration]
@@ -47,11 +48,13 @@ def make_market(participants : Iterable[Participant], price : Prices,
             history.append(iteration)
         if badness < config.epsilon:
             return Result(price=price,
+                          supply=supply,
                           timeout=False,
                           iterations=iterations,
                           history=history)
         if iterations >= config.max_iterations:
             return Result(price=price,
+                          supply=supply,
                           timeout=True,
                           iterations=iterations,
                           history=history)
