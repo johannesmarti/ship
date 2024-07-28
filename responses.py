@@ -11,18 +11,11 @@ import pretty_table as pt
 from read_world import read_world
 
 
-"""
-class Coding:
-    def __init__(self, );
-        pass
-    def encode
-"""
-
 #np.set_printoptions(precision=3,suppress=True,threshold=12)
 
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 def base_data() -> any:
@@ -41,7 +34,7 @@ def base_data() -> any:
     pt.set_global_table_logging_from_schema(schema)
 
     p0 = np.full(schema.global_width(), 100.0)
-    epsilon = 0.001
+    epsilon = 0.01
     participants = list(economy.participants())
 
     scaling = mb.ScalingConfiguration(
@@ -51,9 +44,10 @@ def base_data() -> any:
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
-             rate=0.07,
-             first_momentum_mixin = 0.07,
-             keep_history = False
+             rate=0.010,
+             first_momentum_mixin = 0.09,
+             keep_history = False,
+             max_iterations = 1000000
     )
     r = eva.make_market(participants, p0, config)
     p = r.price
@@ -64,7 +58,6 @@ def base_data() -> any:
     sold = r.supply.sold()
     bought = r.supply.bought()
 
-    datalist = [1,2,3,1,2,2]
     response = {
         "schema": [
            { "name": "datatype",

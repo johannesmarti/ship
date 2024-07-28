@@ -14,9 +14,9 @@
       },
       "producers": [
         {
-          "food": 5,
-          "alcohol": 0.5,
-          "wool": 0.7,
+          "food": 4.5,
+          "alcohol": 0.4,
+          "wool": 0.6,
           "wood": 1,
           "services": 0.1
         },
@@ -193,7 +193,7 @@
       },
       "producers": [
         {
-          "food": 5,
+          "food": 5.5,
           "wool": 0.6,
           "wood": 2,
           "services": 0.1

@@ -21,8 +21,8 @@ from read_world import read_world
 #np.set_printoptions(precision=3,suppress=True,threshold=12)
 
 #logging.basicConfig(level=logging.DEBUG, format='%(message)s (%(levelname)s)')
-#logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
-logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
+logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
+#logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
 
@@ -33,9 +33,10 @@ def simple_run(market_schema, p0, participants, epsilon):
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
-             rate=0.07,
-             first_momentum_mixin = 0.07,
-             keep_history = False
+             rate = 0.00005,
+             first_momentum_mixin = 0.2,
+             keep_history = False,
+             max_iterations = 500000
     )
     r = eva.make_market(participants, p0, config)
     p = r.price
@@ -94,7 +95,7 @@ def main():
     pt.set_global_table_logging_from_schema(market_schema)
 
     p0 = np.full(market_schema.global_width(), 100.0)
-    epsilon = 0.001
+    epsilon = 0.01
     participants = list(economy.participants())
 
     simple_run(market_schema, p0, participants, epsilon)

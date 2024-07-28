@@ -57,8 +57,9 @@ async function main() {
     const bigTable = new BigTable(data);
 
     const heading = h("h1", "Big Table");
+    document.body.append(heading);
     const domTable = bigTable.render();
-    document.body.append(heading, domTable);
+    document.body.append(domTable);
   }
 }
 

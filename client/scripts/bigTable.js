@@ -117,19 +117,32 @@ class BigTable {
     let tbody;
     const table = h("table", tbody = h("tbody"));
 
+    const upperColumnCategory = this._model._schema.categoryOfOrder(0);
     const columnCategory = this._model._schema.categoryOfOrder(1);
     const rowCategory = this._model._schema.categoryOfOrder(2);
 
-    const row = h("tr", h("th"));
-    for (const cindex of columnCategory.indices()) {
-      row.append(h("th", columnCategory.nameOfIndex(cindex)));
-    }
-    tbody.append(row);
+    const upperHeadRow = h("tr", h("th"));
+    const headRow = h("tr", h("th"));
 
-    for (const rindex of rowCategory.indices()) {
-      const row = h("tr", h("th", rowCategory.nameOfIndex(rindex)));
-      for (const cindex of columnCategory.indices()) {
-        row.append(h("td", this._model.lookup([0,cindex,rindex]).toPrecision(3)));
+    for (const upperColumnIndex of upperColumnCategory.indices()) {
+      const bigCell = h("th", upperColumnCategory.nameOfIndex(upperColumnIndex));
+      bigCell.colSpan = columnCategory.numIndices();
+      //bigCell.setAttribute("colspan", "3");
+      upperHeadRow.append(bigCell);
+      for (const columnIndex of columnCategory.indices()) {
+        headRow.append(h("th", columnCategory.nameOfIndex(columnIndex)));
+      }
+    }
+    tbody.append(upperHeadRow);
+    tbody.append(headRow);
+
+    for (const rowIndex of rowCategory.indices()) {
+      const row = h("tr", h("th", rowCategory.nameOfIndex(rowIndex)));
+      for (const upperColumnIndex of upperColumnCategory.indices()) {
+        for (const columnIndex of columnCategory.indices()) {
+          const value = this._model.lookup([upperColumnIndex,columnIndex,rowIndex]);
+          row.append(h("td", value.toFixed(2)));
+        }
       }
       tbody.append(row)
     }
