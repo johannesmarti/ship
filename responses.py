@@ -3,6 +3,7 @@ import logging
 import numpy as np
 import sys
 import itertools
+from typing import Iterable
 
 import fast_labor_economy.labor_economy as ne
 import market.base as mb
@@ -18,7 +19,7 @@ logging.basicConfig(level=logging.INFO, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.WARNING, format='%(message)s (%(levelname)s)')
 #logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 
-def base_data() -> any:
+def responses() -> any:
     if len(sys.argv) >= 2:
         filename = sys.argv[1]
     else:
@@ -46,8 +47,8 @@ def base_data() -> any:
              epsilon=epsilon,
              rate=0.010,
              first_momentum_mixin = 0.09,
-             keep_history = False,
-             max_iterations = 1000000
+             keep_history = True,
+             max_iterations = 10000
     )
     r = eva.make_market(participants, p0, config)
     p = r.price
@@ -58,7 +59,7 @@ def base_data() -> any:
     sold = r.supply.sold()
     bought = r.supply.bought()
 
-    response = {
+    basic_response = {
         "schema": [
            { "name": "datatype",
              "indices": ["price", "sold", "bought"] },
@@ -68,4 +69,26 @@ def base_data() -> any:
              "indices": schema.local_schema().list_of_names() } ],
         "raw_data": list(itertools.chain(iter(p), iter(sold), iter(bought)))
     }
-    return response
+    def iter_for_iteration(iteration: eva.Iteration) -> Iterable[float]:
+        return itertools.chain(iter(iteration.price),
+                               iter(iteration.supply.sold()),
+                               iter(iteration.supply.bought()),
+                               map(lambda m: 1000 * m, iter(iteration.momentum)))
+
+    nested_iterator = map(iter_for_iteration, r.history)
+    history_iter = itertools.chain.from_iterable(nested_iterator)
+    raw_data = list(history_iter)
+    debug_response = {
+        "schema": [
+           { "name": "iteration",
+             "indices": list(range(len(r.history))) },
+           { "name": "datatype",
+             "indices": ["price", "sold", "bought", "momentum"] },
+           { "name": "province",
+             "indices": schema.province_schema().list_of_names() },
+           { "name": "good",
+             "indices": schema.local_schema().list_of_names() } ],
+        "raw_data": raw_data
+    }
+
+    return (basic_response, debug_response)

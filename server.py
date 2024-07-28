@@ -3,7 +3,7 @@ import json
 
 import responses
 
-response = responses.base_data()
+(default_response, debug_response) = responses.responses()
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -11,8 +11,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            #response = responses.base_data()
-            self.wfile.write(json.dumps(response).encode())
+            self.wfile.write(json.dumps(default_response).encode())
+        elif self.path == '/debug_data':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(debug_response).encode())
         elif self.path == '/' or self.path == '/index.html':
             self.send_response(200)
             self.send_header('Content-type', 'text/html')
