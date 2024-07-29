@@ -17,11 +17,19 @@
     }
     table {
       border-collapse: collapse;
+      table-layout: fixed;
     }
     td,th {
       border: 1px solid #ccc;
       padding: 0 1em;
       text-align: right;
+      width: 7em;
+      max-width: 7em;
+      min-width: 7em;
+      height: 1rem;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
     }
   </style>
 
