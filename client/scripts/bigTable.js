@@ -157,7 +157,7 @@ class BigTable {
       "row or column hierarchy contain categories that are not in the schema");
   }
 
-  dynamicRender(rowHierarchy, columnHierarchy) {
+  render(rowHierarchy, columnHierarchy) {
     this.checkHierarchies(rowHierarchy, columnHierarchy);
 
     // using arrow function to get the right behavior of this
@@ -200,7 +200,7 @@ class BigTable {
             const tmp = columnHierarchy[k];
             columnHierarchy[k] = columnHierarchy[k + 1];
             columnHierarchy[k + 1] = tmp;
-            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           rowArray[k].append(h("td", button));
         }
@@ -211,7 +211,7 @@ class BigTable {
             const tmp = rowHierarchy[l];
             rowHierarchy[l] = rowHierarchy[l + 1];
             rowHierarchy[l + 1] = tmp;
-            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           rowArray[lastRow].append(h("td", button));
         }
@@ -221,7 +221,7 @@ class BigTable {
             console.log("sexy ^ for ", rowHierarchy.length - 1);
             const switcher = rowHierarchy.pop();
             columnHierarchy.push(switcher);
-            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           lastCell.append(button);
         }
@@ -232,7 +232,7 @@ class BigTable {
             const fromColumn = columnHierarchy.pop();
             rowHierarchy.push(fromColumn);
             columnHierarchy.push(fromRow);
-            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           lastCell.append(button);
         }
@@ -241,7 +241,7 @@ class BigTable {
             console.log("sexy < for ", lastRow);
             const switcher = columnHierarchy.pop();
             rowHierarchy.push(switcher);
-            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           lastCell.append(button);
         }

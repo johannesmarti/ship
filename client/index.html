@@ -70,10 +70,8 @@ async function main() {
 
     const bigTable = new BigTable(data);
     console.log("big table object is set up");
-    const domTable = bigTable.dynamicRender([3, 2, 1], [0]);
-    //const domTable = bigTable.dynamicRender([2, 0], [1]);
-    //const domTable = bigTable.dynamicRender([2], [1,0]);
 
+    const domTable = bigTable.render([3, 2, 0], [1]);
     document.body.append(domTable);
   }
 }

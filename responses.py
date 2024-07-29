@@ -73,7 +73,7 @@ def responses() -> any:
         return itertools.chain(iter(iteration.price),
                                iter(iteration.supply.sold()),
                                iter(iteration.supply.bought()),
-                               map(lambda m: 1000 * m, iter(iteration.momentum)))
+                               map(lambda m: 1000 * 1000 * m, iter(iteration.momentum)))
 
     nested_iterator = map(iter_for_iteration, r.history)
     history_iter = itertools.chain.from_iterable(nested_iterator)
@@ -83,7 +83,7 @@ def responses() -> any:
            { "name": "iteration",
              "indices": list(range(len(r.history))) },
            { "name": "datatype",
-             "indices": ["price", "sold", "bought", "momentum"] },
+             "indices": ["price", "sold", "bought", "megam"] },
            { "name": "province",
              "indices": schema.province_schema().list_of_names() },
            { "name": "good",
