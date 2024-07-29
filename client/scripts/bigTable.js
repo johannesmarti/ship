@@ -89,15 +89,41 @@ class BigTableModel {
   }
 }
 
-class BigTableViewModel {
-  constructor(schema, rowHierarchy, columnHierarchy) {
-    this._schema = schema
-    // Hierarchies are arrays of orders in the schema. It is assumed that
-    // all elements in the arrays are distinct, that the two arrays are
-    // disjoint and that together they include all orders in the schema. It
-    // is also assumed that they are not empty.
-    this._rowHierarchy = rowHierarchy;
-    this._columnHierarchy = columnHierarchy;
+class MutableHierarchicalIterator {
+  constructor(schema, hierarchy) {
+    this._schema = schema;
+    this._hierarchy = hierarchy;
+    this._array = new Array(hierarchy.length).fill(0);
+  }
+
+  address() {
+    return this._array;
+  }
+
+  increment() {
+    let k = this._array.length - 1;
+    do {
+      const category = this._schema.categoryOfOrder(this._hierarchy[k]);
+      this._array[k]++;
+      if (this._array[k] !== category.numIndices()) {
+        return true;
+      }
+      this._array[k] = 0;
+      k--;
+    } while (k >= 0);
+    return false;
+  }
+
+  callbackOnFreshDigit(callback) {
+    let k = this._array.length - 1;
+    do {
+      const category = this._schema.categoryOfOrder(this._hierarchy[k]);
+      callback(k, this._array[k], category);
+      if (this._array[k] !== 0) {
+        return;
+      }
+      k--;
+    } while (k >= 0);
   }
 }
 
@@ -107,50 +133,109 @@ class BigTable {
     const schema = new Schema(data.schema);
 
     this._model = new BigTableModel(schema, rawData);
-    const rowHierarchy = [0, 2];
-    const columnHierarchy = [1];
-    this._viewModel = new BigTableViewModel(schema, rowHierarchy,
-      columnHierarchy);
+    this._schema = schema;
   }
 
-  render() {
+  checkHierarchies(rowHierarchy, columnHierarchy) {
+    const rSet = new Set(rowHierarchy);
+    const cSet = new Set(columnHierarchy);
+    console.assert(rowHierarchy.length > 0,
+      "row hierarchy is empty");
+    console.assert(columnHierarchy.length > 0,
+      "column hierarchy is empty");
+    console.assert(rSet.size === rowHierarchy.length,
+      "row hierarchy contains duplicates");
+    console.assert(cSet.size === columnHierarchy.length,
+      "column hierarchy contains duplicates");
+    console.assert(rowHierarchy.every(item => !cSet.has(item)),
+      "row and column hierarchies are not disjoint");
+    for (let o = 0; o < this._schema.numCategories(); o++) {
+      console.assert(rSet.has(o) || cSet.has(o),
+        "some category from the schema is not in either row nor column hierarchy");
+    }
+    console.assert(rSet.size + cSet.size === this._schema.numCategories(),
+      "row or column hierarchy contain categories that are not in the schema");
+  }
+
+  dynamicRender(rowHierarchy, columnHierarchy) {
+    this.checkHierarchies(rowHierarchy, columnHierarchy);
+
+    // using arrow function to get the right behavior of this
+    const absoluteAddress = (rowAddress, columnAddress) => {
+      console.assert(rowAddress.length === rowHierarchy.length,
+        "row address length does not match the length of the row hierarchy");
+      console.assert(columnAddress.length === columnHierarchy.length,
+        "column address length does not match the length of the column hierarchy");
+    
+      const address = Array(this._schema.numCategories());
+      for (const [j, index] of rowAddress.entries()) {
+        address[rowHierarchy[j]] = index;
+      }
+      for (const [j, index] of columnAddress.entries()) {
+        address[columnHierarchy[j]] = index;
+      }
+      return address;
+    }
+
     let tbody;
     const table = h("table", tbody = h("tbody"));
 
-    const upperColumnCategory = this._model._schema.categoryOfOrder(0);
-    const columnCategory = this._model._schema.categoryOfOrder(1);
-    const rowCategory = this._model._schema.categoryOfOrder(2);
-
-    const upperHeadRow = h("tr", h("th"));
-    const headRow = h("tr", h("th"));
-
-    for (const upperColumnIndex of upperColumnCategory.indices()) {
-      const bigCell = h("th", upperColumnCategory.nameOfIndex(upperColumnIndex));
-      bigCell.colSpan = columnCategory.numIndices();
-      //bigCell.setAttribute("colspan", "3");
-      upperHeadRow.append(bigCell);
-      for (const columnIndex of columnCategory.indices()) {
-        headRow.append(h("th", columnCategory.nameOfIndex(columnIndex)));
+    // draw column headings
+    {
+      let rowArray = new Array(columnHierarchy.length);
+      for (let o = 0; o < rowArray.length; o++) {
+        const row = h("tr");
+        rowArray[o] = row;
+        tbody.append(row);
       }
-    }
-    tbody.append(upperHeadRow);
-    tbody.append(headRow);
-
-    for (const rowIndex of rowCategory.indices()) {
-      const row = h("tr", h("th", rowCategory.nameOfIndex(rowIndex)));
-      for (const upperColumnIndex of upperColumnCategory.indices()) {
-        for (const columnIndex of columnCategory.indices()) {
-          const value = this._model.lookup([upperColumnIndex,columnIndex,rowIndex]);
-          row.append(h("td", value.toFixed(2)));
-        }
+      // generate top left cell:
+      {
+        const cell = h("td")
+        cell.colSpan = rowHierarchy.length;
+        cell.rowSpan = columnHierarchy.length;
+        rowArray[0].append(cell);
       }
-      tbody.append(row)
+      // go through all cells and draw their heading
+      const columnIterator = new MutableHierarchicalIterator(this._schema, columnHierarchy);
+      do {
+        const row = h("tr");
+        // draw row heading
+        let multiplier = 1;
+        columnIterator.callbackOnFreshDigit((o, index, category) => {
+          const cell = h("th", category.nameOfIndex(index));
+          cell.colSpan = multiplier;
+          rowArray[o].append(cell);
+          multiplier *= category.numIndices();
+        } );
+      } while (columnIterator.increment());
     }
+
+    // draw data rows with iterator
+    const rowIterator = new MutableHierarchicalIterator(this._schema, rowHierarchy);
+    do {
+      const row = h("tr");
+      // draw row heading
+      let multiplier = 1;
+      rowIterator.callbackOnFreshDigit((o, index, category) => {
+        const cell = h("th", category.nameOfIndex(index));
+        cell.rowSpan = multiplier;
+        row.prepend(cell);
+        multiplier *= category.numIndices();
+      } );
+      // draw remaining points
+      const columnIterator = new MutableHierarchicalIterator(this._schema, columnHierarchy);
+      do {
+        const address = absoluteAddress(rowIterator.address(),
+                                        columnIterator.address());
+        const value = this._model.lookup(address);
+        row.append(h("td", value.toFixed(2)));
+      } while(columnIterator.increment());
+      tbody.append(row);
+    } while (rowIterator.increment());
+
     return table;
   }
 }
-
-//function createBigTable(schema, lookup) {
 
 function h(tagName, ...args) {
   const el = document.createElement(tagName);

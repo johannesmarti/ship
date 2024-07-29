@@ -38,6 +38,7 @@
 async function fetchData() {
   try {
     const response = await fetch('http://localhost:8000/data');
+    //const response = await fetch('http://localhost:8000/debug_data');
     
     if (!response.ok) {
       throw new Error('Network response not ok: ' + response.statusText);
@@ -54,90 +55,21 @@ async function main() {
   console.log("starting with body script");
   data = await fetchData();
   if (data !== null) {
-    const bigTable = new BigTable(data);
+    console.log("data is loaded");
 
     const heading = h("h1", "Big Table");
     document.body.append(heading);
-    const domTable = bigTable.render();
+
+    const bigTable = new BigTable(data);
+    console.log("big table object is set up");
+    //const domTable = bigTable.dynamicRender([3, 2, 1], [0]);
+    const domTable = bigTable.dynamicRender([2, 0], [1]);
+
     document.body.append(domTable);
   }
 }
 
 main();
-
-/*
-
-function absoluteAddress(rowAddress, columnAddress) {
-  console.assert(rowAddress.length === rowHierarchy.length,
-    "row address length does not match the length of the row hierarchy");
-  console.assert(columnAddress.length === columnHierarchy.length,
-    "column address length does not match the length of the column hierarchy");
-
-  const address = Array(schema.numCategories());
-  for (const [j, index] of rowAddress.entries()) {
-    address[rowHierarchy[j]] = index;
-  }
-  for (const [j, index] of columnAddress.entries()) {
-    address[columnHierarchy[j]] = index;
-  }
-  return address;
-}
-
-function* addressesInHierarchy(hierarchy) {
-  const address = new Array(hierarchy.length).fill(0);
-  do {
-    yield address;
-    let j = 0;
-    do {
-      const cat = spec.categoryOfOrder(hierarchy[j]);
-      if (address[j] >= cat.numIndices())
-// HERE
-
-    } while ();
-    address[j]++;
-    yield address;
-  } while(true);
-}
-
-function rows() {
-  return addressesInHierarchy(rowHierarchy);
-}
-function columns() {
-  return addressesInHierarchy(columnHierarchy);
-}
-
-function renderTable() {
-  let tbody;
-  const table = h("table", 
-          tbody = h("tbody"));
-
-  const names = detectColumnNames(data);
-  thead.append(h("tr"));
-  for (const colName of names) {
-    thead.append(h("th", colName));
-  }
-
-  for (const rowKey in data) {
-    const row = h("tr", h("th", rowKey))
-    for (const colName of names) {
-      row.append(h("td", data[rowKey][colName]));
-    }
-    tbody.append(row)
-  }
-  return table;
-}
-
-const a = absoluteAddress([2, 0], [0]);
-console.log(a);
-
-console.log(absoluteAddress([3, 1], [0]));
-
-*/
-
-//  const heading = h("h1", "Big Table");
-  //const table = renderAsTable(data);
-
-  //document.body.append(heading, table);
 
 </script>
 </html>
