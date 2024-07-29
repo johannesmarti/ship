@@ -56,7 +56,7 @@ class Schema {
     return this._numCategories;
   }
 
-  categoryOfOrder(order) {
+  categoryAtOrder(order) {
     console.assert(this.isOrder(order), `${order} is not an order in schema`);
     return this._categories[order];
   }
@@ -103,7 +103,7 @@ class MutableHierarchicalIterator {
   increment() {
     let k = this._array.length - 1;
     do {
-      const category = this._schema.categoryOfOrder(this._hierarchy[k]);
+      const category = this._schema.categoryAtOrder(this._hierarchy[k]);
       this._array[k]++;
       if (this._array[k] !== category.numIndices()) {
         return true;
@@ -114,13 +114,13 @@ class MutableHierarchicalIterator {
     return false;
   }
 
-  callbackOnFreshDigit(callback) {
+  *freshDigits() {
     let k = this._array.length - 1;
     do {
-      const category = this._schema.categoryOfOrder(this._hierarchy[k]);
-      callback(k, this._array[k], category);
+      const category = this._schema.categoryAtOrder(this._hierarchy[k]);
+      yield [k, this._array[k], category];
       if (this._array[k] !== 0) {
-        return;
+        break;
       }
       k--;
     } while (k >= 0);
@@ -201,12 +201,12 @@ class BigTable {
         const row = h("tr");
         // draw row heading
         let multiplier = 1;
-        columnIterator.callbackOnFreshDigit((o, index, category) => {
+        for (let [o, index, category] of columnIterator.freshDigits()) {
           const cell = h("th", category.nameOfIndex(index));
           cell.colSpan = multiplier;
           rowArray[o].append(cell);
           multiplier *= category.numIndices();
-        } );
+        }
       } while (columnIterator.increment());
     }
 
@@ -216,13 +216,13 @@ class BigTable {
       const row = h("tr");
       // draw row heading
       let multiplier = 1;
-      rowIterator.callbackOnFreshDigit((o, index, category) => {
+      for (let [o, index, category] of rowIterator.freshDigits()) {
         const cell = h("th", category.nameOfIndex(index));
         cell.rowSpan = multiplier;
         row.prepend(cell);
         multiplier *= category.numIndices();
-      } );
-      // draw remaining points
+      }
+      // draw data cells
       const columnIterator = new MutableHierarchicalIterator(this._schema, columnHierarchy);
       do {
         const address = absoluteAddress(rowIterator.address(),
@@ -244,4 +244,3 @@ function h(tagName, ...args) {
 }
 
 console.log("bigTable loaded");
-
