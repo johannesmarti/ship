@@ -1,9 +1,9 @@
 # silly files that I am toying around with
 play.py
-.vscode/
 
 # stuff from my editor
 *.swp
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

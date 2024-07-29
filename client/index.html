@@ -37,8 +37,8 @@
 
 async function fetchData() {
   try {
-    const response = await fetch('http://localhost:8000/data');
-    //const response = await fetch('http://localhost:8000/debug_data');
+    //const response = await fetch('http://localhost:8000/data');
+    const response = await fetch('http://localhost:8000/debug_data');
     
     if (!response.ok) {
       throw new Error('Network response not ok: ' + response.statusText);
@@ -62,8 +62,8 @@ async function main() {
 
     const bigTable = new BigTable(data);
     console.log("big table object is set up");
-    //const domTable = bigTable.dynamicRender([3, 2, 1], [0]);
-    const domTable = bigTable.dynamicRender([2, 0], [1]);
+    const domTable = bigTable.dynamicRender([3, 2, 1], [0]);
+    //const domTable = bigTable.dynamicRender([2, 0], [1]);
     //const domTable = bigTable.dynamicRender([2], [1,0]);
 
     document.body.append(domTable);

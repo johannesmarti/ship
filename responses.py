@@ -45,10 +45,10 @@ def responses() -> any:
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
-             rate=0.010,
+             rate = 0.08,
              first_momentum_mixin = 0.09,
              keep_history = True,
-             max_iterations = 10000
+             max_iterations = 1000
     )
     r = eva.make_market(participants, p0, config)
     p = r.price

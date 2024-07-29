@@ -188,12 +188,64 @@ class BigTable {
         rowArray[o] = row;
         tbody.append(row);
       }
-      // generate top left cell:
+      // generate top left control cells:
       {
-        const cell = h("td")
-        cell.colSpan = rowHierarchy.length;
-        cell.rowSpan = columnHierarchy.length;
-        rowArray[0].append(cell);
+        const lastRow = columnHierarchy.length - 1;
+        for (let k = 0; k < lastRow; k++) {
+          for (let l = 0; l < rowHierarchy.length - 1; l++) {
+            rowArray[k].append(h("td"));
+          }
+          const button = createButton("& v", () => {
+            console.log("sexy v for ", k);
+            const tmp = columnHierarchy[k];
+            columnHierarchy[k] = columnHierarchy[k + 1];
+            columnHierarchy[k + 1] = tmp;
+            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+          });
+          rowArray[k].append(h("td", button));
+        }
+        // last row of buttons on to of rowHierarchy
+        for (let l = 0; l < rowHierarchy.length - 1; l++) {
+          const button = createButton("& >", () => {
+            console.log("sexy > for ", l);
+            const tmp = rowHierarchy[l];
+            rowHierarchy[l] = rowHierarchy[l + 1];
+            rowHierarchy[l + 1] = tmp;
+            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+          });
+          rowArray[lastRow].append(h("td", button));
+        }
+        const lastCell = h("td");
+        if (rowHierarchy.length > 1) {
+          const button = createButton("^", () => {
+            console.log("sexy ^ for ", rowHierarchy.length - 1);
+            const switcher = rowHierarchy.pop();
+            columnHierarchy.push(switcher);
+            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+          });
+          lastCell.append(button);
+        }
+        {
+          const button = createButton("&", () => {
+            console.log("swap in middle");
+            const fromRow = rowHierarchy.pop();
+            const fromColumn = columnHierarchy.pop();
+            rowHierarchy.push(fromColumn);
+            columnHierarchy.push(fromRow);
+            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+          });
+          lastCell.append(button);
+        }
+        if (columnHierarchy.length > 1) {
+          const button = createButton("<", () => {
+            console.log("sexy < for ", lastRow);
+            const switcher = columnHierarchy.pop();
+            rowHierarchy.push(switcher);
+            table.replaceWith(this.dynamicRender(rowHierarchy, columnHierarchy));
+          });
+          lastCell.append(button);
+        }
+        rowArray[lastRow].append(lastCell);
       }
       // go through all cells and draw their heading
       const columnIterator = new MutableHierarchicalIterator(this._schema, columnHierarchy);
@@ -209,6 +261,7 @@ class BigTable {
         }
       } while (columnIterator.increment());
     }
+
 
     // draw data rows with iterator
     const rowIterator = new MutableHierarchicalIterator(this._schema, rowHierarchy);
@@ -241,6 +294,13 @@ function h(tagName, ...args) {
   const el = document.createElement(tagName);
   el.append(...args);
   return el;
+}
+
+function createButton(text, onClickFunction) {
+  let button = document.createElement("button");
+  button.textContent = text;
+  button.onclick = onClickFunction;
+  return button;
 }
 
 console.log("bigTable loaded");
