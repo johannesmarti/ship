@@ -1,5 +1,18 @@
 console.log("bigTable starts loading");
 
+function h(tagName, ...args) {
+  const el = document.createElement(tagName);
+  el.append(...args);
+  return el;
+}
+
+function createButton(text, onClickFunction) {
+  let button = document.createElement("button");
+  button.textContent = text;
+  button.onclick = onClickFunction;
+  return button;
+}
+
 class Category {
   constructor(name, indexNameList) {
     this._name = name;
@@ -72,13 +85,13 @@ class FixedValueCategoryView {
   }
 
   name() {
-    return this._baseCategory.name() + `[{this.nameOfFixedIndex()}]`;
+    return this._baseCategory.name() + `[${this.nameOfFixedIndex()}]`;
   }
 
   nameOfIndex(index) {
     console.assert(index === 0,
       `${index} is not a index in the fixed categroy ${this.name()} because it is not equal to 0`);
-    return nameOfFixedIndex(); 
+    return this.nameOfFixedIndex(); 
   }
 
   transform(index) {
@@ -146,8 +159,8 @@ function exponentialRemapper(baseCategory, center) {
     }
   }
 
-  const name = `exponential remapper on {baseCategory.name()} around
-{baseCategory.nameOfIndex(center)}`;
+  const name = `exponential remapper on ${baseCategory.name()} around
+${baseCategory.nameOfIndex(center)}`;
   return new RemappingCategoryView(baseCategory, remapper, name);
 }
 
@@ -186,16 +199,6 @@ class Schema {
 
 function schemaFromJSON(spec) {
   return new Schema(spec.map((spec) => categoryFromJSON(spec)));
-}
-
-function virtualize(schema, transformer) {
-  const array = schema._categories.map((c) => {
-    const id = (c) => new IdentityCategoryView(c);
-    const name = c.name();
-    const mapper = transformer[name] || id;
-    return mapper(c);
-  });
-  return new Schema(array);
 }
 
 function toAbsoluteIndex(schema, absoluteAddress) {
@@ -272,8 +275,7 @@ class MutableHierarchicalIterator {
   *freshDigits() {
     let k = this._array.length - 1;
     do {
-      const category = this._schema.categoryAtOrder(this._hierarchy[k]);
-      yield [k, this._array[k], category];
+      yield [k, this._hierarchy[k], this._array[k]];
       if (this._array[k] !== 0) {
         break;
       }
@@ -282,16 +284,57 @@ class MutableHierarchicalIterator {
   }
 }
 
-class BigTable {
-  constructor(dataView) {
-    this._dataView = dataView;
+function indexInCategoryFromJSON(category, json) {
+  const defaultValue = 0;
+  return {
+    "first": 0,
+    "mid": category.numIndices() / 2,
+    "last": category.numIndices() - 1
+  }[json] || (Number.isInteger(json) ? json : defaultValue);
+}
+
+class BigTableConfig {
+  constructor(rowHierarchy, columnHierarchy, virtualizer) {
+    this._rowHierarchy = rowHierarchy;
+    this._columnHierarchy = columnHierarchy;
+    this._virtualizer = virtualizer;
   }
 
-  schema() {
-    return this._dataView.schema();
+  hierarchies() {
+    return [this._rowHierarchy, this._columnHierarchy];
   }
 
-  checkHierarchies(rowHierarchy, columnHierarchy) {
+  virtualizer() {
+    return this._virtualizer;
+  }
+
+  virtualize(schema) {
+    const array = schema._categories.map((_, o) => {
+      const category = schema.categoryAtOrder(o);
+      const descriptor = this._virtualizer[o] || {"type": "id"};
+
+      const id = () => new IdentityCategoryView(category);
+      const onFixed = () => {
+            const fixedValue = indexInCategoryFromJSON(category, descriptor["value"]);
+            return new FixedValueCategoryView(category, fixedValue);
+      };
+      const mapper = {
+        "id": id,
+        "fixed": onFixed,
+        "fixed_id": onFixed,
+        "fixed_exponential": onFixed,
+        "exponential": () => {
+            const center = indexInCategoryFromJSON(category, descriptor["center"]);
+            return exponentialRemapper(category, center);
+          }
+      }[descriptor["type"]] || id;
+      return mapper();
+    });
+    return new Schema(array);
+  }
+
+  checkHierarchies(schema) {
+    const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
     console.assert(rowHierarchy.length > 0,
@@ -304,16 +347,28 @@ class BigTable {
       "column hierarchy contains duplicates");
     console.assert(rowHierarchy.every(item => !cSet.has(item)),
       "row and column hierarchies are not disjoint");
-    for (let o = 0; o < this.schema().numCategories(); o++) {
+    for (let o = 0; o < schema.numCategories(); o++) {
       console.assert(rSet.has(o) || cSet.has(o),
         "some category from the schema is not in either row nor column hierarchy");
     }
-    console.assert(rSet.size + cSet.size === this.schema().numCategories(),
+    console.assert(rSet.size + cSet.size === schema.numCategories(),
       "row or column hierarchy contain categories that are not in the schema");
   }
+}
 
-  render(rowHierarchy, columnHierarchy) {
-    this.checkHierarchies(rowHierarchy, columnHierarchy);
+class BigTable {
+  constructor(dataView) {
+    this._dataView = dataView;
+  }
+
+  render(config) {
+    console.log("big table start rendering");
+    //console.log("the current virtualizer is: ", config.virtualizer());
+    const baseSchema = this._dataView.schema();
+    const schema = config.virtualize(baseSchema);
+    config.checkHierarchies(schema);
+    const virtualDataView = new VirtualDataView(this._dataView, schema);
+    const [rowHierarchy, columnHierarchy] = config.hierarchies();
 
     // using arrow function to get the right behavior of 'this'
     const absoluteAddress = (rowAddress, columnAddress) => {
@@ -322,7 +377,7 @@ class BigTable {
       console.assert(columnAddress.length === columnHierarchy.length,
         "column address length does not match the length of the column hierarchy");
     
-      const address = Array(this.schema().numCategories());
+      const address = Array(schema.numCategories());
       for (const [j, index] of rowAddress.entries()) {
         address[rowHierarchy[j]] = index;
       }
@@ -335,6 +390,47 @@ class BigTable {
     let tbody;
     const table = h("table", tbody = h("tbody"));
 
+    // using arrow function to get the right behavior of 'this'
+    const createHeaderCell = (order, category, index) => {
+      const cell = h("th", category.nameOfIndex(index));
+      cell.addEventListener('click', () => {
+        console.log("clicked on cell with index ", index, " in category ", category.name(), " at order ", order);
+        const virtualizer = config.virtualizer();
+        const description = virtualizer[order] || {"type": "id"};
+        const currentType = description["type"] || "id";
+        const computeNewDescription = {
+          "id": () => { return {"type": "fixed_id", "value": index}; },
+          "fixed": () => { return {"type": "id"}; },
+          "fixed_id": () => { return {"type": "id"}; },
+          "fixed_exponential": () => {
+              return {"type": "exponential",
+                    "center": description["value"]};
+            },
+          "exponential": () => {
+              const baseCategory = baseSchema.categoryAtOrder(order);
+              const baseIndex = category.transform(index);
+              const center = indexInCategoryFromJSON(baseCategory,
+                description["center"]);
+              if (baseIndex === center) {
+                return {"type": "fixed_exponential",
+                        "value": description["center"]};
+              } else {
+                return {"type": "exponential",
+                        // TODO: Here we could make an effort to
+                        // reconstruct the JSON descriptors "first",
+                        // "mid" and "last".
+                        "center": baseIndex};
+              }
+            }
+        }[currentType];
+        const newDescription = computeNewDescription()
+        const newVirtualizer = { ...virtualizer, [order]: newDescription};
+        const newConfig = new BigTableConfig(rowHierarchy, columnHierarchy,
+          newVirtualizer);
+        table.replaceWith(this.render(newConfig));
+      });
+      return cell;
+    }
     // draw column headings
     {
       let rowArray = new Array(columnHierarchy.length);
@@ -351,62 +447,81 @@ class BigTable {
             rowArray[k].append(h("td"));
           }
           const button = createButton("& v", () => {
-            const tmp = columnHierarchy[k];
-            columnHierarchy[k] = columnHierarchy[k + 1];
-            columnHierarchy[k + 1] = tmp;
-            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
+            const newColumnHierarchy = Array.from(columnHierarchy);
+            newColumnHierarchy[k] = columnHierarchy[k + 1];
+            newColumnHierarchy[k + 1] = columnHierarchy[k];
+            const newConfig = new BigTableConfig(rowHierarchy,
+              newColumnHierarchy, config.virtualizer());
+            table.replaceWith(this.render(newConfig));
           });
           rowArray[k].append(h("td", button));
         }
         // last row of buttons on to of rowHierarchy
         for (let l = 0; l < rowHierarchy.length - 1; l++) {
           const button = createButton("& >", () => {
+            const newRowHierarchy = Array.from(rowHierarchy);
             const tmp = rowHierarchy[l];
-            rowHierarchy[l] = rowHierarchy[l + 1];
-            rowHierarchy[l + 1] = tmp;
-            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
+            newRowHierarchy[l] = rowHierarchy[l + 1];
+            newRowHierarchy[l + 1] = rowHierarchy[l];
+            const newConfig = new BigTableConfig(newRowHierarchy,
+              columnHierarchy, config.virtualizer());
+            table.replaceWith(this.render(newConfig));
           });
           rowArray[lastRow].append(h("td", button));
         }
         const lastCell = h("td");
         if (rowHierarchy.length > 1) {
           const button = createButton("^", () => {
-            const switcher = rowHierarchy.pop();
-            columnHierarchy.push(switcher);
-            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
+            const newRowHierarchy = Array.from(rowHierarchy);
+            const newColumnHierarchy = Array.from(columnHierarchy);
+            const switcher = newRowHierarchy.pop();
+            newColumnHierarchy.push(switcher);
+            const newConfig = new BigTableConfig(newRowHierarchy,
+              newColumnHierarchy, config.virtualizer());
+            table.replaceWith(this.render(newConfig));
           });
           lastCell.append(button);
         }
         {
           const button = createButton("&", () => {
-            const fromRow = rowHierarchy.pop();
-            const fromColumn = columnHierarchy.pop();
-            rowHierarchy.push(fromColumn);
-            columnHierarchy.push(fromRow);
+            const newRowHierarchy = Array.from(rowHierarchy);
+            const newColumnHierarchy = Array.from(columnHierarchy);
+            const fromRow = newRowHierarchy.pop();
+            const fromColumn = newColumnHierarchy.pop();
+            newRowHierarchy.push(fromColumn);
+            newColumnHierarchy.push(fromRow);
+            const newConfig = new BigTableConfig(newRowHierarchy,
+              newColumnHierarchy, config.virtualizer());
+            table.replaceWith(this.render(newConfig));
             table.replaceWith(this.render(rowHierarchy, columnHierarchy));
           });
           lastCell.append(button);
         }
         if (columnHierarchy.length > 1) {
           const button = createButton("<", () => {
-            const switcher = columnHierarchy.pop();
-            rowHierarchy.push(switcher);
-            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
+            const newRowHierarchy = Array.from(rowHierarchy);
+            const newColumnHierarchy = Array.from(columnHierarchy);
+            const switcher = newColumnHierarchy.pop();
+            newRowHierarchy.push(switcher);
+            const newConfig = new BigTableConfig(newRowHierarchy,
+              newColumnHierarchy, config.virtualizer());
+            table.replaceWith(this.render(newConfig));
           });
           lastCell.append(button);
         }
         rowArray[lastRow].append(lastCell);
       }
       // go through all cells and draw their heading
-      const columnIterator = new MutableHierarchicalIterator(this.schema(), columnHierarchy);
+      const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
       do {
         const row = h("tr");
         // draw row heading
         let multiplier = 1;
-        for (let [o, index, category] of columnIterator.freshDigits()) {
-          const cell = h("th", category.nameOfIndex(index));
+        for (let [k, order, index] of columnIterator.freshDigits()) {
+          const category = schema.categoryAtOrder(order);
+          const cell = createHeaderCell(order, category, index);
           cell.colSpan = multiplier;
-          rowArray[o].append(cell);
+          rowArray[k].append(cell);
           multiplier *= category.numIndices();
         }
       } while (columnIterator.increment());
@@ -414,23 +529,24 @@ class BigTable {
 
 
     // draw data rows with iterator
-    const rowIterator = new MutableHierarchicalIterator(this.schema(), rowHierarchy);
+    const rowIterator = new MutableHierarchicalIterator(schema, rowHierarchy);
     do {
       const row = h("tr");
       // draw row heading
       let multiplier = 1;
-      for (let [o, index, category] of rowIterator.freshDigits()) {
-        const cell = h("th", category.nameOfIndex(index));
+      for (let [k, order, index] of rowIterator.freshDigits()) {
+        const category = schema.categoryAtOrder(order);
+        const cell = createHeaderCell(order, category, index);
         cell.rowSpan = multiplier;
         row.prepend(cell);
         multiplier *= category.numIndices();
       }
-      // draw data cells
-      const columnIterator = new MutableHierarchicalIterator(this.schema(), columnHierarchy);
+      // draw data cell
+      const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
       do {
         const address = absoluteAddress(rowIterator.address(),
                                         columnIterator.address());
-        const value = this._dataView.lookup(address);
+        const value = virtualDataView.lookup(address);
         row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
       tbody.append(row);
@@ -438,19 +554,6 @@ class BigTable {
 
     return table;
   }
-}
-
-function h(tagName, ...args) {
-  const el = document.createElement(tagName);
-  el.append(...args);
-  return el;
-}
-
-function createButton(text, onClickFunction) {
-  let button = document.createElement("button");
-  button.textContent = text;
-  button.onclick = onClickFunction;
-  return button;
 }
 
 console.log("bigTable loaded");

@@ -64,8 +64,8 @@ def apply_price_scaling(price: Prices,
     else:
         base = price[leading]
     scaling_factor = price_scaling.set_to_price / base
-    price *= scaling_factor
-    return price
+    scaled_prices = scaling_factor * price
+    return scaled_prices
 
 def mixing(a: np.ndarray, b: np.ndarray, factor: float) -> np.ndarray:
     assert a.shape == b.shape

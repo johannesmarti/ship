@@ -35,7 +35,7 @@ def responses() -> any:
     pt.set_global_table_logging_from_schema(schema)
 
     p0 = np.full(schema.global_width(), 100.0)
-    epsilon = 0.01
+    epsilon = 0.1
     participants = list(economy.participants())
 
     scaling = mb.ScalingConfiguration(
@@ -51,6 +51,28 @@ def responses() -> any:
              max_iterations = 1000
     )
     r = eva.make_market(participants, p0, config)
+
+    def iter_for_iteration(iteration: eva.Iteration) -> Iterable[float]:
+        return itertools.chain(iter(iteration.price),
+                               iter(iteration.supply.sold()),
+                               iter(iteration.supply.bought()),
+                               map(lambda m: 1000 * 1000 * m, iter(iteration.momentum)))
+    nested_iterator = map(iter_for_iteration, r.history)
+    history_iter = itertools.chain.from_iterable(nested_iterator)
+    raw_data = list(history_iter)
+    debug_response = {
+        "schema": [
+           { "name": "iteration",
+             "indices": list(map(lambda i: i + 1, range(len(r.history)))) },
+           { "name": "datatype",
+             "indices": ["price", "sold", "bought", "megam"] },
+           { "name": "province",
+             "indices": schema.province_schema().list_of_names() },
+           { "name": "good",
+             "indices": schema.local_schema().list_of_names() } ],
+        "raw_data": raw_data
+    }
+
     p = r.price
     p = mb.apply_price_scaling(p, scaling)
     #pt.pretty_table([("price", p)])
@@ -68,27 +90,6 @@ def responses() -> any:
            { "name": "good",
              "indices": schema.local_schema().list_of_names() } ],
         "raw_data": list(itertools.chain(iter(p), iter(sold), iter(bought)))
-    }
-    def iter_for_iteration(iteration: eva.Iteration) -> Iterable[float]:
-        return itertools.chain(iter(iteration.price),
-                               iter(iteration.supply.sold()),
-                               iter(iteration.supply.bought()),
-                               map(lambda m: 1000 * 1000 * m, iter(iteration.momentum)))
-
-    nested_iterator = map(iter_for_iteration, r.history)
-    history_iter = itertools.chain.from_iterable(nested_iterator)
-    raw_data = list(history_iter)
-    debug_response = {
-        "schema": [
-           { "name": "iteration",
-             "indices": list(range(len(r.history))) },
-           { "name": "datatype",
-             "indices": ["price", "sold", "bought", "megam"] },
-           { "name": "province",
-             "indices": schema.province_schema().list_of_names() },
-           { "name": "good",
-             "indices": schema.local_schema().list_of_names() } ],
-        "raw_data": raw_data
     }
 
     return (basic_response, debug_response)
