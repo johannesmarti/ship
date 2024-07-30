@@ -68,8 +68,20 @@ async function main() {
     const heading = h("h1", "Big Table");
     document.body.append(heading);
 
-    const bigTable = new BigTable(data);
+    const dataView = new PhysicalDataView(data);
+
+    const physicalDataView = new PhysicalDataView(data);
+    const physicalSchema = physicalDataView.schema();
+    const virtualSchema = virtualize(physicalSchema, {
+      "iteration": (c) => exponentialRemapper(c, c.numIndices() - 1)
+    });
+    const virtualDataView = new VirtualDataView(physicalDataView, virtualSchema);
+    const bigTable = new BigTable(virtualDataView);
     console.log("big table object is set up");
+
+    //const category = bigTable.schema().categoryOfName("iteration");
+    //const virtual = exponentialRemapper(category, 299);
+    //console.log(virtual._remapper);
 
     const domTable = bigTable.render([3, 2, 0], [1]);
     document.body.append(domTable);
