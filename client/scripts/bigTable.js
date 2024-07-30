@@ -315,7 +315,7 @@ class BigTable {
   render(rowHierarchy, columnHierarchy) {
     this.checkHierarchies(rowHierarchy, columnHierarchy);
 
-    // using arrow function to get the right behavior of this
+    // using arrow function to get the right behavior of 'this'
     const absoluteAddress = (rowAddress, columnAddress) => {
       console.assert(rowAddress.length === rowHierarchy.length,
         "row address length does not match the length of the row hierarchy");
