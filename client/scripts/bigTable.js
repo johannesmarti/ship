@@ -431,7 +431,7 @@ class BigTable {
         const address = absoluteAddress(rowIterator.address(),
                                         columnIterator.address());
         const value = this._dataView.lookup(address);
-        row.append(h("td", value.toFixed(2)));
+        row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
       tbody.append(row);
     } while (rowIterator.increment());
