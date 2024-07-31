@@ -29,7 +29,7 @@ logging.basicConfig(level=logging.ERROR, format='%(message)s (%(levelname)s)')
 def simple_run(market_schema, p0, participants, epsilon):
     scaling = mb.ScalingConfiguration(
         set_to_price=10,
-        norm_listing=market_schema.listing_of_good_in_province("food", "Germany"))
+        norm_listing=market_schema.listing_of_good_in_province("food", "Switzerland"))
 
     config = eva.EvaConfiguration(
              epsilon=epsilon,
@@ -40,7 +40,7 @@ def simple_run(market_schema, p0, participants, epsilon):
     )
     r = eva.make_market(participants, p0, config)
     p = r.price
-    p = mb.apply_price_scaling(p, scaling)
+    #p = mb.apply_price_scaling(p, scaling)
     pt.pretty_table([("price", p)])
     #print(r.history)
     print(f"eva iterations: {r.iterations}")

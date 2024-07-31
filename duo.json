@@ -1,0 +1,68 @@
+{
+  "provinces": [
+    {
+      "name": "Switzerland",
+      "population": 800,
+      "utilities": {
+        "food": 3,
+        "wood": 1.2,
+        "tools": 0.7
+      },
+      "producers": [
+        {
+          "food": 4.5,
+          "wood": 1
+        },
+        {
+          "wood": -2,
+          "ore": -1,
+          "tools": 3
+        }
+      ],
+      "trade_partners": [
+        "Italy"
+      ]
+    },
+    {
+      "name": "Italy",
+      "population": 800,
+      "utilities": {
+        "food": 3.05,
+        "wood": 0.8,
+        "tools": 0.5
+      },
+      "producers": [
+        {
+          "food": 8,
+          "tools": -0.2
+        },
+        {
+          "food": -1,
+          "wood": 4
+        },
+        {
+          "wood": -1.9,
+          "ore": -1.2,
+          "tools": 1.8
+        }
+      ],
+      "trade_partners": [
+        "Switzerland"
+      ]
+    }
+  ],
+  "tradable_goods": [
+    "food",
+    "wood",
+    "ore",
+    "tools"
+  ],
+  "fixed_goods": [
+  ],
+  "trade_factors": {
+    "food": 3,
+    "wood": 1.5,
+    "ore": 2,
+    "tools": 3
+  }
+}

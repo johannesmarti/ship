@@ -38,11 +38,18 @@ def responses() -> any:
     epsilon = 0.1
     participants = list(economy.participants())
 
-    scaling = mb.ScalingConfiguration(
-        set_to_price=10,
-        norm_listing=schema.listing_of_good_in_province("food", "Germany")
-    )
+    #scaling = mb.ScalingConfiguration(
+    #    set_to_price=10,
+    #    norm_listing=schema.listing_of_good_in_province("food", "Germany")
+    #)
 
+    duo_config = eva.EvaConfiguration(
+             epsilon=epsilon,
+             rate = 0.01,
+             first_momentum_mixin = 0.1,
+             keep_history = True,
+             max_iterations = 10000
+    )
     config = eva.EvaConfiguration(
              epsilon=epsilon,
              rate = 0.08,
@@ -50,12 +57,13 @@ def responses() -> any:
              keep_history = True,
              max_iterations = 1000
     )
+    config = duo_config
     r = eva.make_market(participants, p0, config)
 
     def iter_for_iteration(iteration: eva.Iteration) -> Iterable[float]:
         return itertools.chain(iter(iteration.price),
-                               iter(iteration.supply.sold()),
-                               iter(iteration.supply.bought()),
+                               iter(iteration.supply.error),
+                               iter(iteration.supply.volume),
                                map(lambda m: 1000 * 1000 * m, iter(iteration.momentum)))
     nested_iterator = map(iter_for_iteration, r.history)
     history_iter = itertools.chain.from_iterable(nested_iterator)
@@ -65,7 +73,7 @@ def responses() -> any:
            { "name": "iteration",
              "indices": list(map(lambda i: i + 1, range(len(r.history)))) },
            { "name": "datatype",
-             "indices": ["price", "sold", "bought", "megam"] },
+             "indices": ["price", "error", "volume", "Mp"] },
            { "name": "province",
              "indices": schema.province_schema().list_of_names() },
            { "name": "good",
@@ -74,12 +82,10 @@ def responses() -> any:
     }
 
     p = r.price
-    p = mb.apply_price_scaling(p, scaling)
+    supply = r.supply
+    #p = mb.apply_price_scaling(p, scaling)
     #pt.pretty_table([("price", p)])
     print(f"eva iterations: {r.iterations}")
-
-    sold = r.supply.sold()
-    bought = r.supply.bought()
 
     basic_response = {
         "schema": [
@@ -89,7 +95,8 @@ def responses() -> any:
              "indices": schema.province_schema().list_of_names() },
            { "name": "good",
              "indices": schema.local_schema().list_of_names() } ],
-        "raw_data": list(itertools.chain(iter(p), iter(sold), iter(bought)))
+        "raw_data": list(itertools.chain(iter(p), iter(supply.error),
+                                                  iter(supply.volume)))
     }
 
     return (basic_response, debug_response)

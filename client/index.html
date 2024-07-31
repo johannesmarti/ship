@@ -75,16 +75,20 @@ async function main() {
     console.log("big table object is set up");
 
     const physicalSchema = physicalDataView.schema();
-    const iterOrder = physicalSchema.orderOfCategoryName("iteration");
-    const iterCategory = physicalSchema.categoryAtOrder(iterOrder);
+    const iteration = physicalSchema.orderOfCategoryName("iteration");
+    const good = physicalSchema.orderOfCategoryName("good");
+    const province = physicalSchema.orderOfCategoryName("province");
+    const datatype = physicalSchema.orderOfCategoryName("datatype");
+    const iterCategory = physicalSchema.categoryAtOrder(iteration);
     const virtualizer = {
-      [iterOrder]: {
+      [iteration]: {
         "type": "exponential",
         "center": "last"
       }
     }
 
-    const config = new BigTableConfig([3, 2, 0], [1], virtualizer);
+    const config = new BigTableConfig([iteration, datatype],
+                                      [good, province], virtualizer);
     const domTable = bigTable.render(config);
     document.body.append(domTable);
   }
