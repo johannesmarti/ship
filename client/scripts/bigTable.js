@@ -333,6 +333,41 @@ class BigTableConfig {
     return new Schema(array);
   }
 
+  updateVirtualizer(order, baseIndex, baseCategory) {
+    const virtualizer = this.virtualizer();
+    const description = virtualizer[order] || {"type": "id"};
+    const currentType = description["type"] || "id";
+    const computeNewDescription = {
+      "id": () => { return {"type": "fixed_id", "value": baseIndex}; },
+      "fixed": () => { return {"type": "id"}; },
+      "fixed_id": () => { return {"type": "id"}; },
+      "fixed_exponential": () => {
+          return {"type": "exponential",
+                  "center": description["value"]};
+        },
+      "exponential": () => {
+          const center = indexInCategoryFromJSON(baseCategory,
+            description["center"]);
+          if (baseIndex === center) {
+            return {"type": "fixed_exponential",
+                    "value": description["center"]};
+          } else {
+            return {"type": "exponential",
+                    // TODO: Here we could make an effort to
+                    // reconstruct the JSON descriptors "first",
+                    // "mid" and "last".
+                    "center": baseIndex};
+          }
+        }
+    }[currentType];
+    const newDescription = computeNewDescription()
+    const newVirtualizer = { ...virtualizer, [order]: newDescription};
+    const [rowHierarchy, columnHierarchy] = this.hierarchies()
+    const newConfig = new BigTableConfig(rowHierarchy, columnHierarchy,
+      newVirtualizer);
+    return newConfig;
+  }
+
   checkHierarchies(schema) {
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
@@ -394,39 +429,9 @@ class BigTable {
     const createHeaderCell = (order, category, index) => {
       const cell = h("th", category.nameOfIndex(index));
       cell.addEventListener('click', () => {
-        console.log("clicked on cell with index ", index, " in category ", category.name(), " at order ", order);
-        const virtualizer = config.virtualizer();
-        const description = virtualizer[order] || {"type": "id"};
-        const currentType = description["type"] || "id";
-        const computeNewDescription = {
-          "id": () => { return {"type": "fixed_id", "value": index}; },
-          "fixed": () => { return {"type": "id"}; },
-          "fixed_id": () => { return {"type": "id"}; },
-          "fixed_exponential": () => {
-              return {"type": "exponential",
-                    "center": description["value"]};
-            },
-          "exponential": () => {
-              const baseCategory = baseSchema.categoryAtOrder(order);
-              const baseIndex = category.transform(index);
-              const center = indexInCategoryFromJSON(baseCategory,
-                description["center"]);
-              if (baseIndex === center) {
-                return {"type": "fixed_exponential",
-                        "value": description["center"]};
-              } else {
-                return {"type": "exponential",
-                        // TODO: Here we could make an effort to
-                        // reconstruct the JSON descriptors "first",
-                        // "mid" and "last".
-                        "center": baseIndex};
-              }
-            }
-        }[currentType];
-        const newDescription = computeNewDescription()
-        const newVirtualizer = { ...virtualizer, [order]: newDescription};
-        const newConfig = new BigTableConfig(rowHierarchy, columnHierarchy,
-          newVirtualizer);
+        const baseCategory = baseSchema.categoryAtOrder(order);
+        const baseIndex = category.transform(index);
+        const newConfig = config.updateVirtualizer(order, baseIndex, baseCategory);
         table.replaceWith(this.render(newConfig));
       });
       return cell;
@@ -526,7 +531,6 @@ class BigTable {
         }
       } while (columnIterator.increment());
     }
-
 
     // draw data rows with iterator
     const rowIterator = new MutableHierarchicalIterator(schema, rowHierarchy);
