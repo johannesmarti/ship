@@ -1,5 +1,5 @@
+- get multidimensional grid search results to show in bigTable
 - implement proper class hierarchy in Schema stuff. it is messed up with
   the typing
-- nice web interface
 - include gold and savings
 
