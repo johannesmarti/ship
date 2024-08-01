@@ -1,5 +1,3 @@
-console.log("bigTable starts loading");
-
 function h(tagName, ...args) {
   const el = document.createElement(tagName);
   el.append(...args);
@@ -13,12 +11,16 @@ function createButton(text, onClickFunction) {
   return button;
 }
 
-class Category {
+class Dimension {
   constructor(name, indexNameList) {
     this._name = name;
     this._indexNameList = indexNameList;
     console.assert(this._indexNameList.length >= 1,
-      `Need at least one index in category ${this._name}`);
+      `Need at least one index in dimension ${this._name}`);
+  }
+
+  static fromJSON(spec) {
+    return new Dimension(spec.name, spec.indices);
   }
 
   numIndices() {
@@ -35,34 +37,40 @@ class Category {
 
   nameOfIndex(index) {
     console.assert(this.isIndex(index),
-      `${index} is not an index in category ${this.name()}`);
+      `${index} is not an index in dimension ${this.name()}`);
     return this._indexNameList[index];
   }
 
   indexOfName(name) {
-    return this._IndexNameList.indexOf(name);
+    return this._indexNameList.indexOf(name);
+  }
+
+  extend(newIndexName) {
+    const newIndexNameList = Array.from(this._indexNameList);
+    newIndexNameList.push(newIndexName);
+    return new Dimension(this._name, newIndexNameList);
   }
 }
 
-function categoryFromJSON(spec) {
-  return new Category(spec.name, spec.indices);
-}
-
-class IdentityCategoryView {
-  constructor(baseCategory) {
-    this._baseCategory = baseCategory;
+class IdentityDimensionView {
+  constructor(baseDimension) {
+    this._baseDimension = baseDimension;
   }
 
   numIndices() {
-    return this._baseCategory.numIndices();
+    return this._baseDimension.numIndices();
+  }
+
+  isIndex(number) {
+    return 0 <= number && number < this.numIndices();
   }
 
   name() {
-    return this._baseCategory.name();
+    return this._baseDimension.name();
   }
 
   nameOfIndex(index) {
-    return this._baseCategory.nameOfIndex(index);
+    return this._baseDimension.nameOfIndex(index);
   }
 
   transform(index) {
@@ -70,27 +78,31 @@ class IdentityCategoryView {
   }
 }
 
-class FixedValueCategoryView {
-  constructor(baseCategory, fixedIndex) {
-    this._baseCategory = baseCategory;
+class FixedValueDimensionView {
+  constructor(baseDimension, fixedIndex) {
+    this._baseDimension = baseDimension;
     this._fixedIndex = fixedIndex;
   }
 
   nameOfFixedIndex() {
-    return this._baseCategory.nameOfIndex(this._fixedIndex);
+    return this._baseDimension.nameOfIndex(this._fixedIndex);
   }
 
   numIndices() {
     return 1;
   }
 
+  isIndex(number) {
+    return 0 <= number && number < this.numIndices();
+  }
+
   name() {
-    return this._baseCategory.name() + `[${this.nameOfFixedIndex()}]`;
+    return this._baseDimension.name() + `[${this.nameOfFixedIndex()}]`;
   }
 
   nameOfIndex(index) {
     console.assert(index === 0,
-      `${index} is not a index in the fixed categroy ${this.name()} because it is not equal to 0`);
+      `${index} is not a index in the fixed dimension ${this.name()} because it is not equal to 0`);
     return this.nameOfFixedIndex(); 
   }
 
@@ -99,9 +111,9 @@ class FixedValueCategoryView {
   }
 }
 
-class RemappingCategoryView {
-  constructor(baseCategory, remapper, name) {
-    this._baseCategory = baseCategory;
+class RemappingDimensionView {
+  constructor(baseDimension, remapper, name) {
+    this._baseDimension = baseDimension;
     this._remapper = remapper;
     this._name = name;
   }
@@ -110,25 +122,29 @@ class RemappingCategoryView {
     return this._remapper.length;
   }
 
+  isIndex(number) {
+    return 0 <= number && number < this.numIndices();
+  }
+
   name() {
     return this._name;
   }
 
   nameOfIndex(index) {
-    return this._baseCategory.nameOfIndex(this.transform(index)); 
+    return this._baseDimension.nameOfIndex(this.transform(index)); 
   }
 
   transform(index) {
     console.assert(0 <= index && index < this.numIndices(),
-      `${index} is not a index in the remapping category ${this.name()}`);
+      `${index} is not a index in the remapping dimension ${this.name()}`);
 
     return this._remapper[index];
   }
 }
 
-function exponentialRemapper(baseCategory, center) {
-  console.assert(0 <= center && center < baseCategory.numIndices(),
-    `center point ${center} is not a index in the base category ${baseCategory.name()}`);
+function exponentialRemapper(baseDimension, center) {
+  console.assert(0 <= center && center < baseDimension.numIndices(),
+    `center point ${center} is not a index in the base dimension ${baseDimension.name()}`);
   // This could be computed more efficiently. I don't care.
   const remapper = [center];
   {
@@ -146,7 +162,7 @@ function exponentialRemapper(baseCategory, center) {
   }
   {
     let dist = 1;
-    const last = baseCategory.numIndices() - 1;
+    const last = baseDimension.numIndices() - 1;
     if (center !== last) {
       while (true) {
         if (center + dist >= last) {
@@ -159,64 +175,81 @@ function exponentialRemapper(baseCategory, center) {
     }
   }
 
-  const name = `exponential remapper on ${baseCategory.name()} around
-${baseCategory.nameOfIndex(center)}`;
-  return new RemappingCategoryView(baseCategory, remapper, name);
+  const name = `exponential remapper on ${baseDimension.name()} around
+${baseDimension.nameOfIndex(center)}`;
+  return new RemappingDimensionView(baseDimension, remapper, name);
 }
 
 class Schema {
-  constructor(categories) {
-    this._categories = categories;
+  constructor(dimensions) {
+    this._dimensions = dimensions;
+  }
+
+  static fromJSON(json) {
+    return new Schema(json.map((spec) => Dimension.fromJSON(spec)));
   }
 
   isOrder(number) {
-    return 0 <= number && number < this.numCategories();
+    return 0 <= number && number < this.numDimensions();
   }
 
   *orders() {
-    for (let order = 0; order < this.numCategories(); order++) {
+    for (let order = 0; order < this.numDimensions(); order++) {
       yield order;
     }
   }
 
-  numCategories() {
-    return this._categories.length;
+  numDimensions() {
+    return this._dimensions.length;
   }
 
-  categoryAtOrder(order) {
+  dimensionAtOrder(order) {
     console.assert(this.isOrder(order), `${order} is not an order in schema`);
-    return this._categories[order];
+    return this._dimensions[order];
   }
 
-  orderOfCategoryName(categoryName) {
-    return this._categories.findIndex((c) => c.name() === categoryName);
+  orderOfDimensionName(dimensionName) {
+    return this._dimensions.findIndex((c) => c.name() === dimensionName);
   }
 
-  categoryOfName(categoryName) {
-    return this.categoryAtOrder(this.orderOfCategoryName(categoryName));
+  dimensionOfName(dimensionName) {
+    return this.dimensionAtOrder(this.orderOfDimensionName(dimensionName));
   }
-}
 
-function schemaFromJSON(spec) {
-  return new Schema(spec.map((spec) => categoryFromJSON(spec)));
+  updateAtOrder(order, newDimension) {
+    const newDimensions = Array.from(this._dimensions);
+    newDimensions[order] = newDimension;
+    return new Schema(newDimensions);
+  }
 }
 
 function toAbsoluteIndex(schema, absoluteAddress) {
-  console.assert(absoluteAddress.length === schema.numCategories(),
+  console.assert(absoluteAddress.length === schema.numDimensions(),
     `absolute address is not of the right length`);
   let multiplier = 1;
   let absoluteIndex = 0;
-  for (let o = schema.numCategories() - 1; o >= 0; o--) {
-      absoluteIndex += absoluteAddress[o] * multiplier;
-      multiplier *= schema.categoryAtOrder(o).numIndices();
+  for (let o = schema.numDimensions() - 1; o >= 0; o--) {
+    const dimension = schema.dimensionAtOrder(o);
+    console.assert(
+      dimension.isIndex(absoluteAddress[o]),
+      `in order ${o}$ the index in the absolute address ${absoluteAddress} is out of range for the dimension ${dimension.name()}`
+    );
+    absoluteIndex += absoluteAddress[o] * multiplier;
+    multiplier *= dimension.numIndices();
   }
   return absoluteIndex;
 }
 
-class PhysicalDataView {
-  constructor(json) {
-    this._schema = schemaFromJSON(json.schema);
-    this._rawData = json.raw_data;
+class PhysicalData {
+  constructor(rawData, schema) {
+    this._rawData = rawData;
+    this._schema = schema;
+  }
+
+  static fromJSON(json) {
+    const schema = Schema.fromJSON(json.schema);
+    const rawData = json.raw_data;
+    return new PhysicalData(rawData, schema);
   }
 
   schema() {
@@ -228,7 +261,44 @@ class PhysicalDataView {
   }
 }
 
-class VirtualDataView {
+// It might be worth to make this recompute layer fatter so that
+// multiple recomputes can happen at the same time! In the current
+// approach we get a long chain of calls to lookup when we stack more
+// than one recompute.
+class RecomputeLayer {
+  constructor(baseData, orderOfRecompute, indexName, recomputer) {
+    this._baseData = baseData;
+    this._orderOfRecompute = orderOfRecompute;
+    const baseSchema = baseData.schema();
+    const baseDimension = baseSchema.dimensionAtOrder(orderOfRecompute);
+    this._cutoff = baseDimension.numIndices()
+    const newDimension = baseDimension.extend(indexName);
+    this._schema = baseSchema.updateAtOrder(orderOfRecompute, newDimension);
+    this._recomputer = recomputer;
+  }
+
+  schema() {
+    return this._schema;
+  }
+
+  lookup(absoluteAddress) {
+    const order = this._orderOfRecompute;
+    const cutoff = this._cutoff;
+    console.assert(absoluteAddress[order] <= cutoff,
+      `absolute address ${absoluteAddress} is out of range in order ${order}`);
+    if (absoluteAddress[order] < cutoff) {
+      return this._baseData.lookup(absoluteAddress);
+    }
+    const lookup = (index) => {
+      const newAddress = Array.from(absoluteAddress);
+      newAddress[order] = index;
+      return this._baseData.lookup(newAddress);
+    }
+    return this._recomputer(lookup);
+  }
+}
+
+class DataView {
   constructor(physicalView, virtualSchema) {
     this._physicalView = physicalView;
     this._schema = virtualSchema;
@@ -241,7 +311,7 @@ class VirtualDataView {
   lookup(absoluteAddress) {
     const physicalAddress = new Array(absoluteAddress.length);
     for (let o of this.schema().orders()) {
-      physicalAddress[o] = this.schema().categoryAtOrder(o).transform(absoluteAddress[o]);
+      physicalAddress[o] = this.schema().dimensionAtOrder(o).transform(absoluteAddress[o]);
     }
     return this._physicalView.lookup(physicalAddress);
   }
@@ -261,9 +331,9 @@ class MutableHierarchicalIterator {
   increment() {
     let k = this._array.length - 1;
     do {
-      const category = this._schema.categoryAtOrder(this._hierarchy[k]);
+      const dimension = this._schema.dimensionAtOrder(this._hierarchy[k]);
       this._array[k]++;
-      if (this._array[k] !== category.numIndices()) {
+      if (this._array[k] !== dimension.numIndices()) {
         return true;
       }
       this._array[k] = 0;
@@ -284,12 +354,12 @@ class MutableHierarchicalIterator {
   }
 }
 
-function indexInCategoryFromJSON(category, json) {
+function indexInDimensionFromJSON(dimension, json) {
   const defaultValue = 0;
   return {
     "first": 0,
-    "mid": category.numIndices() / 2,
-    "last": category.numIndices() - 1
+    "mid": dimension.numIndices() / 2,
+    "last": dimension.numIndices() - 1
   }[json] || (Number.isInteger(json) ? json : defaultValue);
 }
 
@@ -309,14 +379,14 @@ class BigTableConfig {
   }
 
   virtualize(schema) {
-    const array = schema._categories.map((_, o) => {
-      const category = schema.categoryAtOrder(o);
+    const array = schema._dimensions.map((_, o) => {
+      const dimension = schema.dimensionAtOrder(o);
       const descriptor = this._virtualizer[o] || {"type": "id"};
 
-      const id = () => new IdentityCategoryView(category);
+      const id = () => new IdentityDimensionView(dimension);
       const onFixed = () => {
-            const fixedValue = indexInCategoryFromJSON(category, descriptor["value"]);
-            return new FixedValueCategoryView(category, fixedValue);
+            const fixedValue = indexInDimensionFromJSON(dimension, descriptor["value"]);
+            return new FixedValueDimensionView(dimension, fixedValue);
       };
       const mapper = {
         "id": id,
@@ -324,8 +394,8 @@ class BigTableConfig {
         "fixed_id": onFixed,
         "fixed_exponential": onFixed,
         "exponential": () => {
-            const center = indexInCategoryFromJSON(category, descriptor["center"]);
-            return exponentialRemapper(category, center);
+            const center = indexInDimensionFromJSON(dimension, descriptor["center"]);
+            return exponentialRemapper(dimension, center);
           }
       }[descriptor["type"]] || id;
       return mapper();
@@ -333,7 +403,7 @@ class BigTableConfig {
     return new Schema(array);
   }
 
-  updateVirtualizer(order, baseIndex, baseCategory) {
+  updateVirtualizer(order, baseIndex, baseDimension) {
     const virtualizer = this.virtualizer();
     const description = virtualizer[order] || {"type": "id"};
     const currentType = description["type"] || "id";
@@ -346,7 +416,7 @@ class BigTableConfig {
                   "center": description["value"]};
         },
       "exponential": () => {
-          const center = indexInCategoryFromJSON(baseCategory,
+          const center = indexInDimensionFromJSON(baseDimension,
             description["center"]);
           if (baseIndex === center) {
             return {"type": "fixed_exponential",
@@ -382,12 +452,12 @@ class BigTableConfig {
       "column hierarchy contains duplicates");
     console.assert(rowHierarchy.every(item => !cSet.has(item)),
       "row and column hierarchies are not disjoint");
-    for (let o = 0; o < schema.numCategories(); o++) {
+    for (let o = 0; o < schema.numDimensions(); o++) {
       console.assert(rSet.has(o) || cSet.has(o),
-        "some category from the schema is not in either row nor column hierarchy");
+        "some dimension from the schema is not in either row nor column hierarchy");
     }
-    console.assert(rSet.size + cSet.size === schema.numCategories(),
-      "row or column hierarchy contain categories that are not in the schema");
+    console.assert(rSet.size + cSet.size === schema.numDimensions(),
+      "row or column hierarchy contain dimensions that are not in the schema");
   }
 }
 
@@ -397,12 +467,11 @@ class BigTable {
   }
 
   render(config) {
-    console.log("big table start rendering");
     //console.log("the current virtualizer is: ", config.virtualizer());
     const baseSchema = this._dataView.schema();
     const schema = config.virtualize(baseSchema);
     config.checkHierarchies(schema);
-    const virtualDataView = new VirtualDataView(this._dataView, schema);
+    const virtualDataView = new DataView(this._dataView, schema);
     const [rowHierarchy, columnHierarchy] = config.hierarchies();
 
     // using arrow function to get the right behavior of 'this'
@@ -412,7 +481,7 @@ class BigTable {
       console.assert(columnAddress.length === columnHierarchy.length,
         "column address length does not match the length of the column hierarchy");
     
-      const address = Array(schema.numCategories());
+      const address = Array(schema.numDimensions());
       for (const [j, index] of rowAddress.entries()) {
         address[rowHierarchy[j]] = index;
       }
@@ -426,12 +495,12 @@ class BigTable {
     const table = h("table", tbody = h("tbody"));
 
     // using arrow function to get the right behavior of 'this'
-    const createHeaderCell = (order, category, index) => {
-      const cell = h("th", category.nameOfIndex(index));
+    const createHeaderCell = (order, dimension, index) => {
+      const cell = h("th", dimension.nameOfIndex(index));
       cell.addEventListener('click', () => {
-        const baseCategory = baseSchema.categoryAtOrder(order);
-        const baseIndex = category.transform(index);
-        const newConfig = config.updateVirtualizer(order, baseIndex, baseCategory);
+        const baseDimension = baseSchema.dimensionAtOrder(order);
+        const baseIndex = dimension.transform(index);
+        const newConfig = config.updateVirtualizer(order, baseIndex, baseDimension);
         table.replaceWith(this.render(newConfig));
       });
       return cell;
@@ -523,11 +592,11 @@ class BigTable {
         // draw row heading
         let multiplier = 1;
         for (let [k, order, index] of columnIterator.freshDigits()) {
-          const category = schema.categoryAtOrder(order);
-          const cell = createHeaderCell(order, category, index);
+          const dimension = schema.dimensionAtOrder(order);
+          const cell = createHeaderCell(order, dimension, index);
           cell.colSpan = multiplier;
           rowArray[k].append(cell);
-          multiplier *= category.numIndices();
+          multiplier *= dimension.numIndices();
         }
       } while (columnIterator.increment());
     }
@@ -539,11 +608,11 @@ class BigTable {
       // draw row heading
       let multiplier = 1;
       for (let [k, order, index] of rowIterator.freshDigits()) {
-        const category = schema.categoryAtOrder(order);
-        const cell = createHeaderCell(order, category, index);
+        const dimension = schema.dimensionAtOrder(order);
+        const cell = createHeaderCell(order, dimension, index);
         cell.rowSpan = multiplier;
         row.prepend(cell);
-        multiplier *= category.numIndices();
+        multiplier *= dimension.numIndices();
       }
       // draw data cell
       const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
@@ -559,5 +628,3 @@ class BigTable {
     return table;
   }
 }
-
-console.log("bigTable loaded");

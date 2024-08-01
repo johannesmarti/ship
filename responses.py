@@ -57,13 +57,13 @@ def responses() -> any:
              keep_history = True,
              max_iterations = 1000
     )
-    config = duo_config
+    #config = duo_config
     r = eva.make_market(participants, p0, config)
 
     def iter_for_iteration(iteration: eva.Iteration) -> Iterable[float]:
         return itertools.chain(iter(iteration.price),
                                iter(iteration.supply.error),
-                               iter(iteration.supply.volume),
+                               iter(iteration.supply.double_volume),
                                map(lambda m: 1000 * 1000 * m, iter(iteration.momentum)))
     nested_iterator = map(iter_for_iteration, r.history)
     history_iter = itertools.chain.from_iterable(nested_iterator)
@@ -73,7 +73,7 @@ def responses() -> any:
            { "name": "iteration",
              "indices": list(map(lambda i: i + 1, range(len(r.history)))) },
            { "name": "datatype",
-             "indices": ["price", "error", "volume", "Mp"] },
+             "indices": ["price", "error", "double_volume", "Mp"] },
            { "name": "province",
              "indices": schema.province_schema().list_of_names() },
            { "name": "good",
@@ -90,13 +90,12 @@ def responses() -> any:
     basic_response = {
         "schema": [
            { "name": "datatype",
-             "indices": ["price", "sold", "bought"] },
+             "indices": ["price", "volume"] },
            { "name": "province",
              "indices": schema.province_schema().list_of_names() },
            { "name": "good",
              "indices": schema.local_schema().list_of_names() } ],
-        "raw_data": list(itertools.chain(iter(p), iter(supply.error),
-                                                  iter(supply.volume)))
+        "raw_data": list(itertools.chain(iter(p), iter(supply.volume())))
     }
 
     return (basic_response, debug_response)

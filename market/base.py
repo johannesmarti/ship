@@ -74,7 +74,7 @@ def mixing(a: np.ndarray, b: np.ndarray, factor: float) -> np.ndarray:
 def relative_badness(error : VolumeBundle) -> float:
     #return norm(error)
     #return norm(error, ord=1)
-    return norm(error.error/(error.volume + 0.0001), ord=1)
+    return norm(error.error/(error.double_volume + 0.0001), ord=1)
 
 def absolute_badness(error : VolumeBundle) -> float:
     #return norm(error)

@@ -60,26 +60,32 @@ async function fetchData() {
 }
 
 async function main() {
-  console.log("starting with body script");
   data = await fetchData();
   if (data !== null) {
-    console.log("data is loaded");
-
     const heading = h("h1", "Big Table");
     document.body.append(heading);
 
-    const dataView = new PhysicalDataView(data);
+    const physicalData = PhysicalData.fromJSON(data);
 
-    const physicalDataView = new PhysicalDataView(data);
-    const bigTable = new BigTable(physicalDataView);
-    console.log("big table object is set up");
+    const physicalSchema = physicalData.schema();
+    const iteration = physicalSchema.orderOfDimensionName("iteration");
+    const good = physicalSchema.orderOfDimensionName("good");
+    const province = physicalSchema.orderOfDimensionName("province");
+    const datatype = physicalSchema.orderOfDimensionName("datatype");
 
-    const physicalSchema = physicalDataView.schema();
-    const iteration = physicalSchema.orderOfCategoryName("iteration");
-    const good = physicalSchema.orderOfCategoryName("good");
-    const province = physicalSchema.orderOfCategoryName("province");
-    const datatype = physicalSchema.orderOfCategoryName("datatype");
-    const iterCategory = physicalSchema.categoryAtOrder(iteration);
+    const datatypeDimension = physicalSchema.dimensionAtOrder(datatype);
+    const double_volume = datatypeDimension.indexOfName("double_volume");
+    const error = datatypeDimension.indexOfName("error");
+
+    new RecomputeLayer(physicalData, datatype, "sold",
+      (l) => (l(double_volume) + l(error)) / 2 );
+
+    const dataLayer = new RecomputeLayer(
+      new RecomputeLayer(physicalData, datatype, "sold",
+          (l) => (l(double_volume) + l(error)) / 2 ),
+        datatype, "bought",
+          (l) => (l(double_volume) - l(error)) / 2 );
+
     const virtualizer = {
       [iteration]: {
         "type": "exponential",
@@ -89,6 +95,7 @@ async function main() {
 
     const config = new BigTableConfig([iteration, datatype],
                                       [good, province], virtualizer);
+    const bigTable = new BigTable(dataLayer);
     const domTable = bigTable.render(config);
     document.body.append(domTable);
   }
