@@ -76,12 +76,18 @@ async function main() {
     const datatypeDimension = physicalSchema.dimensionAtOrder(datatype);
     const double_volume = datatypeDimension.indexOfName("double_volume");
     const error = datatypeDimension.indexOfName("error");
+    const price = datatypeDimension.indexOfName("price");
 
     new RecomputeLayer(physicalData, datatype, "sold",
       (l) => (l(double_volume) + l(error)) / 2 );
 
-    const dataLayer = new RecomputeLayer(
-      new RecomputeLayer(physicalData, datatype, "sold",
+    const dataLayer =
+      new RecomputeLayer(
+      new RecomputeLayer(
+      new RecomputeLayer(physicalData,
+        datatype, "volume",
+          (l) => l(double_volume)/2 * l(price) ),
+        datatype, "sold",
           (l) => (l(double_volume) + l(error)) / 2 ),
         datatype, "bought",
           (l) => (l(double_volume) - l(error)) / 2 );

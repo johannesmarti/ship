@@ -1,5 +1,36 @@
-- get multidimensional grid search results to show in bigTable
+- get bigTable to deal with different cubes at once
 - implement proper class hierarchy in Schema stuff. it is messed up with
   the typing
 - include gold and savings
 
+Iteration
+Location
+Good
+Datatype {price and volume}
+
+Iteration
+Location
+FactoryType
+Good {labor, input, output}
+Datatype {totalprice, volume}
+
+Location
+FactoryType
+Good
+Type {production coefficent}
+
+Iteration
+Location
+Good
+Type {consumed, utility generated}
+
+Location
+Good
+Type {utility_coefficient}
+
+Iteration
+Location
+Location_from
+Location_to
+Good
+Type {quantity, sell_value, buy_value}
