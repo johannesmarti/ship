@@ -483,7 +483,6 @@ class BigTable {
   }
 
   render(config) {
-    //console.log("the current virtualizer is: ", config.virtualizer());
     const baseSchema = this._dataView.schema();
     const schema = config.virtualize(baseSchema);
     config.checkHierarchies(schema);

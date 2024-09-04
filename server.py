@@ -37,7 +37,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 def run(handler_class=SimpleHTTPRequestHandler, port=8000):
     server_address = ('', port)
     httpd = HTTPServer(server_address, handler_class)
-    print(f'Starting pytrade http server on port {port}')
+    print(f'Starting kogge http server on port {port}')
     httpd.serve_forever()
 
 if __name__ == '__main__':
