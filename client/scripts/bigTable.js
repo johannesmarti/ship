@@ -370,6 +370,39 @@ class MutableHierarchicalIterator {
   }
 }
 
+class Hierarchization {
+  constructor(rowHierarchy, columnHierarchy) {
+    this._rowHierarchy = rowHierarchy;
+    this._columnHierarchy = columnHierarchy;
+  }
+
+  hierarchies() {
+    return [this._rowHierarchy, this._columnHierarchy];
+  }
+
+  checkHierarchies(schema) {
+    const [rowHierarchy, columnHierarchy] = this.hierarchies()
+    const rSet = new Set(rowHierarchy);
+    const cSet = new Set(columnHierarchy);
+    console.assert(rowHierarchy.length > 0,
+      "row hierarchy is empty");
+    console.assert(columnHierarchy.length > 0,
+      "column hierarchy is empty");
+    console.assert(rSet.size === rowHierarchy.length,
+      "row hierarchy contains duplicates");
+    console.assert(cSet.size === columnHierarchy.length,
+      "column hierarchy contains duplicates");
+    console.assert(rowHierarchy.every(item => !cSet.has(item)),
+      "row and column hierarchies are not disjoint");
+    for (let o = 0; o < schema.numDimensions(); o++) {
+      console.assert(rSet.has(o) || cSet.has(o),
+        "some dimension from the schema is not in either row nor column hierarchy");
+    }
+    console.assert(rSet.size + cSet.size === schema.numDimensions(),
+      "row or column hierarchy contain dimensions that are not in the schema");
+  }
+}
+
 function indexInDimensionFromJSON(dimension, json) {
   const defaultValue = 0;
   return {
@@ -379,19 +412,13 @@ function indexInDimensionFromJSON(dimension, json) {
   }[json] || (Number.isInteger(json) ? json : defaultValue);
 }
 
-class BigTableConfig {
-  constructor(rowHierarchy, columnHierarchy, virtualizer) {
-    this._rowHierarchy = rowHierarchy;
-    this._columnHierarchy = columnHierarchy;
-    this._virtualizer = virtualizer;
+class Virtualizer {
+  constructor(configuration) {
+    this._configuration = configuration;
   }
 
-  hierarchies() {
-    return [this._rowHierarchy, this._columnHierarchy];
-  }
-
-  virtualizer() {
-    return this._virtualizer;
+  configuration() {
+    return this._configuration;
   }
 
   virtualize(schema) {
@@ -419,7 +446,7 @@ class BigTableConfig {
     return new Schema(array);
   }
 
-  updateVirtualizer(order, baseIndex, baseDimension) {
+  update(order, baseIndex, baseDimension) {
     const virtualizer = this.virtualizer();
     const description = virtualizer[order] || {"type": "id"};
     const currentType = description["type"] || "id";
@@ -447,33 +474,32 @@ class BigTableConfig {
         }
     }[currentType];
     const newDescription = computeNewDescription()
-    const newVirtualizer = { ...virtualizer, [order]: newDescription};
-    const [rowHierarchy, columnHierarchy] = this.hierarchies()
-    const newConfig = new BigTableConfig(rowHierarchy, columnHierarchy,
-      newVirtualizer);
-    return newConfig;
+    const newConfiguration = { ...virtualizer, [order]: newDescription};
+    const newVirtualizer = new Virtualizer(newConfiguration);
+    return newVirtualizer;
+  }
+}
+
+class BigTableViewState {
+  constructor(hierarchization, virtualizer) {
+    this._hierarchization = hierarchization;
+    this._virtualizer = virtualizer;
   }
 
-  checkHierarchies(schema) {
-    const [rowHierarchy, columnHierarchy] = this.hierarchies()
-    const rSet = new Set(rowHierarchy);
-    const cSet = new Set(columnHierarchy);
-    console.assert(rowHierarchy.length > 0,
-      "row hierarchy is empty");
-    console.assert(columnHierarchy.length > 0,
-      "column hierarchy is empty");
-    console.assert(rSet.size === rowHierarchy.length,
-      "row hierarchy contains duplicates");
-    console.assert(cSet.size === columnHierarchy.length,
-      "column hierarchy contains duplicates");
-    console.assert(rowHierarchy.every(item => !cSet.has(item)),
-      "row and column hierarchies are not disjoint");
-    for (let o = 0; o < schema.numDimensions(); o++) {
-      console.assert(rSet.has(o) || cSet.has(o),
-        "some dimension from the schema is not in either row nor column hierarchy");
-    }
-    console.assert(rSet.size + cSet.size === schema.numDimensions(),
-      "row or column hierarchy contain dimensions that are not in the schema");
+  hierarchization() {
+    return this._hierarchization;
+  }
+
+  virtualizer() {
+    return this._virtualizer;
+  }
+
+  setHierarchization(newHierarchization) {
+    return newBigTableViewState(newHierarchization, this._virtualizer);
+  }
+
+  setVirtualizer(newVirtualizer) {
+    return newBigTableViewState(this._hierarchization, newVirtualizer);
   }
 }
 
@@ -482,12 +508,14 @@ class BigTable {
     this._dataView = dataView;
   }
 
-  render(config) {
+  render(viewState) {
     const baseSchema = this._dataView.schema();
-    const schema = config.virtualize(baseSchema);
-    config.checkHierarchies(schema);
+    const virtualizer = viewState.virtualizer();
+    const schema = virtualizer.virtualize(baseSchema);
+    const hierarchization = viewState.hierarchization();
+    hierarchization.checkHierarchies(schema);
+    const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
     const virtualDataView = new DataView(this._dataView, schema);
-    const [rowHierarchy, columnHierarchy] = config.hierarchies();
 
     // using arrow function to get the right behavior of 'this'
     const absoluteAddress = (rowAddress, columnAddress) => {
@@ -515,8 +543,9 @@ class BigTable {
       cell.addEventListener('click', () => {
         const baseDimension = baseSchema.dimensionAtOrder(order);
         const baseIndex = dimension.transform(index);
-        const newConfig = config.updateVirtualizer(order, baseIndex, baseDimension);
-        table.replaceWith(this.render(newConfig));
+        const newVirtualizer = virtualizer.update(order, baseIndex, baseDimension);
+        const newViewState = viewState.updateVirtualizer(newVirtualizer);
+        table.replaceWith(this.render(newViewState));
       });
       return cell;
     }
