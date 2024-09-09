@@ -401,6 +401,23 @@ class Hierarchization {
     console.assert(rSet.size + cSet.size === schema.numDimensions(),
       "row or column hierarchy contain dimensions that are not in the schema");
   }
+
+  absoluteAddress(rowAddress, columnAddress) {
+    const [rowHierarchy, columnHierarchy] = this.hierarchies();
+    console.assert(rowAddress.length === rowHierarchy.length,
+      "row address length does not match the length of the row hierarchy");
+    console.assert(columnAddress.length === columnHierarchy.length,
+      "column address length does not match the length of the column hierarchy");
+
+    const address = Array(rowHierarchy.length + columnHierarchy.length);
+    for (const [j, index] of rowAddress.entries()) {
+      address[rowHierarchy[j]] = index;
+    }
+    for (const [j, index] of columnAddress.entries()) {
+      address[columnHierarchy[j]] = index;
+    }
+    return address;
+  }
 }
 
 function indexInDimensionFromJSON(dimension, json) {
@@ -517,23 +534,6 @@ class BigTable {
     const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
     const virtualDataView = new DataView(this._dataView, schema);
 
-    // using arrow function to get the right behavior of 'this'
-    const absoluteAddress = (rowAddress, columnAddress) => {
-      console.assert(rowAddress.length === rowHierarchy.length,
-        "row address length does not match the length of the row hierarchy");
-      console.assert(columnAddress.length === columnHierarchy.length,
-        "column address length does not match the length of the column hierarchy");
-    
-      const address = Array(schema.numDimensions());
-      for (const [j, index] of rowAddress.entries()) {
-        address[rowHierarchy[j]] = index;
-      }
-      for (const [j, index] of columnAddress.entries()) {
-        address[columnHierarchy[j]] = index;
-      }
-      return address;
-    }
-
     let tbody;
     const table = h("table", tbody = h("tbody"));
 
@@ -587,7 +587,7 @@ class BigTable {
             const newHierarchization = new Hierarchization(
                 newRowHierarchy, columnHierarchy);
             const newViewState =
-                new viewState.setHierarchization(newHierarchization);
+                viewState.setHierarchization(newHierarchization);
             table.replaceWith(this.render(newViewState));
           });
           rowArray[lastRow].append(h("td", button));
@@ -671,8 +671,8 @@ class BigTable {
       // draw data cell
       const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
       do {
-        const address = absoluteAddress(rowIterator.address(),
-                                        columnIterator.address());
+        const address = hierarchization.absoluteAddress(rowIterator.address(),
+                                                        columnIterator.address());
         const value = virtualDataView.lookup(address);
         row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
