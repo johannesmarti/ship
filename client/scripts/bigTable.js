@@ -424,7 +424,7 @@ class Virtualizer {
   virtualize(schema) {
     const array = schema._dimensions.map((_, o) => {
       const dimension = schema.dimensionAtOrder(o);
-      const descriptor = this._virtualizer[o] || {"type": "id"};
+      const descriptor = this._configuration[o] || {"type": "id"};
 
       const id = () => new IdentityDimensionView(dimension);
       const onFixed = () => {
@@ -447,8 +447,8 @@ class Virtualizer {
   }
 
   update(order, baseIndex, baseDimension) {
-    const virtualizer = this.virtualizer();
-    const description = virtualizer[order] || {"type": "id"};
+    const configuration = this.configuration();
+    const description = configuration[order] || {"type": "id"};
     const currentType = description["type"] || "id";
     const computeNewDescription = {
       "id": () => { return {"type": "fixed_id", "value": baseIndex}; },
@@ -474,7 +474,7 @@ class Virtualizer {
         }
     }[currentType];
     const newDescription = computeNewDescription()
-    const newConfiguration = { ...virtualizer, [order]: newDescription};
+    const newConfiguration = { ...configuration, [order]: newDescription};
     const newVirtualizer = new Virtualizer(newConfiguration);
     return newVirtualizer;
   }
@@ -495,11 +495,11 @@ class BigTableViewState {
   }
 
   setHierarchization(newHierarchization) {
-    return newBigTableViewState(newHierarchization, this._virtualizer);
+    return new BigTableViewState(newHierarchization, this._virtualizer);
   }
 
   setVirtualizer(newVirtualizer) {
-    return newBigTableViewState(this._hierarchization, newVirtualizer);
+    return new BigTableViewState(this._hierarchization, newVirtualizer);
   }
 }
 
@@ -543,8 +543,9 @@ class BigTable {
       cell.addEventListener('click', () => {
         const baseDimension = baseSchema.dimensionAtOrder(order);
         const baseIndex = dimension.transform(index);
-        const newVirtualizer = virtualizer.update(order, baseIndex, baseDimension);
-        const newViewState = viewState.updateVirtualizer(newVirtualizer);
+        const newVirtualizer =
+            virtualizer.update(order, baseIndex, baseDimension);
+        const newViewState = viewState.setVirtualizer(newVirtualizer);
         table.replaceWith(this.render(newViewState));
       });
       return cell;
@@ -568,9 +569,11 @@ class BigTable {
             const newColumnHierarchy = Array.from(columnHierarchy);
             newColumnHierarchy[k] = columnHierarchy[k + 1];
             newColumnHierarchy[k + 1] = columnHierarchy[k];
-            const newConfig = new BigTableConfig(rowHierarchy,
-              newColumnHierarchy, config.virtualizer());
-            table.replaceWith(this.render(newConfig));
+            const newHierarchization = new Hierarchization(
+                rowHierarchy, newColumnHierarchy);
+            const newViewState =
+                viewState.setHierarchization(newHierarchization);
+            table.replaceWith(this.render(newViewState));
           });
           rowArray[k].append(h("td", button));
         }
@@ -581,9 +584,11 @@ class BigTable {
             const tmp = rowHierarchy[l];
             newRowHierarchy[l] = rowHierarchy[l + 1];
             newRowHierarchy[l + 1] = rowHierarchy[l];
-            const newConfig = new BigTableConfig(newRowHierarchy,
-              columnHierarchy, config.virtualizer());
-            table.replaceWith(this.render(newConfig));
+            const newHierarchization = new Hierarchization(
+                newRowHierarchy, columnHierarchy);
+            const newViewState =
+                new viewState.setHierarchization(newHierarchization);
+            table.replaceWith(this.render(newViewState));
           });
           rowArray[lastRow].append(h("td", button));
         }
@@ -594,9 +599,11 @@ class BigTable {
             const newColumnHierarchy = Array.from(columnHierarchy);
             const switcher = newRowHierarchy.pop();
             newColumnHierarchy.push(switcher);
-            const newConfig = new BigTableConfig(newRowHierarchy,
-              newColumnHierarchy, config.virtualizer());
-            table.replaceWith(this.render(newConfig));
+            const newHierarchization = new Hierarchization(
+                newRowHierarchy, newColumnHierarchy);
+            const newViewState =
+                viewState.setHierarchization(newHierarchization);
+            table.replaceWith(this.render(newViewState));
           });
           lastCell.append(button);
         }
@@ -608,10 +615,11 @@ class BigTable {
             const fromColumn = newColumnHierarchy.pop();
             newRowHierarchy.push(fromColumn);
             newColumnHierarchy.push(fromRow);
-            const newConfig = new BigTableConfig(newRowHierarchy,
-              newColumnHierarchy, config.virtualizer());
-            table.replaceWith(this.render(newConfig));
-            table.replaceWith(this.render(rowHierarchy, columnHierarchy));
+            const newHierarchization = new Hierarchization(
+                newRowHierarchy, newColumnHierarchy);
+            const newViewState =
+                viewState.setHierarchization(newHierarchization);
+            table.replaceWith(this.render(newViewState));
           });
           lastCell.append(button);
         }
@@ -621,9 +629,11 @@ class BigTable {
             const newColumnHierarchy = Array.from(columnHierarchy);
             const switcher = newColumnHierarchy.pop();
             newRowHierarchy.push(switcher);
-            const newConfig = new BigTableConfig(newRowHierarchy,
-              newColumnHierarchy, config.virtualizer());
-            table.replaceWith(this.render(newConfig));
+            const newHierarchization = new Hierarchization(
+                newRowHierarchy, newColumnHierarchy);
+            const newViewState =
+                viewState.setHierarchization(newHierarchization);
+            table.replaceWith(this.render(newViewState));
           });
           lastCell.append(button);
         }
@@ -668,7 +678,6 @@ class BigTable {
       } while(columnIterator.increment());
       tbody.append(row);
     } while (rowIterator.increment());
-
     return table;
   }
 }

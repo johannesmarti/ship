@@ -92,15 +92,17 @@ async function main() {
         datatype, "bought",
           (l) => (l(double_volume) - l(error)) / 2 );
 
-    const virtualizer = {
+    const vconfig = {
       [iteration]: {
         "type": "exponential",
         "center": "last"
       }
     }
 
-    const config = new BigTableConfig([iteration, datatype],
-                                      [good, province], virtualizer);
+    const hierarchization = new Hierarchization([iteration, datatype],
+                                                [good, province]);
+    const virtualizer = new Virtualizer(vconfig);
+    const config = new BigTableViewState(hierarchization, virtualizer);
     const bigTable = new BigTable(dataLayer);
     const domTable = bigTable.render(config);
     document.body.append(domTable);
