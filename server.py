@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import os
 
 import responses
 
@@ -23,12 +24,19 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             with open('client/index.html', 'rb') as file:
                 self.wfile.write(file.read())
-        elif self.path == '/scripts/bigTable.js':
-            self.send_response(200)
-            self.send_header('Content-type', 'application/javascript')
-            self.end_headers()
-            with open('client/scripts/bigTable.js', 'rb') as file:
-                self.wfile.write(file.read())
+        elif self.path.startswith('/scripts/') and self.path.endswith('.js'):
+            # Serve arbitrary JavaScript files from the scripts folder
+            file_path = os.path.join('client', self.path.lstrip('/'))
+            if os.path.isfile(file_path):
+                self.send_response(200)
+                self.send_header('Content-type', 'application/javascript')
+                self.end_headers()
+                with open(file_path, 'rb') as file:
+                    self.wfile.write(file.read())
+            else:
+                self.send_response(404)
+                self.end_headers()
+                self.wfile.write(b'{"error": "File not found"}')
         else:
             self.send_response(404)
             self.end_headers()

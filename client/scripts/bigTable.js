@@ -1,4 +1,6 @@
-function h(tagName, ...args) {
+import {Schema} from './schema.js';
+
+export function h(tagName, ...args) {
   const el = document.createElement(tagName);
   el.append(...args);
   return el;
@@ -9,47 +11,6 @@ function createButton(text, onClickFunction) {
   button.textContent = text;
   button.onclick = onClickFunction;
   return button;
-}
-
-class Dimension {
-  constructor(name, indexNameList) {
-    this._name = name;
-    this._indexNameList = indexNameList;
-    console.assert(this._indexNameList.length >= 1,
-      `Need at least one index in dimension ${this._name}`);
-  }
-
-  static fromJSON(spec) {
-    return new Dimension(spec.name, spec.indices);
-  }
-
-  numIndices() {
-    return this._indexNameList.length;
-  }
-
-  isIndex(number) {
-    return 0 <= number && number < this.numIndices();
-  }
-
-  name() {
-    return this._name;
-  }
-
-  nameOfIndex(index) {
-    console.assert(this.isIndex(index),
-      `${index} is not an index in dimension ${this.name()}`);
-    return this._indexNameList[index];
-  }
-
-  indexOfName(name) {
-    return this._indexNameList.indexOf(name);
-  }
-
-  extend(newIndexName) {
-    const newIndexNameList = Array.from(this._indexNameList);
-    newIndexNameList.push(newIndexName);
-    return new Dimension(this._name, newIndexNameList);
-  }
 }
 
 class IdentityDimensionTransformer {
@@ -237,7 +198,7 @@ class MutableHierarchicalIterator {
   }
 }
 
-class Hierarchization {
+export class Hierarchization {
   constructor(rowHierarchy, columnHierarchy) {
     this._rowHierarchy = rowHierarchy;
     this._columnHierarchy = columnHierarchy;
@@ -296,7 +257,7 @@ function indexInDimensionFromJSON(dimension, json) {
   }[json] || (Number.isInteger(json) ? json : defaultValue);
 }
 
-class Virtualizer {
+export class Virtualizer {
   constructor(configuration) {
     this._configuration = configuration;
   }
@@ -364,7 +325,7 @@ class Virtualizer {
   }
 }
 
-class BigTableViewState {
+export class BigTableViewState {
   constructor(hierarchization, virtualizer) {
     this._hierarchization = hierarchization;
     this._virtualizer = virtualizer;
@@ -387,7 +348,7 @@ class BigTableViewState {
   }
 }
 
-class BigTable {
+export class BigTable {
   constructor(dataView) {
     this._dataView = dataView;
   }

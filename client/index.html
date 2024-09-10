@@ -33,15 +33,21 @@
     }
   </style>
 
-  <script src="scripts/bigTable.js"></script>
+  <script type="module" src="scripts/physicalData.js"></script>
+  <script type="module" src="scripts/recomputeLayer.js"></script>
+  <script type="module" src="scripts/bigTable.js"></script>
 </head>
 
 <body>
  <!-- stuff that is there when the script runs -->
 </body>
 
-<script>
-  // body is there is there
+<script type="module">
+
+import {PhysicalData} from './scripts/physicalData.js';
+import {RecomputeLayer} from './scripts/recomputeLayer.js';
+import {h, Hierarchization, Virtualizer, BigTableViewState, BigTable
+    } from './scripts/bigTable.js';
 
 async function fetchData() {
   try {
@@ -60,7 +66,7 @@ async function fetchData() {
 }
 
 async function main() {
-  data = await fetchData();
+  const data = await fetchData();
   if (data !== null) {
     const heading = h("h1", "Big Table");
     document.body.append(heading);
