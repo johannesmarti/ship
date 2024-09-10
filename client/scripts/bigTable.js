@@ -315,19 +315,20 @@ class RecomputeLayer {
 }
 
 class DataView {
-  constructor(physicalView, virtualSchema) {
+  constructor(physicalView, transformationSchema) {
     this._physicalView = physicalView;
-    this._schema = virtualSchema;
+    this._transformationSchema = transformationSchema;
   }
 
   schema() {
-    return this._schema;
+    return this._transformationSchema;
   }
   
   lookup(absoluteAddress) {
+    const schema = this.schema();
     const physicalAddress = new Array(absoluteAddress.length);
-    for (let o of this.schema().orders()) {
-      physicalAddress[o] = this.schema().dimensionAtOrder(o).transform(absoluteAddress[o]);
+    for (let o of schema.orders()) {
+      physicalAddress[o] = schema.dimensionAtOrder(o).transform(absoluteAddress[o]);
     }
     return this._physicalView.lookup(physicalAddress);
   }
