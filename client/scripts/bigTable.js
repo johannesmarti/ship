@@ -52,7 +52,7 @@ class Dimension {
   }
 }
 
-class IdentityDimensionView {
+class IdentityDimensionTransformer {
   constructor(baseDimension) {
     this._baseDimension = baseDimension;
   }
@@ -78,7 +78,7 @@ class IdentityDimensionView {
   }
 }
 
-class FixedValueDimensionView {
+class FixedValueDimensionTransformer {
   constructor(baseDimension, fixedIndex) {
     this._baseDimension = baseDimension;
     this._fixedIndex = fixedIndex;
@@ -111,7 +111,7 @@ class FixedValueDimensionView {
   }
 }
 
-class RemappingDimensionView {
+class RemappingDimensionTransformer {
   constructor(baseDimension, remapper, name) {
     this._baseDimension = baseDimension;
     this._remapper = remapper;
@@ -177,144 +177,10 @@ function exponentialRemapper(baseDimension, center) {
 
   const name = `exponential remapper on ${baseDimension.name()} around
 ${baseDimension.nameOfIndex(center)}`;
-  return new RemappingDimensionView(baseDimension, remapper, name);
+  return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 
-class Schema {
-  constructor(dimensions) {
-    this._dimensions = dimensions;
-  }
-
-  static fromJSON(json) {
-    return new Schema(json.map((spec) => Dimension.fromJSON(spec)));
-  }
-
-  isOrder(number) {
-    return 0 <= number && number < this.numDimensions();
-  }
-
-  *orders() {
-    for (let order = 0; order < this.numDimensions(); order++) {
-      yield order;
-    }
-  }
-
-  numDimensions() {
-    return this._dimensions.length;
-  }
-
-  dimensionAtOrder(order) {
-    console.assert(this.isOrder(order), `${order} is not an order in schema`);
-    return this._dimensions[order];
-  }
-
-  orderOfDimensionName(dimensionName) {
-    return this._dimensions.findIndex((c) => c.name() === dimensionName);
-  }
-
-  dimensionOfName(dimensionName) {
-    return this.dimensionAtOrder(this.orderOfDimensionName(dimensionName));
-  }
-
-  updateAtOrder(order, newDimension) {
-    const newDimensions = Array.from(this._dimensions);
-    newDimensions[order] = newDimension;
-    return new Schema(newDimensions);
-  }
-}
-
-function toAbsoluteIndex(schema, absoluteAddress) {
-  console.assert(absoluteAddress.length === schema.numDimensions(),
-    `absolute address is not of the right length`);
-  let multiplier = 1;
-  let absoluteIndex = 0;
-  for (let o = schema.numDimensions() - 1; o >= 0; o--) {
-    const dimension = schema.dimensionAtOrder(o);
-    console.assert(
-      dimension.isIndex(absoluteAddress[o]),
-      `in order ${o}$ the index in the absolute address ${absoluteAddress} is out of range for the dimension ${dimension.name()}`
-    );
-    absoluteIndex += absoluteAddress[o] * multiplier;
-    multiplier *= dimension.numIndices();
-  }
-  return absoluteIndex;
-}
-
-class PhysicalData {
-  constructor(rawData, schema) {
-    this._rawData = rawData;
-    this._schema = schema;
-  }
-
-  static fromJSON(json) {
-    const schema = Schema.fromJSON(json.schema);
-    const rawData = json.raw_data;
-    return new PhysicalData(rawData, schema);
-  }
-
-  schema() {
-    return this._schema;
-  }
-
-  lookup(absoluteAddress) {
-    return this._rawData[toAbsoluteIndex(this._schema, absoluteAddress)];
-  }
-}
-
-// It might be worth to make this recompute layer fatter so that
-// multiple recomputes can happen at the same time! In the current
-// approach we get a long chain of calls to lookup when we stack more
-// than one recompute.
-class RecomputeLayer {
-  constructor(baseData, orderOfRecompute, indexName, recomputer) {
-    this._baseData = baseData;
-    this._orderOfRecompute = orderOfRecompute;
-    const baseSchema = baseData.schema();
-    const baseDimension = baseSchema.dimensionAtOrder(orderOfRecompute);
-    this._cutoff = baseDimension.numIndices()
-    const newDimension = baseDimension.extend(indexName);
-    this._schema = baseSchema.updateAtOrder(orderOfRecompute, newDimension);
-    this._recomputer = recomputer;
-  }
-
-  schema() {
-    return this._schema;
-  }
-
-  lookup(address) {
-    const order = this._orderOfRecompute;
-    const cutoff = this._cutoff;
-    console.assert(address[order] <= cutoff,
-      `absolute address ${address} is out of range in order ${order}`);
-    if (address[order] < cutoff) {
-      return this._baseData.lookup(address);
-    }
-    const lookup = (index) => {
-      // This lookup is called often. We have a slow copying
-      // implementation that trashes memory at every lookup and an
-      // alternative quicker implementation that reuses the memory of
-      // address but is a bit hacky. It does not seem to make a
-      // measurable difference in performance.
-
-      // slow and clean:
-      const newAddress = Array.from(address);
-      newAddress[order] = index;
-      return this._baseData.lookup(newAddress);
-
-      // quick and dirty:
-/*
-      const tmp = address[order];
-      address[order] = index;
-      const value = this._baseData.lookup(address);
-      address[order] = tmp;
-      return value;
-*/
-    }
-    return this._recomputer(lookup);
-  }
-}
-
-class DataView {
+class TransformedDataView {
   constructor(physicalView, transformationSchema) {
     this._physicalView = physicalView;
     this._transformationSchema = transformationSchema;
@@ -444,10 +310,10 @@ class Virtualizer {
       const dimension = schema.dimensionAtOrder(o);
       const descriptor = this._configuration[o] || {"type": "id"};
 
-      const id = () => new IdentityDimensionView(dimension);
+      const id = () => new IdentityDimensionTransformer(dimension);
       const onFixed = () => {
             const fixedValue = indexInDimensionFromJSON(dimension, descriptor["value"]);
-            return new FixedValueDimensionView(dimension, fixedValue);
+            return new FixedValueDimensionTransformer(dimension, fixedValue);
       };
       const mapper = {
         "id": id,
@@ -533,7 +399,7 @@ class BigTable {
     const hierarchization = viewState.hierarchization();
     hierarchization.checkHierarchies(schema);
     const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
-    const virtualDataView = new DataView(this._dataView, schema);
+    const transformedDataView = new TransformedDataView(this._dataView, schema);
 
     let tbody;
     const table = h("table", tbody = h("tbody"));
@@ -674,7 +540,7 @@ class BigTable {
       do {
         const address = hierarchization.absoluteAddress(rowIterator.address(),
                                                         columnIterator.address());
-        const value = virtualDataView.lookup(address);
+        const value = transformedDataView.lookup(address);
         row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
       tbody.append(row);

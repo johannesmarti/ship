@@ -21,7 +21,7 @@ def test_fast_labor_producers(producers):
     vb = producers.participate(prices)
 
     assert np.isclose(vb.error, np.array([1, -2.25, 2.5, -4.25])).all()
-    assert np.isclose(vb.volume, np.array([2, 2.25, 2.5, 4.25])).all()
+    assert np.isclose(vb.double_volume, np.array([2, 2.25, 2.5, 4.25])).all()
 
 @pytest.fixture
 def consumers():
@@ -37,5 +37,5 @@ def test_fast_labor_consumers(consumers):
     vb = consumers.participate(prices)
 
     assert np.isclose(vb.error, np.array([-400, -100, 150, -218.181818, -61.363636, 100])).all()
-    assert np.isclose(vb.volume, np.array([400, 100, 150, 218.181818, 61.363636, 100])).all()
+    assert np.isclose(vb.double_volume, np.array([400, 100, 150, 218.181818, 61.363636, 100])).all()
 
