@@ -21,23 +21,35 @@ export class Arrangement {
     this._pointedOrders = pointedOrders;
     this._rowHierarchy = rowHierarchy;
     this._columnHierarchy = columnHierarchy;
+    checkInternally();
   }
 
-  // TODO: This check needs to be adapted
-  checkHierarchies(schema) {
+  checkInternally() {
+    const pos = this._pointedOrders;
+    const fSet = new Set(pos.map(po => po["orders"]))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
-    console.assert(rowHierarchy.length > 0,
-      "row hierarchy is empty");
-    console.assert(columnHierarchy.length > 0,
-      "column hierarchy is empty");
+    console.assert(rowHierarchy.length > 0 || pos.length > 0,
+      "row hierarchy is empty and there are no pointed orders");
+    console.assert(columnHierarchy.length > 0 || pos.length > 0,
+      "column hierarchy is empty and there are no pointed orders");
+    console.assert(fSet.size === pos.length,
+      "ponted orders contain duplicates");
     console.assert(rSet.size === rowHierarchy.length,
       "row hierarchy contains duplicates");
     console.assert(cSet.size === columnHierarchy.length,
       "column hierarchy contains duplicates");
     console.assert(rowHierarchy.every(item => !cSet.has(item)),
       "row and column hierarchies are not disjoint");
+    console.assert(rowHierarchy.every(item => !fSet.has(item)),
+      "row hierarchy and pointed orders are not disjoint");
+    console.assert(columnHierarchy.every(item => !fSet.has(item)),
+      "column hierarchy and pointed orders are not disjoint");
+  }
+
+  // TODO: This check needs to be adapted
+  checkHierarchiesAgainstSchema(schema) {
     for (let o = 0; o < schema.numDimensions(); o++) {
       console.assert(rSet.has(o) || cSet.has(o),
         "some dimension from the schema is not in either row nor column hierarchy");
