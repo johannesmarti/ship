@@ -24,12 +24,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             self.end_headers()
             with open('client/index.html', 'rb') as file:
                 self.wfile.write(file.read())
-        elif self.path.startswith('/scripts/') and self.path.endswith('.js'):
+        elif self.path.startswith('/scripts/') and self.path.endswith('.mjs'):
             # Serve arbitrary JavaScript files from the scripts folder
             file_path = os.path.join('client', self.path.lstrip('/'))
             if os.path.isfile(file_path):
                 self.send_response(200)
-                self.send_header('Content-type', 'application/javascript')
+                self.send_header('Content-type', 'text/javascript')
                 self.end_headers()
                 with open(file_path, 'rb') as file:
                     self.wfile.write(file.read())

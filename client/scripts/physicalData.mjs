@@ -1,4 +1,4 @@
-import {Schema} from './schema.js'
+import { Schema } from './schema.mjs'
 
 function toAbsoluteIndex(schema, absoluteAddress) {
   console.assert(absoluteAddress.length === schema.numDimensions(),

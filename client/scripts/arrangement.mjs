@@ -21,7 +21,7 @@ export class Arrangement {
     this._pointedOrders = pointedOrders;
     this._rowHierarchy = rowHierarchy;
     this._columnHierarchy = columnHierarchy;
-    checkInternally();
+    this.checkInternally();
   }
 
   checkInternally() {

@@ -33,9 +33,9 @@
     }
   </style>
 
-  <script type="module" src="scripts/physicalData.js"></script>
-  <script type="module" src="scripts/recomputeLayer.js"></script>
-  <script type="module" src="scripts/bigTable.js"></script>
+  <script type="module" src="scripts/physicalData.mjs"></script>
+  <script type="module" src="scripts/recomputeLayer.mjs"></script>
+  <script type="module" src="scripts/bigTable.mjs"></script>
 </head>
 
 <body>
@@ -44,10 +44,10 @@
 
 <script type="module">
 
-import { PhysicalData } from './scripts/physicalData.js';
-import { RecomputeLayer } from './scripts/recomputeLayer.js';
+import { PhysicalData } from './scripts/physicalData.mjs';
+import { RecomputeLayer } from './scripts/recomputeLayer.mjs';
 import { h, Hierarchization, Virtualizer, BigTableViewState, BigTable
-    } from './scripts/bigTable.js';
+    } from './scripts/bigTable.mjs';
 
 async function fetchData() {
   try {

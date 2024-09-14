@@ -1,4 +1,4 @@
-import { Schema } from './schema.js';
+import { Schema } from './schema.mjs';
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
