@@ -46,23 +46,29 @@ function checkPointedOrder(schema, pointedOrder) {
 }
 
 export class Arrangement {
-  constructor(pointedOrders, rowHierarchy, columnHierarchy) {
-    this._pointedOrders = pointedOrders;
+  constructor(fixed, rowHierarchy, columnHierarchy) {
+    this._fixed = fixed;
     this._rowHierarchy = rowHierarchy;
     this._columnHierarchy = columnHierarchy;
-    this.checkInternally();
+  }
+
+  static create(fixed, rowHierarchy, columnHierarchy) {
+    const newArrangement = new Arrangement(fixed, rowHierarchy,
+                                                  columnHierarchy);
+    newArrangement.checkInternally();
+    return newArrangement;
   }
 
   checkInternally() {
-    const pos = this._pointedOrders;
+    const pos = this._fixed;
     const fSet = new Set(pos.map(po => po["orders"]))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
     console.assert(rowHierarchy.length > 0 || pos.length > 0,
-      "row hierarchy is empty and there are no pointed orders");
+      "row hierarchy is empty and there are no fixed values");
     console.assert(columnHierarchy.length > 0 || pos.length > 0,
-      "column hierarchy is empty and there are no pointed orders");
+      "column hierarchy is empty and there are no fixed values");
     console.assert(fSet.size === pos.length,
       "ponted orders contain duplicates");
     console.assert(rSet.size === rowHierarchy.length,
@@ -78,7 +84,7 @@ export class Arrangement {
   }
 
   checkAgainstSchema(schema) {
-    const pos = this._pointedOrders;
+    const pos = this._fixed;
     const fSet = new Set(pos.map(po => po["orders"]))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
@@ -90,7 +96,7 @@ export class Arrangement {
     console.assert(this.numOrders() === schema.numDimensions(),
       "arrangement contains orders that are not in the schema");
 
-    for (let pointedOrder of this._pointedOrders) {
+    for (let pointedOrder of this._fixed) {
       checkPointedOrder(schema, pointedOrder);
     }
   }
@@ -100,33 +106,45 @@ export class Arrangement {
   }
 
   numOrders() {
-    return this._pointedOrders.length
+    return this._fixed.length
          + this._rowHierarchy.length
          + this._columnHierarchy.length;
   }
 
-  lengthOfType(position) {
-    switch (position.type()) {
+  arrayOfType(type) {
+    switch (type) {
       case 'fixed':
-        return this._pointedOrders.length;
+        return this._fixed;
       case 'rowHierarchy':
-        return this._rowHierarchy.length;
+        return this._rowHierarchy;
       case 'columnHierarchy':
-        return this._columnHierarchy.length;
+        return this._columnHierarchy;
     }
-    return -1;
+    console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
+  }
+
+  setArrayOfType(type, array) {
+    switch (type) {
+      case 'fixed':
+        return new Arrangement(array, this._rowHierarchy, this._columnHierarchy);
+      case 'rowHierarchy':
+        return new Arrangement(this._fixed, array, this._columnHierarchy);
+      case 'columnHierarchy':
+        return new Arrangement(this._fixed, this._rowHierarchy, array);
+    }
+    console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
   }
 
   isPosition(position) {
     const offset = position.offset();
     if (offset < 0) return false;
-    return offset < this.lengthOfType(position);
+    return offset < this.arrayOfType(position.type()).length;
   }
 
   isDropPosition(position) {
     const offset = position.offset();
     if (offset < 0) return false;
-    return offset <= this.lengthOfType(position);
+    return offset <= this.arrayOfType(position.type()).length;
   }
 
   isMovable(fromPosition, toPosition) {
@@ -140,7 +158,7 @@ export class Arrangement {
          toPosition.offset() === fromPosition.offset() + 1)) {
         return false;
     }
-    if (this.lengthOfType(fromPosition) <= 0) {
+    if (this.arrayOfType(fromPosition.type()).length <= 1) {
       switch (fromPosition.type()) {
         case 'fixed':
           switch (toPosition.type()) {
@@ -148,10 +166,10 @@ export class Arrangement {
               console.assert(false, "the impossible happened");
               break;
             case 'rowHierarchy':
-              if (this._columnHierarchy.lenght <= 0) return false;
+              if (this._columnHierarchy.length <= 0) return false;
               break;
             case 'columnHierarchy':
-              if (this._rowHierarchy.lenght <= 0) return false;
+              if (this._rowHierarchy.length <= 0) return false;
               break;
           }
           break;
@@ -163,7 +181,7 @@ export class Arrangement {
               console.assert(false, "the impossible happened");
               break;
             case 'columnHierarchy':
-              if (this._pointedOrders.lenght <= 0) return false;
+              if (this._fixed.length <= 0) return false;
               break;
           }
           break;
@@ -172,7 +190,7 @@ export class Arrangement {
             case 'fixed':
               break;
             case 'rowHierarchy':
-              if (this._pointedOrders.lenght <= 0) return false;
+              if (this._fixed.length <= 0) return false;
               break;
             case 'columnHierarchy':
               console.assert(false, "the impossible happened");
@@ -185,9 +203,42 @@ export class Arrangement {
   }
 
   move(fromPosition, toPosition, fixedIndex) {
+    this.checkInternally();
     console.assert(this.isMovable(fromPosition, toPosition),
       `trying to move ${fromPosition} to ${toPosition}, but operation is not possible`);
 
+    const fromType = fromPosition.type();
+    const fromOffset = fromPosition.offset();
+    const toType = toPosition.type();
+    const toOffset = toPosition.offset();
+    const fromArray = this.arrayOfType(fromType);
+    if (fromType === toType) {
+      const array = fromArray;
+      const mover = array[fromOffset];
+      let newArray;
+      if (fromOffset < toOffset) {
+        newArray = [...array.slice(0, fromOffset),
+                    ...array.slice(fromOffset + 1, toOffset), mover,
+                    ...array.slice(toOffset)];
+      } else {
+        newArray = [...array.slice(0, toOffset), mover,
+                    ...array.slice(toOffset, fromOffset),
+                    ...array.slice(fromOffset + 1)];
+      }
+      return this.setArrayOfType(fromType, newArray);
+    } else {
+      const fromElement = fromArray[fromOffset];
+      const order = fromType !== 'fixed' ? fromElement : fromElement['order'];
+      const newElement = toType !== 'fixed' ? order
+                            : { 'order': order, 'fixedIndex': fixedIndex };
+      const toArray = this.arrayOfType(toType);
+      const newFromArray = [...fromArray.slice(0, fromOffset),
+                            ...fromArray.slice(fromOffset + 1)];
+      const newToArray = [...toArray.slice(0, toOffset), newElement,
+                          ...toArray.slice(toOffset)];
+      return this.setArrayOfType(fromType, newFromArray)
+                 .setArrayOfType(toType, newToArray);
+    }
   }
 
   absoluteAddress(rowAddress, columnAddress) {
@@ -198,7 +249,7 @@ export class Arrangement {
       "column address length does not match the length of the column hierarchy");
 
     const address = Array(this.numOrders());
-    for (const pointedOrder of this._pointedOrders) {
+    for (const pointedOrder of this._fixed) {
       address[pointedOrder["order"]] = pointedOrder["fixedIndex"];
     }
     for (const [offset, index] of rowAddress.entries()) {
