@@ -1,3 +1,32 @@
+export class Position {
+  constructor(type, offset) {
+    console.assert(type === 'fixed' || type === 'columnHierarchy'
+                    || type === 'rowHierarchy',
+        `'${type}' is not a supported position type`);
+    this._type = type;
+    this._offset = offset;
+  }
+
+  static fixed(offset) {
+    return new Position('fixed', offset);
+  }
+
+  static column(offset) {
+    return new Position('columnHierarchy', offset);
+  }
+
+  static row(offset) {
+    return new Position('rowHierarchy', offset);
+  }
+
+  type() { return this._type; }
+  offset() { return this._offset; }
+
+  toString() {
+    return `${this.type()}[${this.offset()}]`;
+  }
+}
+
 function createPointedOrder(order, fixedIndex) {
   console.assert(schema.isOrder(order), `${order} is not an order in schema`);
   console.assert(schema.dimensionAtOrder(order).isIndex(fixedIndex),
@@ -48,14 +77,22 @@ export class Arrangement {
       "column hierarchy and pointed orders are not disjoint");
   }
 
-  // TODO: This check needs to be adapted
-  checkHierarchiesAgainstSchema(schema) {
+  checkAgainstSchema(schema) {
+    const pos = this._pointedOrders;
+    const fSet = new Set(pos.map(po => po["orders"]))
+    const [rowHierarchy, columnHierarchy] = this.hierarchies()
+    const rSet = new Set(rowHierarchy);
+    const cSet = new Set(columnHierarchy);
     for (let o = 0; o < schema.numDimensions(); o++) {
-      console.assert(rSet.has(o) || cSet.has(o),
+      console.assert(fSet.has(o) || rSet.has(o) || cSet.has(o),
         "some dimension from the schema is not in either row nor column hierarchy");
     }
-    console.assert(rSet.size + cSet.size === schema.numDimensions(),
-      "row or column hierarchy contain dimensions that are not in the schema");
+    console.assert(this.numOrders() === schema.numDimensions(),
+      "arrangement contains orders that are not in the schema");
+
+    for (let pointedOrder of this._pointedOrders) {
+      checkPointedOrder(schema, pointedOrder);
+    }
   }
 
   hierarchies() {
@@ -66,6 +103,91 @@ export class Arrangement {
     return this._pointedOrders.length
          + this._rowHierarchy.length
          + this._columnHierarchy.length;
+  }
+
+  lengthOfType(position) {
+    switch (position.type()) {
+      case 'fixed':
+        return this._pointedOrders.length;
+      case 'rowHierarchy':
+        return this._rowHierarchy.length;
+      case 'columnHierarchy':
+        return this._columnHierarchy.length;
+    }
+    return -1;
+  }
+
+  isPosition(position) {
+    const offset = position.offset();
+    if (offset < 0) return false;
+    return offset < this.lengthOfType(position);
+  }
+
+  isDropPosition(position) {
+    const offset = position.offset();
+    if (offset < 0) return false;
+    return offset <= this.lengthOfType(position);
+  }
+
+  isMovable(fromPosition, toPosition) {
+    console.assert(this.isPosition(fromPosition),
+      `position ${fromPosition} is not a position in arrangement`);
+    console.assert(this.isDropPosition(toPosition),
+      `position ${toPosition} is not a drop position in arrangement`);
+
+    if (toPosition.type() === fromPosition.type() &&
+        (toPosition.offset() === fromPosition.offset() ||
+         toPosition.offset() === fromPosition.offset() + 1)) {
+        return false;
+    }
+    if (this.lengthOfType(fromPosition) <= 0) {
+      switch (fromPosition.type()) {
+        case 'fixed':
+          switch (toPosition.type()) {
+            case 'fixed':
+              console.assert(false, "the impossible happened");
+              break;
+            case 'rowHierarchy':
+              if (this._columnHierarchy.lenght <= 0) return false;
+              break;
+            case 'columnHierarchy':
+              if (this._rowHierarchy.lenght <= 0) return false;
+              break;
+          }
+          break;
+        case 'rowHierarchy':
+          switch (toPosition.type()) {
+            case 'fixed':
+              break;
+            case 'rowHierarchy':
+              console.assert(false, "the impossible happened");
+              break;
+            case 'columnHierarchy':
+              if (this._pointedOrders.lenght <= 0) return false;
+              break;
+          }
+          break;
+        case 'columnHierarchy':
+          switch (toPosition.type()) {
+            case 'fixed':
+              break;
+            case 'rowHierarchy':
+              if (this._pointedOrders.lenght <= 0) return false;
+              break;
+            case 'columnHierarchy':
+              console.assert(false, "the impossible happened");
+              break;
+          }
+          break;
+      }
+    }
+    return true;
+  }
+
+  move(fromPosition, toPosition, fixedIndex) {
+    console.assert(this.isMovable(fromPosition, toPosition),
+      `trying to move ${fromPosition} to ${toPosition}, but operation is not possible`);
+
   }
 
   absoluteAddress(rowAddress, columnAddress) {

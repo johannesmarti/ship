@@ -81,5 +81,3 @@ export class Schema {
     return new Schema(newDimensions);
   }
 }
-
-
