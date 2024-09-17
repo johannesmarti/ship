@@ -53,6 +53,19 @@ console.assert(arraysAreEqual(arrangement.absoluteAddress([1, 3, 3], [7]),
                               [1, 3, 3, 7, 2]),
   "absoluteAddress with fixed is reasonable");
 
+const json = arrangement.toJSON(schema);
+const reconstructed = Arrangement.fromJSON(schema, json);
+console.assert(reconstructed._fixed.length === 1,
+  "reconstructed.fixed has right length");
+console.assert(reconstructed._fixed[0]['order'] === 4,
+  "reconstructed.fixed has right order");
+console.assert(reconstructed._fixed[0]['fixedIndex'] === 2,
+  "reconstructed.fixed has right fixedIndex");
+console.assert(arraysAreEqual(arrangement._rowHierarchy, reconstructed._rowHierarchy),
+  "reconstructed has same rowHierarchy");
+console.assert(arraysAreEqual(arrangement._columnHierarchy, reconstructed._columnHierarchy),
+  "reconstructed has same columnHierarchy");
+
 arrangement = arrangement.move(Position.column(0), Position.row(1), 1);
 // arrangement = new Arrangement([(4,2)], [0,3,1,2], [])
 console.assert(arrangement.isMovable(Position.fixed(0), Position.column(0)),

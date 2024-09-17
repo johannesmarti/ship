@@ -27,10 +27,8 @@ export class Position {
   }
 }
 
+// TODO: Maybe pointedOrders should also be classes.
 function createPointedOrder(order, fixedIndex) {
-  console.assert(schema.isOrder(order), `${order} is not an order in schema`);
-  console.assert(schema.dimensionAtOrder(order).isIndex(fixedIndex),
-        `${index} is not an index in order ${order}`);
   return {
     "order": order,
     "fixedIndex": fixedIndex
@@ -42,7 +40,32 @@ function checkPointedOrder(schema, pointedOrder) {
   const fixedIndex = pointedOrder["fixedIndex"];
   console.assert(schema.isOrder(order), `${order} is not an order in schema`);
   console.assert(schema.dimensionAtOrder(order).isIndex(fixedIndex),
-        `${index} is not an index in order ${order}`);
+        `${fixedIndex} is not an index in order ${order}`);
+}
+
+function pointedOrderToJSON(schema, pointedOrder) {
+  const dimension = schema.dimensionAtOrder(pointedOrder['order']);
+  return {
+    'dimension': dimension.name(),
+    'fixedIndex': dimension.nameOfIndex(pointedOrder['fixedIndex'])
+  };
+}
+
+// returns null if there is no such dimension in schema
+function pointedOrderFromJSON(schema, json) {
+  const dimensionName = json['dimension'];
+  const indexName = json['fixedIndex'];
+  const order = schema.orderOfDimensionName(dimensionName);
+  if (order === -1) {
+    console.log(`WARNING: '${dimensionName}' is not the name of any dimension in schema`);
+    return null;
+  }
+  let index = schema.dimensionAtOrder(order).indexOfName(indexName);
+  if (index === -1) {
+    console.log(`WARNING: '${indexName}' is not the name of any index in dimension ${dimensionName}`);
+    index = 0;
+  }
+  return createPointedOrder(order, index);
 }
 
 export class Arrangement {
@@ -70,7 +93,7 @@ export class Arrangement {
     console.assert(columnHierarchy.length > 0 || pos.length > 0,
       "column hierarchy is empty and there are no fixed values");
     console.assert(fSet.size === pos.length,
-      "ponted orders contain duplicates");
+      "pointed orders contain duplicates");
     console.assert(rSet.size === rowHierarchy.length,
       "row hierarchy contains duplicates");
     console.assert(cSet.size === columnHierarchy.length,
@@ -85,13 +108,13 @@ export class Arrangement {
 
   checkAgainstSchema(schema) {
     const pos = this._fixed;
-    const fSet = new Set(pos.map(po => po["orders"]))
+    const fSet = new Set(pos.map(po => po['order']))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
     for (let o = 0; o < schema.numDimensions(); o++) {
       console.assert(fSet.has(o) || rSet.has(o) || cSet.has(o),
-        "some dimension from the schema is not in either row nor column hierarchy");
+        `dimension ${o} from the schema is not in either row nor column hierarchy, nor is it fixed`);
     }
     console.assert(this.numOrders() === schema.numDimensions(),
       "arrangement contains orders that are not in the schema");
@@ -99,6 +122,63 @@ export class Arrangement {
     for (let pointedOrder of this._fixed) {
       checkPointedOrder(schema, pointedOrder);
     }
+  }
+
+  static fromJSON(schema, json) {
+    function hierarchyFromJSON(list) {
+      //if (list == undefined) { return []; }
+      const result = [];
+      for (const name of list) {
+        const order = schema.orderOfDimensionName(name);
+        if (order === -1) {
+          console.log(`WARNING: '${name}' is not the name of any dimension in schema`);
+        } else {
+          result.push(order);
+        }
+      }
+      return result;
+    }
+    const rowHierarchy = hierarchyFromJSON(json['rowHierarchy']);
+    const columnHierarchy = hierarchyFromJSON(json['columnHierarchy']);
+
+    const fixed = [];
+    const fixedJSON = json['fixed'];
+    if (fixedJSON != undefined) {
+      for (const jsonElement of fixedJSON) {
+        const po = pointedOrderFromJSON(schema, jsonElement);
+        if (po !== null) {
+          fixed.push(po);
+        }
+      }
+    }
+
+    // since orders are just numbers in a range 0 ... n we could also
+    // just use an array to store the accounted orders. This would be
+    // much more efficient than a set, but maybe less clean?
+    const fixedOrders = fixed.map(po => po['order'] );
+    const coveredDimensions = new Set([...fixedOrders,
+                                       ...rowHierarchy, ...columnHierarchy]);
+    for (const order of schema.orders()) {
+      if (!coveredDimensions.has(order)) {
+        const name = schema.dimensionAtOrder(order).name();
+        console.log(`WARNING: dimension ${name} is not accounted for in JSON arrangement`);
+        fixed.push(createPointedOrder(order, 0));
+      }
+    }
+
+    const arrangement = Arrangement.create(fixed, rowHierarchy, columnHierarchy);
+    arrangement.checkAgainstSchema(schema);
+    return arrangement;
+  }
+
+  toJSON(schema) {
+    return {
+      'fixed': this._fixed.map((po) => pointedOrderToJSON(schema, po)),
+      'rowHierarchy': this._rowHierarchy.map( (order) =>
+            schema.dimensionAtOrder(order).name() ),
+      'columnHierarchy': this._columnHierarchy.map( (order) =>
+            schema.dimensionAtOrder(order).name() )
+    };
   }
 
   hierarchies() {
