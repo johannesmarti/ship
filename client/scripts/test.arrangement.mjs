@@ -57,9 +57,9 @@ const json = arrangement.toJSON(schema);
 const reconstructed = Arrangement.fromJSON(schema, json);
 console.assert(reconstructed._fixed.length === 1,
   "reconstructed.fixed has right length");
-console.assert(reconstructed._fixed[0]['order'] === 4,
+console.assert(reconstructed._fixed[0].order() === 4,
   "reconstructed.fixed has right order");
-console.assert(reconstructed._fixed[0]['fixedIndex'] === 2,
+console.assert(reconstructed._fixed[0].fixedIndex() === 2,
   "reconstructed.fixed has right fixedIndex");
 console.assert(arraysAreEqual(arrangement._rowHierarchy, reconstructed._rowHierarchy),
   "reconstructed has same rowHierarchy");

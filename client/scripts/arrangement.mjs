@@ -27,45 +27,47 @@ export class Position {
   }
 }
 
-// TODO: Maybe pointedOrders should also be classes.
-function createPointedOrder(order, fixedIndex) {
-  return {
-    "order": order,
-    "fixedIndex": fixedIndex
+class PointedOrder {
+  constructor(order, fixedIndex) {
+    this._order = order;
+    this._fixedIndex = fixedIndex;
   }
-}
 
-function checkPointedOrder(schema, pointedOrder) {
-  const order = pointedOrder["order"];
-  const fixedIndex = pointedOrder["fixedIndex"];
-  console.assert(schema.isOrder(order), `${order} is not an order in schema`);
-  console.assert(schema.dimensionAtOrder(order).isIndex(fixedIndex),
-        `${fixedIndex} is not an index in order ${order}`);
-}
-
-function pointedOrderToJSON(schema, pointedOrder) {
-  const dimension = schema.dimensionAtOrder(pointedOrder['order']);
-  return {
-    'dimension': dimension.name(),
-    'fixedIndex': dimension.nameOfIndex(pointedOrder['fixedIndex'])
-  };
-}
-
-// returns null if there is no such dimension in schema
-function pointedOrderFromJSON(schema, json) {
-  const dimensionName = json['dimension'];
-  const indexName = json['fixedIndex'];
-  const order = schema.orderOfDimensionName(dimensionName);
-  if (order === -1) {
-    console.log(`WARNING: '${dimensionName}' is not the name of any dimension in schema`);
-    return null;
+  checkAgainstSchema(schema) {
+    const order = this._order;
+    const fixedIndex = this._fixedIndex
+    console.assert(schema.isOrder(order), `${order} is not an order in schema`);
+    console.assert(schema.dimensionAtOrder(order).isIndex(fixedIndex),
+          `${fixedIndex} is not an index in order ${order}`);
   }
-  let index = schema.dimensionAtOrder(order).indexOfName(indexName);
-  if (index === -1) {
-    console.log(`WARNING: '${indexName}' is not the name of any index in dimension ${dimensionName}`);
-    index = 0;
+
+  // returns null if there is no such dimension in schema
+  static fromJSON(schema, json) {
+    const dimensionName = json['dimension'];
+    const indexName = json['fixedIndex'];
+    const order = schema.orderOfDimensionName(dimensionName);
+    if (order === -1) {
+      console.log(`WARNING: '${dimensionName}' is not the name of any dimension in schema`);
+      return null;
+    }
+    let index = schema.dimensionAtOrder(order).indexOfName(indexName);
+    if (index === -1) {
+      console.log(`WARNING: '${indexName}' is not the name of any index in dimension ${dimensionName}`);
+      index = 0;
+    }
+    return new PointedOrder(order, index);
   }
-  return createPointedOrder(order, index);
+
+  toJSON(schema) {
+    const dimension = schema.dimensionAtOrder(this._order);
+    return {
+      'dimension': dimension.name(),
+      'fixedIndex': dimension.nameOfIndex(this._fixedIndex)
+    };
+  }
+
+  order() { return this._order; }
+  fixedIndex() { return this._fixedIndex; }
 }
 
 export class Arrangement {
@@ -84,7 +86,7 @@ export class Arrangement {
 
   checkInternally() {
     const pos = this._fixed;
-    const fSet = new Set(pos.map(po => po["orders"]))
+    const fSet = new Set(pos.map(po => po.order()))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
@@ -108,7 +110,7 @@ export class Arrangement {
 
   checkAgainstSchema(schema) {
     const pos = this._fixed;
-    const fSet = new Set(pos.map(po => po['order']))
+    const fSet = new Set(pos.map(po => po.order()))
     const [rowHierarchy, columnHierarchy] = this.hierarchies()
     const rSet = new Set(rowHierarchy);
     const cSet = new Set(columnHierarchy);
@@ -120,7 +122,7 @@ export class Arrangement {
       "arrangement contains orders that are not in the schema");
 
     for (let pointedOrder of this._fixed) {
-      checkPointedOrder(schema, pointedOrder);
+      pointedOrder.checkAgainstSchema(schema);
     }
   }
 
@@ -145,7 +147,7 @@ export class Arrangement {
     const fixedJSON = json['fixed'];
     if (fixedJSON != undefined) {
       for (const jsonElement of fixedJSON) {
-        const po = pointedOrderFromJSON(schema, jsonElement);
+        const po = PointedOrder.fromJSON(schema, jsonElement);
         if (po !== null) {
           fixed.push(po);
         }
@@ -155,14 +157,14 @@ export class Arrangement {
     // since orders are just numbers in a range 0 ... n we could also
     // just use an array to store the accounted orders. This would be
     // much more efficient than a set, but maybe less clean?
-    const fixedOrders = fixed.map(po => po['order'] );
+    const fixedOrders = fixed.map( po => po.order() );
     const coveredDimensions = new Set([...fixedOrders,
                                        ...rowHierarchy, ...columnHierarchy]);
     for (const order of schema.orders()) {
       if (!coveredDimensions.has(order)) {
         const name = schema.dimensionAtOrder(order).name();
         console.log(`WARNING: dimension ${name} is not accounted for in JSON arrangement`);
-        fixed.push(createPointedOrder(order, 0));
+        fixed.push(new PointedOrder(order, 0));
       }
     }
 
@@ -173,10 +175,10 @@ export class Arrangement {
 
   toJSON(schema) {
     return {
-      'fixed': this._fixed.map((po) => pointedOrderToJSON(schema, po)),
-      'rowHierarchy': this._rowHierarchy.map( (order) =>
+      'fixed': this._fixed.map(po => po.toJSON(schema)),
+      'rowHierarchy': this._rowHierarchy.map( order =>
             schema.dimensionAtOrder(order).name() ),
-      'columnHierarchy': this._columnHierarchy.map( (order) =>
+      'columnHierarchy': this._columnHierarchy.map( order =>
             schema.dimensionAtOrder(order).name() )
     };
   }
@@ -308,9 +310,9 @@ export class Arrangement {
       return this.setArrayOfType(fromType, newArray);
     } else {
       const fromElement = fromArray[fromOffset];
-      const order = fromType !== 'fixed' ? fromElement : fromElement['order'];
+      const order = fromType !== 'fixed' ? fromElement : fromElement.order();
       const newElement = toType !== 'fixed' ? order
-                            : { 'order': order, 'fixedIndex': fixedIndex };
+                            : new PointedOrder(order, fixedIndex);
       const toArray = this.arrayOfType(toType);
       const newFromArray = [...fromArray.slice(0, fromOffset),
                             ...fromArray.slice(fromOffset + 1)];
