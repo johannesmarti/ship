@@ -42,9 +42,14 @@ class PointedOrder {
   }
 
   // returns null if there is no such dimension in schema
+  // returns 'formatError' if the json object does not have the right keys.
   static fromJSON(schema, json) {
     const dimensionName = json['dimension'];
     const indexName = json['fixedIndex'];
+    if (dimensionName === undefined || indexName === undefined) {
+      console.log('ERROR: json object for pointed order is not of the right format');
+      return 'formatError';
+    }
     const order = schema.orderOfDimensionName(dimensionName);
     if (order === -1) {
       console.log(`WARNING: '${dimensionName}' is not the name of any dimension in schema`);
@@ -126,9 +131,14 @@ export class Arrangement {
     }
   }
 
+  // returns null if json is not of the right structure
   static fromJSON(schema, json) {
     function hierarchyFromJSON(list) {
-      //if (list == undefined) { return []; }
+      if (list === undefined) {
+        console.log(`ERROR: JSON object for arrangement is no of the
+right format`);
+        return 'formatError';
+      }
       const result = [];
       for (const name of list) {
         const order = schema.orderOfDimensionName(name);
@@ -141,16 +151,20 @@ export class Arrangement {
       return result;
     }
     const rowHierarchy = hierarchyFromJSON(json['rowHierarchy']);
+    if (rowHierarchy === 'formatError') { return null; }
     const columnHierarchy = hierarchyFromJSON(json['columnHierarchy']);
+    if (columnHierarchy === 'formatError') { return null; }
 
     const fixed = [];
     const fixedJSON = json['fixed'];
-    if (fixedJSON != undefined) {
-      for (const jsonElement of fixedJSON) {
-        const po = PointedOrder.fromJSON(schema, jsonElement);
-        if (po !== null) {
-          fixed.push(po);
-        }
+    if (fixedJSON === undefined) {
+      console.log(`ERROR: JSON object for arrangement is no of the righformat`);
+      return null;
+    }
+    for (const jsonElement of fixedJSON) {
+      const po = PointedOrder.fromJSON(schema, jsonElement);
+      if (po !== null) {
+        fixed.push(po);
       }
     }
 
