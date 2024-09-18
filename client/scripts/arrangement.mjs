@@ -75,6 +75,8 @@ class PointedOrder {
   fixedIndex() { return this._fixedIndex; }
 }
 
+// Maybe this should be called Heirarchization. That used to be the name
+// and I almost like it more.
 export class Arrangement {
   constructor(fixed, rowHierarchy, columnHierarchy) {
     this._fixed = fixed;
@@ -195,6 +197,10 @@ right format`);
       'columnHierarchy': this._columnHierarchy.map( order =>
             schema.dimensionAtOrder(order).name() )
     };
+  }
+
+  fixed() {
+    return this._fixed;
   }
 
   hierarchies() {

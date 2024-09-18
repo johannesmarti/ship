@@ -46,8 +46,8 @@
 
 import { PhysicalData } from './scripts/physicalData.mjs';
 import { RecomputeLayer } from './scripts/recomputeLayer.mjs';
-import { h, Hierarchization, Virtualizer, BigTableViewState, BigTable
-    } from './scripts/bigTable.mjs';
+import { Arrangement, Position } from './scripts/arrangement.mjs';
+import { h, Virtualizer, BigTable } from './scripts/bigTable.mjs';
 
 async function fetchData() {
   try {
@@ -105,12 +105,11 @@ async function main() {
       }
     }
 
-    const hierarchization = new Hierarchization([iteration, datatype],
-                                                [good, province]);
+    const arrangement = Arrangement.create([], [iteration, good],
+                                               [datatype, province]);
     const virtualizer = new Virtualizer(vconfig);
-    const config = new BigTableViewState(hierarchization, virtualizer);
     const bigTable = new BigTable(dataLayer);
-    const domTable = bigTable.render(config);
+    const domTable = bigTable.render(arrangement, virtualizer);
     document.body.append(domTable);
   }
 }

@@ -1,4 +1,5 @@
 import { Schema } from './schema.mjs';
+import { Position, Arrangement } from './arrangement.mjs';
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -198,56 +199,6 @@ class MutableHierarchicalIterator {
   }
 }
 
-export class Hierarchization {
-  constructor(rowHierarchy, columnHierarchy) {
-    this._rowHierarchy = rowHierarchy;
-    this._columnHierarchy = columnHierarchy;
-  }
-
-  hierarchies() {
-    return [this._rowHierarchy, this._columnHierarchy];
-  }
-
-  checkHierarchies(schema) {
-    const [rowHierarchy, columnHierarchy] = this.hierarchies()
-    const rSet = new Set(rowHierarchy);
-    const cSet = new Set(columnHierarchy);
-    console.assert(rowHierarchy.length > 0,
-      "row hierarchy is empty");
-    console.assert(columnHierarchy.length > 0,
-      "column hierarchy is empty");
-    console.assert(rSet.size === rowHierarchy.length,
-      "row hierarchy contains duplicates");
-    console.assert(cSet.size === columnHierarchy.length,
-      "column hierarchy contains duplicates");
-    console.assert(rowHierarchy.every(item => !cSet.has(item)),
-      "row and column hierarchies are not disjoint");
-    for (let o = 0; o < schema.numDimensions(); o++) {
-      console.assert(rSet.has(o) || cSet.has(o),
-        "some dimension from the schema is not in either row nor column hierarchy");
-    }
-    console.assert(rSet.size + cSet.size === schema.numDimensions(),
-      "row or column hierarchy contain dimensions that are not in the schema");
-  }
-
-  absoluteAddress(rowAddress, columnAddress) {
-    const [rowHierarchy, columnHierarchy] = this.hierarchies();
-    console.assert(rowAddress.length === rowHierarchy.length,
-      "row address length does not match the length of the row hierarchy");
-    console.assert(columnAddress.length === columnHierarchy.length,
-      "column address length does not match the length of the column hierarchy");
-
-    const address = Array(rowHierarchy.length + columnHierarchy.length);
-    for (const [j, index] of rowAddress.entries()) {
-      address[rowHierarchy[j]] = index;
-    }
-    for (const [j, index] of columnAddress.entries()) {
-      address[columnHierarchy[j]] = index;
-    }
-    return address;
-  }
-}
-
 function indexInDimensionFromJSON(dimension, json) {
   const defaultValue = 0;
   return {
@@ -325,42 +276,19 @@ export class Virtualizer {
   }
 }
 
-export class BigTableViewState {
-  constructor(hierarchization, virtualizer) {
-    this._hierarchization = hierarchization;
-    this._virtualizer = virtualizer;
-  }
-
-  hierarchization() {
-    return this._hierarchization;
-  }
-
-  virtualizer() {
-    return this._virtualizer;
-  }
-
-  setHierarchization(newHierarchization) {
-    return new BigTableViewState(newHierarchization, this._virtualizer);
-  }
-
-  setVirtualizer(newVirtualizer) {
-    return new BigTableViewState(this._hierarchization, newVirtualizer);
-  }
-}
-
 export class BigTable {
   constructor(dataView) {
     this._dataView = dataView;
   }
 
-  render(viewState) {
+  render(arrangement, virtualizer) {
     const baseSchema = this._dataView.schema();
-    const virtualizer = viewState.virtualizer();
+    // could be done in constructor, need to think how I do this stuff
+    // in the interface
     const schema = virtualizer.virtualize(baseSchema);
-    const hierarchization = viewState.hierarchization();
-    hierarchization.checkHierarchies(schema);
-    const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
     const transformedDataView = new TransformedDataView(this._dataView, schema);
+    arrangement.checkAgainstSchema(schema);
+    const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
     let tbody;
     const table = h("table", tbody = h("tbody"));
@@ -373,8 +301,7 @@ export class BigTable {
         const baseIndex = dimension.transform(index);
         const newVirtualizer =
             virtualizer.update(order, baseIndex, baseDimension);
-        const newViewState = viewState.setVirtualizer(newVirtualizer);
-        table.replaceWith(this.render(newViewState));
+        table.replaceWith(this.render(arrangement, newVirtualizer));
       });
       return cell;
     }
@@ -394,74 +321,51 @@ export class BigTable {
             rowArray[k].append(h("td"));
           }
           const button = createButton("& v", () => {
-            const newColumnHierarchy = Array.from(columnHierarchy);
-            newColumnHierarchy[k] = columnHierarchy[k + 1];
-            newColumnHierarchy[k + 1] = columnHierarchy[k];
-            const newHierarchization = new Hierarchization(
-                rowHierarchy, newColumnHierarchy);
-            const newViewState =
-                viewState.setHierarchization(newHierarchization);
-            table.replaceWith(this.render(newViewState));
+            const fromPosition = Position.column(k);
+            const toPosition = Position.column(k + 2);
+            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
+            table.replaceWith(this.render(newArrangement, virtualizer));
           });
           rowArray[k].append(h("td", button));
         }
         // last row of buttons on to of rowHierarchy
         for (let l = 0; l < rowHierarchy.length - 1; l++) {
           const button = createButton("& >", () => {
-            const newRowHierarchy = Array.from(rowHierarchy);
-            const tmp = rowHierarchy[l];
-            newRowHierarchy[l] = rowHierarchy[l + 1];
-            newRowHierarchy[l + 1] = rowHierarchy[l];
-            const newHierarchization = new Hierarchization(
-                newRowHierarchy, columnHierarchy);
-            const newViewState =
-                viewState.setHierarchization(newHierarchization);
-            table.replaceWith(this.render(newViewState));
+            const fromPosition = Position.row(l);
+            const toPosition = Position.row(l + 2);
+            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
+            table.replaceWith(this.render(newArrangement, virtualizer));
           });
           rowArray[lastRow].append(h("td", button));
         }
         const lastCell = h("td");
         if (rowHierarchy.length > 1) {
           const button = createButton("^", () => {
-            const newRowHierarchy = Array.from(rowHierarchy);
-            const newColumnHierarchy = Array.from(columnHierarchy);
-            const switcher = newRowHierarchy.pop();
-            newColumnHierarchy.push(switcher);
-            const newHierarchization = new Hierarchization(
-                newRowHierarchy, newColumnHierarchy);
-            const newViewState =
-                viewState.setHierarchization(newHierarchization);
-            table.replaceWith(this.render(newViewState));
+            const fromPosition = Position.row(rowHierarchy.length - 1);
+            const toPosition = Position.column(columnHierarchy.length);
+            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
+            table.replaceWith(this.render(newArrangement, virtualizer));
           });
           lastCell.append(button);
         }
         {
           const button = createButton("&", () => {
-            const newRowHierarchy = Array.from(rowHierarchy);
-            const newColumnHierarchy = Array.from(columnHierarchy);
-            const fromRow = newRowHierarchy.pop();
-            const fromColumn = newColumnHierarchy.pop();
-            newRowHierarchy.push(fromColumn);
-            newColumnHierarchy.push(fromRow);
-            const newHierarchization = new Hierarchization(
-                newRowHierarchy, newColumnHierarchy);
-            const newViewState =
-                viewState.setHierarchization(newHierarchization);
-            table.replaceWith(this.render(newViewState));
+            const fromPosition1 = Position.row(rowHierarchy.length - 1);
+            const toPosition1 = Position.column(columnHierarchy.length);
+            const fromPosition2 = Position.column(columnHierarchy.length - 1);
+            const toPosition2 = Position.row(columnHierarchy.length - 1);
+            const newArrangement = arrangement.move(fromPosition1, toPosition1, -1);
+            const newerArrangement = newArrangement.move(fromPosition2, toPosition2, -1);
+            table.replaceWith(this.render(newerArrangement, virtualizer));
           });
           lastCell.append(button);
         }
         if (columnHierarchy.length > 1) {
           const button = createButton("<", () => {
-            const newRowHierarchy = Array.from(rowHierarchy);
-            const newColumnHierarchy = Array.from(columnHierarchy);
-            const switcher = newColumnHierarchy.pop();
-            newRowHierarchy.push(switcher);
-            const newHierarchization = new Hierarchization(
-                newRowHierarchy, newColumnHierarchy);
-            const newViewState =
-                viewState.setHierarchization(newHierarchization);
-            table.replaceWith(this.render(newViewState));
+            const fromPosition = Position.column(columnHierarchy.length - 1);
+            const toPosition = Position.row(rowHierarchy.length);
+            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
+            table.replaceWith(this.render(newArrangement, virtualizer));
           });
           lastCell.append(button);
         }
@@ -499,8 +403,8 @@ export class BigTable {
       // draw data cell
       const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
       do {
-        const address = hierarchization.absoluteAddress(rowIterator.address(),
-                                                        columnIterator.address());
+        const address = arrangement.absoluteAddress(rowIterator.address(),
+                                                    columnIterator.address());
         const value = transformedDataView.lookup(address);
         row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
