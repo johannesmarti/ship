@@ -137,8 +137,7 @@ export class Arrangement {
   static fromJSON(schema, json) {
     function hierarchyFromJSON(list) {
       if (list === undefined) {
-        console.log(`ERROR: JSON object for arrangement is no of the
-right format`);
+        console.log(`ERROR: JSON object for arrangement is not of the right format`);
         return 'formatError';
       }
       const result = [];
@@ -352,7 +351,7 @@ right format`);
 
     const address = Array(this.numOrders());
     for (const pointedOrder of this._fixed) {
-      address[pointedOrder["order"]] = pointedOrder["fixedIndex"];
+      address[pointedOrder.order()] = pointedOrder.fixedIndex();
     }
     for (const [offset, index] of rowAddress.entries()) {
       address[rowHierarchy[offset]] = index;

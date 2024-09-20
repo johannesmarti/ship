@@ -286,12 +286,26 @@ export class BigTable {
     // could be done in constructor, need to think how I do this stuff
     // in the interface
     const schema = virtualizer.virtualize(baseSchema);
+    arrangement.checkInternally();
+    arrangement.checkAgainstSchema(schema);
     const transformedDataView = new TransformedDataView(this._dataView, schema);
     arrangement.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
+    let frow;
     let tbody;
-    const table = h("table", tbody = h("tbody"));
+    let div = h("div",
+        h("table", h("tbody", frow = h("tr"))),
+        h("table", tbody = h("tbody"))
+    );
+
+    for (const fixedOrder of arrangement.fixed()) {
+      const order = fixedOrder.order();
+      const fixedIndex = fixedOrder.fixedIndex();
+      const dimension = schema.dimensionAtOrder(order);
+      const cell = h("th", dimension.nameOfIndex(fixedIndex));
+      frow.append(cell);
+    }
 
     // using arrow function to get the right behavior of 'this'
     const createHeaderCell = (order, dimension, index) => {
@@ -301,7 +315,7 @@ export class BigTable {
         const baseIndex = dimension.transform(index);
         const newVirtualizer =
             virtualizer.update(order, baseIndex, baseDimension);
-        table.replaceWith(this.render(arrangement, newVirtualizer));
+        div.replaceWith(this.render(arrangement, newVirtualizer));
       });
       return cell;
     }
@@ -324,7 +338,7 @@ export class BigTable {
             const fromPosition = Position.column(k);
             const toPosition = Position.column(k + 2);
             const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            table.replaceWith(this.render(newArrangement, virtualizer));
+            div.replaceWith(this.render(newArrangement, virtualizer));
           });
           rowArray[k].append(h("td", button));
         }
@@ -334,7 +348,7 @@ export class BigTable {
             const fromPosition = Position.row(l);
             const toPosition = Position.row(l + 2);
             const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            table.replaceWith(this.render(newArrangement, virtualizer));
+            div.replaceWith(this.render(newArrangement, virtualizer));
           });
           rowArray[lastRow].append(h("td", button));
         }
@@ -344,7 +358,7 @@ export class BigTable {
             const fromPosition = Position.row(rowHierarchy.length - 1);
             const toPosition = Position.column(columnHierarchy.length);
             const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            table.replaceWith(this.render(newArrangement, virtualizer));
+            div.replaceWith(this.render(newArrangement, virtualizer));
           });
           lastCell.append(button);
         }
@@ -352,11 +366,11 @@ export class BigTable {
           const button = createButton("&", () => {
             const fromPosition1 = Position.row(rowHierarchy.length - 1);
             const toPosition1 = Position.column(columnHierarchy.length);
-            const fromPosition2 = Position.column(columnHierarchy.length - 1);
-            const toPosition2 = Position.row(columnHierarchy.length - 1);
             const newArrangement = arrangement.move(fromPosition1, toPosition1, -1);
+            const fromPosition2 = Position.column(columnHierarchy.length - 1);
+            const toPosition2 = Position.row(rowHierarchy.length - 1);
             const newerArrangement = newArrangement.move(fromPosition2, toPosition2, -1);
-            table.replaceWith(this.render(newerArrangement, virtualizer));
+            div.replaceWith(this.render(newerArrangement, virtualizer));
           });
           lastCell.append(button);
         }
@@ -365,7 +379,7 @@ export class BigTable {
             const fromPosition = Position.column(columnHierarchy.length - 1);
             const toPosition = Position.row(rowHierarchy.length);
             const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            table.replaceWith(this.render(newArrangement, virtualizer));
+            div.replaceWith(this.render(newArrangement, virtualizer));
           });
           lastCell.append(button);
         }
@@ -410,6 +424,6 @@ export class BigTable {
       } while(columnIterator.increment());
       tbody.append(row);
     } while (rowIterator.increment());
-    return table;
+    return div;
   }
 }

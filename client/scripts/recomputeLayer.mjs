@@ -22,7 +22,7 @@ export class RecomputeLayer {
     const order = this._orderOfRecompute;
     const cutoff = this._cutoff;
     console.assert(address[order] <= cutoff,
-      `absolute address ${address} is out of range in order ${order}`);
+      `absolute address ${address} is out of range in order ${order} with value ${address[order]}`);
     if (address[order] < cutoff) {
       return this._baseData.lookup(address);
     }

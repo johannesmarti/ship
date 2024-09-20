@@ -2,6 +2,8 @@ import { Arrangement, Position } from './arrangement.mjs'
 import { Schema } from './schema.mjs'
 
 function arraysAreEqual(arr1, arr2) {
+  // TODO: this chatGPT code might be wrong in case arr1 has undefined
+  // entries.
   return arr1.length === arr2.length &&
             arr1.every((value, index) => value === arr2[index]);
 }

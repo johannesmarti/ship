@@ -46,7 +46,7 @@
 
 import { PhysicalData } from './scripts/physicalData.mjs';
 import { RecomputeLayer } from './scripts/recomputeLayer.mjs';
-import { Arrangement, Position } from './scripts/arrangement.mjs';
+import { Arrangement } from './scripts/arrangement.mjs';
 import { h, Virtualizer, BigTable } from './scripts/bigTable.mjs';
 
 async function fetchData() {
@@ -105,8 +105,12 @@ async function main() {
       }
     }
 
-    const arrangement = Arrangement.create([], [iteration, good],
-                                               [datatype, province]);
+    const ajson = {
+      'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
+      'rowHierarchy': ['iteration', 'good'],
+      'columnHierarchy': ['province']
+    }
+    const arrangement = Arrangement.fromJSON(dataLayer.schema(), ajson);
     const virtualizer = new Virtualizer(vconfig);
     const bigTable = new BigTable(dataLayer);
     const domTable = bigTable.render(arrangement, virtualizer);
