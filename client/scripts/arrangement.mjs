@@ -44,8 +44,8 @@ class PointedOrder {
   // returns null if there is no such dimension in schema
   // returns 'formatError' if the json object does not have the right keys.
   static fromJSON(schema, json) {
-    const dimensionName = json['dimension'];
-    const indexName = json['fixedIndex'];
+    const dimensionName = json.dimension;
+    const indexName = json.fixedIndex;
     if (dimensionName === undefined || indexName === undefined) {
       console.log('ERROR: json object for pointed order is not of the right format');
       return 'formatError';
@@ -66,8 +66,8 @@ class PointedOrder {
   toJSON(schema) {
     const dimension = schema.dimensionAtOrder(this._order);
     return {
-      'dimension': dimension.name(),
-      'fixedIndex': dimension.nameOfIndex(this._fixedIndex)
+      dimension: dimension.name(),
+      fixedIndex: dimension.nameOfIndex(this._fixedIndex)
     };
   }
 
