@@ -276,6 +276,28 @@ export class Virtualizer {
   }
 }
 
+class IndexedPosition {
+  constructor(index, position) {
+    this._index = index;
+    this._position = position;
+  }
+
+  static fixed(index, offset) {
+    return new IndexedPosition(index, Position.fixed(offset));
+  }
+
+  static row(index, offset) {
+    return new IndexedPosition(index, Position.row(offset));
+  }
+
+  static column(index, offset) {
+    return new IndexedPosition(index, Position.column(offset));
+  }
+
+  index() { return this._index; }
+  position() { return this._position; }
+}
+
 class ElementIndex {
   constructor(fixedLength, rowHierarchyLength, columnHierarchyLength) {
     function arrayOfEmptyArrays(length) {
@@ -303,11 +325,20 @@ class ElementIndex {
     console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
   }
 
-  positionOfElement(element) {
-    const position = this._elementToPosition.get(element);
-    console.assert(position !== undefined,
+  indexedPositionOfElement(element) {
+    const indexedPosition = this._elementToPosition.get(element);
+    console.assert(indexedPosition !== undefined,
       `element does not exists in ElementIndex`);
-    return position;
+    return indexedPosition;
+
+  }
+
+  positionOfElement(element) {
+    return this.indexedPositionOfElement(element).position();
+  }
+
+  indexOfElement(element) {
+    return this.indexedPositionOfElement(element).index();
   }
 
   elementsAtPosition(position) {
@@ -320,9 +351,9 @@ position ${type}, but got a position with offset '${offset}'`);
     return array[offset];
   }
 
-  add(element, position) {
-    this._elementToPosition.set(element, position);
-    this.elementsAtPosition(position).push(element);
+  add(element, indexedPosition) {
+    this._elementToPosition.set(element, indexedPosition);
+    this.elementsAtPosition(indexedPosition.position()).push(element);
   }
 }
 
@@ -348,8 +379,8 @@ export class BigTable {
       cell.setAttribute('draggable', 'true');
     } 
 
-    let draggingPosition = null;
-    let highlightedPosition = null;
+    let dragging = null;
+    let highlighted = null;
 
     function determineTargetPosition(event) {
       const target = event.target.closest('th');
@@ -434,48 +465,49 @@ export class BigTable {
     }
 
     div.addEventListener('dragstart', (event) => {
-      const position = headerIndex.positionOfElement(event.target);
-      if (position !== undefined) {
-        draggingPosition = position
-        for (const cell of headerIndex.elementsAtPosition(position)) {
-          cell.classList.add('dragging');
-        }
+      const indexedPosition = headerIndex.indexedPositionOfElement(event.target);
+      const position = indexedPosition.position();
+      dragging = indexedPosition;
+      for (const cell of headerIndex.elementsAtPosition(position)) {
+        cell.classList.add('dragging');
       }
     });
 
     div.addEventListener('dragover', (event) => {
-      console.assert(draggingPosition !== null,
-        `there is a draggingPosition on dragover event`);
-      // I do not understand why this prevent defalt is needed
+      console.assert(dragging !== null,
+        `there is a dragging element on dragover event`);
+      // I do not understand why this preventDefault is needed
       event.preventDefault();
-      const targetPosition = determineTargetPosition(event);
-      if (targetPosition === null) { return; }
-      if (highlightedPosition !== null) {
-        if (targetPosition.equals(highlightedPosition)) { return; }
-        removeHighlighting(highlightedPosition);
-        highlightedPosition = null;
+      const target = determineTargetPosition(event);
+      if (target === null) { return; }
+      if (highlighted !== null) {
+        if (target.equals(highlighted)) { return; }
+        removeHighlighting(highlighted);
+        highlighted = null;
       }
-      if (arrangement.isMovable(draggingPosition, targetPosition)) {
-        highlight(targetPosition);
-        highlightedPosition = targetPosition;
+      if (arrangement.isMovable(dragging.position(), target)) {
+        highlight(target);
+        highlighted = target;
       }
     });
 
     div.addEventListener('drop', (event) => {
-      console.log("drop fired");
-      if (highlightedPosition == null) { return; }
-      const newArrangement = arrangement.move(draggingPosition, highlightedPosition);
+      if (highlighted == null) { return; }
+      const newArrangement = arrangement.move(dragging.position(), highlighted,
+                                              dragging.index());
       div.replaceWith(this.render(newArrangement, virtualizer));
     });
 
     div.addEventListener('dragend', (event) => {
-      for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
+      console.assert(dragging !== null,
+        `there is a dragging element on dragend event`);
+      for (const cell of headerIndex.elementsAtPosition(dragging.position())) {
         cell.classList.remove('dragging');
       }
-      draggingPosition = null;
-      if (highlightedPosition !== null) {
-        removeHighlighting(highlightedPosition);
-        highlightedPosition = null;
+      dragging = null;
+      if (highlighted !== null) {
+        removeHighlighting(highlighted);
+        highlighted = null;
       }
     });
   }
@@ -506,7 +538,7 @@ export class BigTable {
       const fixedIndex = fixedOrder.fixedIndex();
       const dimension = schema.dimensionAtOrder(order);
       const cell = h("th", dimension.nameOfIndex(fixedIndex));
-      headerIndex.add(cell, Position.fixed(offset));
+      headerIndex.add(cell, IndexedPosition.fixed(fixedIndex, offset));
       frow.append(cell);
     }
 
@@ -598,7 +630,7 @@ export class BigTable {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
           cell.colSpan = multiplier;
-          headerIndex.add(cell, Position.column(k));
+          headerIndex.add(cell, IndexedPosition.column(index, k));
           rowArray[k].append(cell);
           multiplier *= dimension.numIndices();
         }
@@ -615,7 +647,7 @@ export class BigTable {
         const dimension = schema.dimensionAtOrder(order);
         const cell = createHeaderCell(order, dimension, index);
         cell.rowSpan = multiplier;
-        headerIndex.add(cell, Position.row(k));
+        headerIndex.add(cell, IndexedPosition.row(index, k));
         row.prepend(cell);
         multiplier *= dimension.numIndices();
       }
@@ -625,6 +657,9 @@ export class BigTable {
         const address = arrangement.absoluteAddress(rowIterator.address(),
                                                     columnIterator.address());
         const value = transformedDataView.lookup(address);
+        console.log("looking up value");
+        console.log("address: ", address);
+        console.log("value: ", value);
         row.append(h("td", value.toFixed(3)));
       } while(columnIterator.increment());
       tbody.append(row);
