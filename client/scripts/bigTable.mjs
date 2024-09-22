@@ -276,9 +276,84 @@ export class Virtualizer {
   }
 }
 
+class ElementIndex {
+  constructor(fixedLength, rowHierarchyLength, columnHierarchyLength) {
+    function arrayOfEmptyArrays(length) {
+      return Array(length).fill().map(() => []);
+    }
+    this._elementToPosition = new Map();
+    this._fixedArray = arrayOfEmptyArrays(fixedLength);
+    this._rowHierarchyArray = arrayOfEmptyArrays(rowHierarchyLength);
+    this._columnHierarchyArray = arrayOfEmptyArrays(columnHierarchyLength);
+  }
+
+  allElements() {
+    return this._elementToPosition.keys();
+  }
+
+  arrayOfType(type) {
+    switch (type) {
+      case 'fixed':
+        return this._fixedArray;
+      case 'rowHierarchy':
+        return this._rowHierarchyArray;
+      case 'columnHierarchy':
+        return this._columnHierarchyArray;
+    }
+    console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
+  }
+
+  positionOfElement(element) {
+    const position = this._elementToPosition.get(element);
+    console.assert(position !== undefined,
+      `element does not exists in ElementIndex`);
+    return position;
+  }
+
+  elementsAtPosition(position) {
+    const type = position.type();
+    const offset = position.offset();
+    const array = this.arrayOfType(type);
+    console.assert(position.offset() < array.length,
+        `HeaderElementindex only has ${array.length} elements in
+position ${type}, but got a position with offset '${offset}'`);
+    return array[offset];
+  }
+
+  add(element, position) {
+    this._elementToPosition.set(element, position);
+    this.elementsAtPosition(position).push(element);
+  }
+}
+
 export class BigTable {
   constructor(dataView) {
     this._dataView = dataView;
+  }
+
+  addListeners(headerIndex, divElement) {
+    for (let cell of headerIndex.allElements()) {
+      cell.setAttribute('draggable', 'true');
+    } 
+
+    let draggingPosition = null;
+
+    divElement.addEventListener('dragstart', (event) => {
+      const target = event.target;
+      if (target.tagName === 'TH') {
+        draggingPosition = headerIndex.positionOfElement(target);
+        for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
+          cell.classList.add('dragging');
+        }
+      }
+    });
+    divElement.addEventListener('dragend', (event) => {
+      if (event.target.tagName === 'TH') {
+        for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
+          cell.classList.remove('dragging');
+        }
+      }
+    });
   }
 
   render(arrangement, virtualizer) {
@@ -292,6 +367,9 @@ export class BigTable {
     arrangement.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
+    const headerIndex = new ElementIndex(arrangement.fixed().length,
+        rowHierarchy.length, columnHierarchy.length);
+
     let frow;
     let tbody;
     let div = h("div",
@@ -299,11 +377,12 @@ export class BigTable {
         h("table", tbody = h("tbody"))
     );
 
-    for (const fixedOrder of arrangement.fixed()) {
+    for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
       const order = fixedOrder.order();
       const fixedIndex = fixedOrder.fixedIndex();
       const dimension = schema.dimensionAtOrder(order);
       const cell = h("th", dimension.nameOfIndex(fixedIndex));
+      headerIndex.add(cell, Position.fixed(offset));
       frow.append(cell);
     }
 
@@ -395,6 +474,7 @@ export class BigTable {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
           cell.colSpan = multiplier;
+          headerIndex.add(cell, Position.column(k));
           rowArray[k].append(cell);
           multiplier *= dimension.numIndices();
         }
@@ -411,6 +491,7 @@ export class BigTable {
         const dimension = schema.dimensionAtOrder(order);
         const cell = createHeaderCell(order, dimension, index);
         cell.rowSpan = multiplier;
+        headerIndex.add(cell, Position.row(k));
         row.prepend(cell);
         multiplier *= dimension.numIndices();
       }
@@ -424,6 +505,7 @@ export class BigTable {
       } while(columnIterator.increment());
       tbody.append(row);
     } while (rowIterator.increment());
+    this.addListeners(headerIndex, div);
     return div;
   }
 }
