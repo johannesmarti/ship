@@ -326,32 +326,156 @@ position ${type}, but got a position with offset '${offset}'`);
   }
 }
 
+function isHorizontal(type) {
+  switch (type) {
+    case 'fixed':
+      return true;
+    case 'rowHierarchy':
+      return true;
+    case 'columnHierarchy':
+      return false;
+  }
+  console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
+}
+
 export class BigTable {
   constructor(dataView) {
     this._dataView = dataView;
   }
 
-  addListeners(headerIndex, divElement) {
+  addListeners(headerIndex, div, arrangement, virtualizer) {
     for (let cell of headerIndex.allElements()) {
       cell.setAttribute('draggable', 'true');
     } 
 
     let draggingPosition = null;
+    let highlightedPosition = null;
 
-    divElement.addEventListener('dragstart', (event) => {
-      const target = event.target;
-      if (target.tagName === 'TH') {
-        draggingPosition = headerIndex.positionOfElement(target);
-        for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
+    function determineTargetPosition(event) {
+      const target = event.target.closest('th');
+      if (target === null) { return null; }
+      const overPosition = headerIndex.positionOfElement(event.target);
+      if (overPosition === undefined) { return null; }
+
+      const boundingRectangle = target.getBoundingClientRect();
+      if (isHorizontal(overPosition.type())) {
+        const xOffset = event.clientX - boundingRectangle.left;
+        if (xOffset < boundingRectangle.width / 2) {
+          return overPosition;
+        } else {
+          return new Position(overPosition.type(), overPosition.offset() + 1);
+        }
+      } else {
+        const yOffset = event.clientY - boundingRectangle.top;
+        if (yOffset < boundingRectangle.height / 2) {
+          return overPosition;
+        } else {
+          return new Position(overPosition.type(), overPosition.offset() + 1);
+        }
+      }
+    }
+
+    function highlight(position) {
+      console.log(`highlighting position ${position}`);
+      if (arrangement.isPosition(position)) {
+        if (isHorizontal(position.type())) {
+          for (const cell of headerIndex.elementsAtPosition(position)) {
+            cell.classList.add('dragover-left');
+          }
+        } else {
+          for (const cell of headerIndex.elementsAtPosition(position)) {
+            cell.classList.add('dragover-top');
+          }
+        }
+      } else if (arrangement.isDropPosition(position)) {
+        const type = position.type();
+        const mutating = new Position(type, position.offset() - 1);
+        if (isHorizontal(type)) {
+          for (const cell of headerIndex.elementsAtPosition(mutating)) {
+            cell.classList.add('dragover-right');
+          }
+        } else {
+          for (const cell of headerIndex.elementsAtPosition(mutating)) {
+            cell.classList.add('dragover-bottom');
+          }
+        }
+      } else {
+        console.assert(false, `highlighting on invalid position: ${position}`);
+      }
+    }
+
+    function removeHighlighting(position) {
+      if (arrangement.isPosition(position)) {
+        if (isHorizontal(position.type())) {
+          for (const cell of headerIndex.elementsAtPosition(position)) {
+            cell.classList.remove('dragover-left');
+          }
+        } else {
+          for (const cell of headerIndex.elementsAtPosition(position)) {
+            cell.classList.remove('dragover-top');
+          }
+        }
+      } else if (arrangement.isDropPosition(position)) {
+        const type = position.type();
+        const mutating = new Position(type, position.offset() - 1);
+        if (isHorizontal(type)) {
+          for (const cell of headerIndex.elementsAtPosition(mutating)) {
+            cell.classList.remove('dragover-right');
+          }
+        } else {
+          for (const cell of headerIndex.elementsAtPosition(mutating)) {
+            cell.classList.remove('dragover-bottom');
+          }
+        }
+      } else {
+        console.assert(false,
+          `removing highlighting on invalid position: ${position}`);
+      }
+    }
+
+    div.addEventListener('dragstart', (event) => {
+      const position = headerIndex.positionOfElement(event.target);
+      if (position !== undefined) {
+        draggingPosition = position
+        for (const cell of headerIndex.elementsAtPosition(position)) {
           cell.classList.add('dragging');
         }
       }
     });
-    divElement.addEventListener('dragend', (event) => {
-      if (event.target.tagName === 'TH') {
-        for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
-          cell.classList.remove('dragging');
-        }
+
+    div.addEventListener('dragover', (event) => {
+      console.assert(draggingPosition !== null,
+        `there is a draggingPosition on dragover event`);
+      // I do not understand why this prevent defalt is needed
+      event.preventDefault();
+      const targetPosition = determineTargetPosition(event);
+      if (targetPosition === null) { return; }
+      if (highlightedPosition !== null) {
+        if (targetPosition.equals(highlightedPosition)) { return; }
+        removeHighlighting(highlightedPosition);
+        highlightedPosition = null;
+      }
+      if (arrangement.isMovable(draggingPosition, targetPosition)) {
+        highlight(targetPosition);
+        highlightedPosition = targetPosition;
+      }
+    });
+
+    div.addEventListener('drop', (event) => {
+      console.log("drop fired");
+      if (highlightedPosition == null) { return; }
+      const newArrangement = arrangement.move(draggingPosition, highlightedPosition);
+      div.replaceWith(this.render(newArrangement, virtualizer));
+    });
+
+    div.addEventListener('dragend', (event) => {
+      for (const cell of headerIndex.elementsAtPosition(draggingPosition)) {
+        cell.classList.remove('dragging');
+      }
+      draggingPosition = null;
+      if (highlightedPosition !== null) {
+        removeHighlighting(highlightedPosition);
+        highlightedPosition = null;
       }
     });
   }
@@ -505,7 +629,7 @@ export class BigTable {
       } while(columnIterator.increment());
       tbody.append(row);
     } while (rowIterator.increment());
-    this.addListeners(headerIndex, div);
+    this.addListeners(headerIndex, div, arrangement, virtualizer);
     return div;
   }
 }

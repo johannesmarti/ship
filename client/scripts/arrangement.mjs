@@ -19,6 +19,10 @@ export class Position {
     return new Position('rowHierarchy', offset);
   }
 
+  equals(other) {
+    return this.offset() === other.offset() && this.type() === other.type();
+  }
+
   type() { return this._type; }
   offset() { return this._offset; }
 
