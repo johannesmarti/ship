@@ -35,16 +35,16 @@
       opacity: 0.5;
     }
     .dragover-left {
-      border-left: 2px solid red;
+      border-left: 1px solid red;
     }
     .dragover-right {
-      border-right: 2px solid red;
+      border-right: 1px solid red;
     }
     .dragover-top {
-      border-top: 2px solid red;
+      border-top: 1px solid red;
     }
     .dragover-bottom {
-      border-bottom: 2px solid red;
+      border-bottom: 1px solid red;
     }
   </style>
 
@@ -120,10 +120,16 @@ async function main() {
       }
     }
 
+    //const ajson = {
+    //  'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
+    //  'rowHierarchy': ['iteration', 'good'],
+    //  'columnHierarchy': ['province']
+    //}
     const ajson = {
-      'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
+      'fixed': [ { dimension: 'datatype', fixedIndex: 'price' },
+                 { dimension: 'province', fixedIndex: 'Switzerland'} ],
       'rowHierarchy': ['iteration', 'good'],
-      'columnHierarchy': ['province']
+      'columnHierarchy': []
     }
     const arrangement = Arrangement.fromJSON(dataLayer.schema(), ajson);
     const virtualizer = new Virtualizer(vconfig);

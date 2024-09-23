@@ -523,8 +523,9 @@ export class BigTable {
     arrangement.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
-    const headerIndex = new ElementIndex(arrangement.fixed().length,
-        rowHierarchy.length, columnHierarchy.length);
+    //const dropIndex = new DropIndex(arrangement.fixed().length,
+    //    rowHierarchy.length, columnHierarchy.length);
+    //const dragMap = Map();
 
     let frow;
     let tbody;
@@ -533,13 +534,21 @@ export class BigTable {
         h("table", tbody = h("tbody"))
     );
 
-    for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
-      const order = fixedOrder.order();
-      const fixedIndex = fixedOrder.fixedIndex();
-      const dimension = schema.dimensionAtOrder(order);
-      const cell = h("th", dimension.nameOfIndex(fixedIndex));
-      headerIndex.add(cell, IndexedPosition.fixed(fixedIndex, offset));
+    // draw fixed entries
+    if (arrangement.length === 0) {
+      const cell = h("th", "&#9733;");
+      dropIndex.add(cell);
       frow.append(cell);
+    } else {
+      for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
+        const order = fixedOrder.order();
+        const fixedIndex = fixedOrder.fixedIndex();
+        const dimension = schema.dimensionAtOrder(order);
+        const cell = h("th", dimension.nameOfIndex(fixedIndex));
+        //dropIndex.add(cell, Position.fixed(offset));
+        //dragMap.set(cell, IndexedPosition.fixed(fixedIndex, offset));
+        frow.append(cell);
+      }
     }
 
     // using arrow function to get the right behavior of 'this'
@@ -554,117 +563,94 @@ export class BigTable {
       });
       return cell;
     }
+    const rowLength = Math.max(1, rowHierarchy.length);
+    const columnLength = Math.max(1, columnHierarchy.length);
     // draw column headings
     {
-      let rowArray = new Array(columnHierarchy.length);
+      const rowArray = new Array(columnLength);
       for (let o = 0; o < rowArray.length; o++) {
         const row = h("tr");
         rowArray[o] = row;
         tbody.append(row);
       }
-      // generate top left control cells:
+      // generate top left cell:
       {
-        const lastRow = columnHierarchy.length - 1;
-        for (let k = 0; k < lastRow; k++) {
-          for (let l = 0; l < rowHierarchy.length - 1; l++) {
-            rowArray[k].append(h("td"));
-          }
-          const button = createButton("& v", () => {
-            const fromPosition = Position.column(k);
-            const toPosition = Position.column(k + 2);
-            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            div.replaceWith(this.render(newArrangement, virtualizer));
-          });
-          rowArray[k].append(h("td", button));
-        }
-        // last row of buttons on to of rowHierarchy
-        for (let l = 0; l < rowHierarchy.length - 1; l++) {
-          const button = createButton("& >", () => {
-            const fromPosition = Position.row(l);
-            const toPosition = Position.row(l + 2);
-            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            div.replaceWith(this.render(newArrangement, virtualizer));
-          });
-          rowArray[lastRow].append(h("td", button));
-        }
-        const lastCell = h("td");
-        if (rowHierarchy.length > 1) {
-          const button = createButton("^", () => {
-            const fromPosition = Position.row(rowHierarchy.length - 1);
-            const toPosition = Position.column(columnHierarchy.length);
-            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            div.replaceWith(this.render(newArrangement, virtualizer));
-          });
-          lastCell.append(button);
-        }
-        {
-          const button = createButton("&", () => {
-            const fromPosition1 = Position.row(rowHierarchy.length - 1);
-            const toPosition1 = Position.column(columnHierarchy.length);
-            const newArrangement = arrangement.move(fromPosition1, toPosition1, -1);
-            const fromPosition2 = Position.column(columnHierarchy.length - 1);
-            const toPosition2 = Position.row(rowHierarchy.length - 1);
-            const newerArrangement = newArrangement.move(fromPosition2, toPosition2, -1);
-            div.replaceWith(this.render(newerArrangement, virtualizer));
-          });
-          lastCell.append(button);
-        }
-        if (columnHierarchy.length > 1) {
-          const button = createButton("<", () => {
-            const fromPosition = Position.column(columnHierarchy.length - 1);
-            const toPosition = Position.row(rowHierarchy.length);
-            const newArrangement = arrangement.move(fromPosition, toPosition, -1);
-            div.replaceWith(this.render(newArrangement, virtualizer));
-          });
-          lastCell.append(button);
-        }
-        rowArray[lastRow].append(lastCell);
+        const cell = h("td")
+        cell.colSpan = rowLength;
+        cell.rowSpan = columnLength;
+        rowArray[0].append(cell);
       }
-      // go through all cells and draw their heading
-      const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
+      if (columnHierarchy.length === 0) {
+        const cell = h("th", "&#9733;");
+        //dropIndex.add(cell);
+        rowArray[0].append(cell);
+      } else {
+        // go through all cells and draw their heading
+        const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
+        do {
+          const row = h("tr");
+          // draw row heading
+          let multiplier = 1;
+          for (let [k, order, index] of columnIterator.freshDigits()) {
+            const dimension = schema.dimensionAtOrder(order);
+            const cell = createHeaderCell(order, dimension, index);
+            cell.colSpan = multiplier;
+            //headerIndex.add(cell, IndexedPosition.column(index, k));
+            rowArray[k].append(cell);
+            multiplier *= dimension.numIndices();
+          }
+        } while (columnIterator.increment());
+      }
+    }
+
+    // draw data rows with iterator
+    if (rowHierarchy.length === 0) {
+        const row = h("tr");
+        const cell = h("th", "&#9733;");
+        //dropIndex.add(cell);
+        row.append(cell);
+        // draw data cell
+        const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
+        do {
+          const address = arrangement.absoluteAddress([],
+                                                      columnIterator.address());
+          const value = transformedDataView.lookup(address);
+          console.log("looking up value");
+          console.log("address: ", address);
+          console.log("value: ", value);
+          row.append(h("td", value.toFixed(3)));
+        } while(columnIterator.increment());
+        tbody.append(row);
+    } else {
+      const rowIterator = new MutableHierarchicalIterator(schema, rowHierarchy);
       do {
         const row = h("tr");
         // draw row heading
         let multiplier = 1;
-        for (let [k, order, index] of columnIterator.freshDigits()) {
+        for (let [k, order, index] of rowIterator.freshDigits()) {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
-          cell.colSpan = multiplier;
-          headerIndex.add(cell, IndexedPosition.column(index, k));
-          rowArray[k].append(cell);
+          cell.rowSpan = multiplier;
+          //headerIndex.add(cell, IndexedPosition.row(index, k));
+          row.prepend(cell);
           multiplier *= dimension.numIndices();
         }
-      } while (columnIterator.increment());
-    }
 
-    // draw data rows with iterator
-    const rowIterator = new MutableHierarchicalIterator(schema, rowHierarchy);
-    do {
-      const row = h("tr");
-      // draw row heading
-      let multiplier = 1;
-      for (let [k, order, index] of rowIterator.freshDigits()) {
-        const dimension = schema.dimensionAtOrder(order);
-        const cell = createHeaderCell(order, dimension, index);
-        cell.rowSpan = multiplier;
-        headerIndex.add(cell, IndexedPosition.row(index, k));
-        row.prepend(cell);
-        multiplier *= dimension.numIndices();
-      }
-      // draw data cell
-      const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
-      do {
-        const address = arrangement.absoluteAddress(rowIterator.address(),
-                                                    columnIterator.address());
-        const value = transformedDataView.lookup(address);
-        console.log("looking up value");
-        console.log("address: ", address);
-        console.log("value: ", value);
-        row.append(h("td", value.toFixed(3)));
-      } while(columnIterator.increment());
-      tbody.append(row);
-    } while (rowIterator.increment());
-    this.addListeners(headerIndex, div, arrangement, virtualizer);
+        // draw data cell
+        const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
+        do {
+          const address = arrangement.absoluteAddress(rowIterator.address(),
+                                                      columnIterator.address());
+          const value = transformedDataView.lookup(address);
+          console.log("looking up value");
+          console.log("address: ", address);
+          console.log("value: ", value);
+          row.append(h("td", value.toFixed(3)));
+        } while(columnIterator.increment());
+        tbody.append(row);
+      } while (rowIterator.increment());
+    }
+    //this.addListeners(headerIndex, div, arrangement, virtualizer);
     return div;
   }
 }
