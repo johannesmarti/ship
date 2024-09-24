@@ -277,40 +277,41 @@ export class Virtualizer {
 }
 
 class IndexedPosition {
-  constructor(index, position) {
-    this._index = index;
+  constructor(position, index) {
     this._position = position;
+    this._index = index;
   }
 
-  static fixed(index, offset) {
-    return new IndexedPosition(index, Position.fixed(offset));
+  static fixed(offset, index) {
+    return new IndexedPosition(Position.fixed(offset), index);
   }
 
-  static row(index, offset) {
-    return new IndexedPosition(index, Position.row(offset));
+  static row(offset, index) {
+    return new IndexedPosition(Position.row(offset), index);
   }
 
-  static column(index, offset) {
-    return new IndexedPosition(index, Position.column(offset));
+  static column(offset, index) {
+    return new IndexedPosition(Position.column(offset), index);
   }
 
-  index() { return this._index; }
   position() { return this._position; }
+  index() { return this._index; }
 }
 
-class ElementIndex {
-  constructor(fixedLength, rowHierarchyLength, columnHierarchyLength) {
+class PositionIndex {
+  constructor(positionExtractor, fixedLength, rowHierarchyLength, columnHierarchyLength) {
     function arrayOfEmptyArrays(length) {
       return Array(length).fill().map(() => []);
     }
-    this._elementToPosition = new Map();
+    this._positionExtractor = positionExtractor;
+    this._elementToValue = new Map();
     this._fixedArray = arrayOfEmptyArrays(fixedLength);
     this._rowHierarchyArray = arrayOfEmptyArrays(rowHierarchyLength);
     this._columnHierarchyArray = arrayOfEmptyArrays(columnHierarchyLength);
   }
 
   allElements() {
-    return this._elementToPosition.keys();
+    return this._elementToValue.keys();
   }
 
   arrayOfType(type) {
@@ -325,20 +326,16 @@ class ElementIndex {
     console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
   }
 
-  indexedPositionOfElement(element) {
-    const indexedPosition = this._elementToPosition.get(element);
-    console.assert(indexedPosition !== undefined,
+  valueOfElement(element) {
+    const value = this._elementToValue.get(element);
+    console.assert(value !== undefined,
       `element does not exists in ElementIndex`);
-    return indexedPosition;
+    return value;
 
   }
 
   positionOfElement(element) {
-    return this.indexedPositionOfElement(element).position();
-  }
-
-  indexOfElement(element) {
-    return this.indexedPositionOfElement(element).index();
+    return this._positionExtractor(this.valueOfElement(element));
   }
 
   elementsAtPosition(position) {
@@ -351,9 +348,12 @@ position ${type}, but got a position with offset '${offset}'`);
     return array[offset];
   }
 
-  add(element, indexedPosition) {
-    this._elementToPosition.set(element, indexedPosition);
-    this.elementsAtPosition(indexedPosition.position()).push(element);
+  add(element, value) {
+    //console.log("considering value: ", value);
+    this._elementToValue.set(element, value);
+    const position = this._positionExtractor(value);
+    //console.log("giving position: ", position);
+    this.elementsAtPosition(position).push(element);
   }
 }
 
@@ -374,14 +374,14 @@ export class BigTable {
     this._dataView = dataView;
   }
 
-  addListeners(headerIndex, div, arrangement, virtualizer) {
-    for (let cell of headerIndex.allElements()) {
+  addListeners(dragIndex, div, arrangement, virtualizer) {
+    for (let cell of dragIndex.allElements()) {
       cell.setAttribute('draggable', 'true');
     } 
-
     let dragging = null;
     let highlighted = null;
 
+/*
     function determineTargetPosition(event) {
       const target = event.target.closest('th');
       if (target === null) { return null; }
@@ -464,15 +464,18 @@ export class BigTable {
       }
     }
 
+*/
+
     div.addEventListener('dragstart', (event) => {
-      const indexedPosition = headerIndex.indexedPositionOfElement(event.target);
-      const position = indexedPosition.position();
+      const indexedPosition = dragIndex.valueOfElement(event.target);
       dragging = indexedPosition;
-      for (const cell of headerIndex.elementsAtPosition(position)) {
+      const position = indexedPosition.position();
+      for (const cell of dragIndex.elementsAtPosition(position)) {
         cell.classList.add('dragging');
       }
     });
 
+/*
     div.addEventListener('dragover', (event) => {
       console.assert(dragging !== null,
         `there is a dragging element on dragover event`);
@@ -510,6 +513,7 @@ export class BigTable {
         highlighted = null;
       }
     });
+*/
   }
 
   render(arrangement, virtualizer) {
@@ -523,9 +527,12 @@ export class BigTable {
     arrangement.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
+    const dragIndex = new PositionIndex(
+        function(indexedPosition) { return indexedPosition.position(); },
+        arrangement.fixed().length,
+        rowHierarchy.length, columnHierarchy.length);
     //const dropIndex = new DropIndex(arrangement.fixed().length,
     //    rowHierarchy.length, columnHierarchy.length);
-    //const dragMap = Map();
 
     let frow;
     let tbody;
@@ -545,8 +552,8 @@ export class BigTable {
         const fixedIndex = fixedOrder.fixedIndex();
         const dimension = schema.dimensionAtOrder(order);
         const cell = h("th", dimension.nameOfIndex(fixedIndex));
+        dragIndex.add(cell, IndexedPosition.fixed(offset, fixedIndex));
         //dropIndex.add(cell, Position.fixed(offset));
-        //dragMap.set(cell, IndexedPosition.fixed(fixedIndex, offset));
         frow.append(cell);
       }
     }
@@ -563,6 +570,7 @@ export class BigTable {
       });
       return cell;
     }
+
     const rowLength = Math.max(1, rowHierarchy.length);
     const columnLength = Math.max(1, columnHierarchy.length);
     // draw column headings
@@ -595,7 +603,8 @@ export class BigTable {
             const dimension = schema.dimensionAtOrder(order);
             const cell = createHeaderCell(order, dimension, index);
             cell.colSpan = multiplier;
-            //headerIndex.add(cell, IndexedPosition.column(index, k));
+            dragIndex.add(cell, IndexedPosition.column(k, index));
+            //headerIndex.add(cell);
             rowArray[k].append(cell);
             multiplier *= dimension.numIndices();
           }
@@ -631,6 +640,7 @@ export class BigTable {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
           cell.rowSpan = multiplier;
+          dragIndex.add(cell, IndexedPosition.row(k, index));
           //headerIndex.add(cell, IndexedPosition.row(index, k));
           row.prepend(cell);
           multiplier *= dimension.numIndices();
@@ -639,7 +649,7 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    //this.addListeners(headerIndex, div, arrangement, virtualizer);
+    this.addListeners(dragIndex, div, arrangement, virtualizer);
     return div;
   }
 }

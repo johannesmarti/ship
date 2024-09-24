@@ -31,6 +31,15 @@
       overflow: hidden;
       white-space: nowrap;
     }
+    /* Normal state (draggable) */
+    [draggable="true"] {
+        cursor: grab;
+    }
+    
+    /* While dragging */
+    [draggable="true"]:active {
+        cursor: grabbing;
+    }
     .dragging {
       opacity: 0.5;
     }
