@@ -174,16 +174,16 @@ class MutableHierarchicalIterator {
   }
 
   increment() {
-    let k = this._array.length - 1;
-    do {
+    let k = this._array.length;
+    while (k > 0) {
+      k--;
       const dimension = this._schema.dimensionAtOrder(this._hierarchy[k]);
       this._array[k]++;
       if (this._array[k] !== dimension.numIndices()) {
         return true;
       }
       this._array[k] = 0;
-      k--;
-    } while (k >= 0);
+    }
     return false;
   }
 
@@ -535,9 +535,9 @@ export class BigTable {
     );
 
     // draw fixed entries
-    if (arrangement.length === 0) {
-      const cell = h("th", "&#9733;");
-      dropIndex.add(cell);
+    if (arrangement.fixed().length === 0) {
+      const cell = h("th", "\u2605");
+      //dropIndex.add(cell);
       frow.append(cell);
     } else {
       for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
@@ -581,7 +581,7 @@ export class BigTable {
         rowArray[0].append(cell);
       }
       if (columnHierarchy.length === 0) {
-        const cell = h("th", "&#9733;");
+        const cell = h("th", "\u2605");
         //dropIndex.add(cell);
         rowArray[0].append(cell);
       } else {
@@ -603,23 +603,23 @@ export class BigTable {
       }
     }
 
+    function drawDataPartOfRow(row, rowAddress) {
+      const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
+      do {
+        const address = arrangement.absoluteAddress(rowAddress,
+                                                    columnIterator.address());
+        const value = transformedDataView.lookup(address);
+        row.append(h("td", value.toFixed(3)));
+      } while(columnIterator.increment());
+    }
+
     // draw data rows with iterator
     if (rowHierarchy.length === 0) {
         const row = h("tr");
-        const cell = h("th", "&#9733;");
+        const cell = h("th", "\u2605");
         //dropIndex.add(cell);
         row.append(cell);
-        // draw data cell
-        const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
-        do {
-          const address = arrangement.absoluteAddress([],
-                                                      columnIterator.address());
-          const value = transformedDataView.lookup(address);
-          console.log("looking up value");
-          console.log("address: ", address);
-          console.log("value: ", value);
-          row.append(h("td", value.toFixed(3)));
-        } while(columnIterator.increment());
+        drawDataPartOfRow(row, []);
         tbody.append(row);
     } else {
       const rowIterator = new MutableHierarchicalIterator(schema, rowHierarchy);
@@ -635,18 +635,7 @@ export class BigTable {
           row.prepend(cell);
           multiplier *= dimension.numIndices();
         }
-
-        // draw data cell
-        const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
-        do {
-          const address = arrangement.absoluteAddress(rowIterator.address(),
-                                                      columnIterator.address());
-          const value = transformedDataView.lookup(address);
-          console.log("looking up value");
-          console.log("address: ", address);
-          console.log("value: ", value);
-          row.append(h("td", value.toFixed(3)));
-        } while(columnIterator.increment());
+        drawDataPartOfRow(row, rowIterator.address());
         tbody.append(row);
       } while (rowIterator.increment());
     }
