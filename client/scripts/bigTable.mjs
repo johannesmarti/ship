@@ -328,14 +328,13 @@ class PositionIndex {
 
   valueOfElement(element) {
     const value = this._elementToValue.get(element);
-    console.assert(value !== undefined,
-      `element does not exists in ElementIndex`);
-    return value;
-
+    return value || null;
   }
 
   positionOfElement(element) {
-    return this._positionExtractor(this.valueOfElement(element));
+    const value = this.valueOfElement(element);
+    if (value === null) return null;
+    else return this._positionExtractor(value);
   }
 
   elementsAtPosition(position) {
@@ -349,10 +348,8 @@ position ${type}, but got a position with offset '${offset}'`);
   }
 
   add(element, value) {
-    //console.log("considering value: ", value);
     this._elementToValue.set(element, value);
     const position = this._positionExtractor(value);
-    //console.log("giving position: ", position);
     this.elementsAtPosition(position).push(element);
   }
 }
@@ -374,19 +371,22 @@ export class BigTable {
     this._dataView = dataView;
   }
 
-  addListeners(dragIndex, div, arrangement, virtualizer) {
+  addListeners(dragIndex, unitIndex, div, arrangement, virtualizer) {
     for (let cell of dragIndex.allElements()) {
       cell.setAttribute('draggable', 'true');
     } 
     let dragging = null;
     let highlighted = null;
 
-/*
-    function determineTargetPosition(event) {
+    function determineDropPosition(event) {
       const target = event.target.closest('th');
       if (target === null) { return null; }
-      const overPosition = headerIndex.positionOfElement(event.target);
-      if (overPosition === undefined) { return null; }
+      const overPosition = dragIndex.positionOfElement(target);
+      if (overPosition === null) { 
+        const unitPosition = unitIndex.positionOfElement(target);
+        if (unitPosition === null) return null;
+        else return unitPosition;
+      }
 
       const boundingRectangle = target.getBoundingClientRect();
       if (isHorizontal(overPosition.type())) {
@@ -407,27 +407,33 @@ export class BigTable {
     }
 
     function highlight(position) {
-      console.log(`highlighting position ${position}`);
       if (arrangement.isPosition(position)) {
         if (isHorizontal(position.type())) {
-          for (const cell of headerIndex.elementsAtPosition(position)) {
+          for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList.add('dragover-left');
           }
         } else {
-          for (const cell of headerIndex.elementsAtPosition(position)) {
+          for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList.add('dragover-top');
           }
         }
       } else if (arrangement.isDropPosition(position)) {
         const type = position.type();
-        const mutating = new Position(type, position.offset() - 1);
-        if (isHorizontal(type)) {
-          for (const cell of headerIndex.elementsAtPosition(mutating)) {
-            cell.classList.add('dragover-right');
+        const offset = position.offset();
+        if (offset === 0) { // we are a unitPosition
+          for (const cell of unitIndex.elementsAtPosition(position)) {
+            cell.classList.add('dragover-unit');
           }
-        } else {
-          for (const cell of headerIndex.elementsAtPosition(mutating)) {
-            cell.classList.add('dragover-bottom');
+        } else { // we are a dragPosition
+          const mutating = new Position(type, offset - 1);
+          if (isHorizontal(type)) {
+            for (const cell of dragIndex.elementsAtPosition(mutating)) {
+              cell.classList.add('dragover-right');
+            }
+          } else {
+            for (const cell of dragIndex.elementsAtPosition(mutating)) {
+              cell.classList.add('dragover-bottom');
+            }
           }
         }
       } else {
@@ -435,27 +441,35 @@ export class BigTable {
       }
     }
 
+    // should be abstracted together with the previous
     function removeHighlighting(position) {
       if (arrangement.isPosition(position)) {
         if (isHorizontal(position.type())) {
-          for (const cell of headerIndex.elementsAtPosition(position)) {
+          for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList.remove('dragover-left');
           }
         } else {
-          for (const cell of headerIndex.elementsAtPosition(position)) {
+          for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList.remove('dragover-top');
           }
         }
       } else if (arrangement.isDropPosition(position)) {
         const type = position.type();
-        const mutating = new Position(type, position.offset() - 1);
-        if (isHorizontal(type)) {
-          for (const cell of headerIndex.elementsAtPosition(mutating)) {
-            cell.classList.remove('dragover-right');
+        const offset = position.offset();
+        if (offset === 0) { // we are a unitPosition
+          for (const cell of unitIndex.elementsAtPosition(position)) {
+            cell.classList.remove('dragover-unit');
           }
-        } else {
-          for (const cell of headerIndex.elementsAtPosition(mutating)) {
-            cell.classList.remove('dragover-bottom');
+        } else { // we are a dragPosition
+          const mutating = new Position(type, offset - 1);
+          if (isHorizontal(type)) {
+            for (const cell of dragIndex.elementsAtPosition(mutating)) {
+              cell.classList.remove('dragover-right');
+            }
+          } else {
+            for (const cell of dragIndex.elementsAtPosition(mutating)) {
+              cell.classList.remove('dragover-bottom');
+            }
           }
         }
       } else {
@@ -463,8 +477,6 @@ export class BigTable {
           `removing highlighting on invalid position: ${position}`);
       }
     }
-
-*/
 
     div.addEventListener('dragstart', (event) => {
       const indexedPosition = dragIndex.valueOfElement(event.target);
@@ -475,13 +487,12 @@ export class BigTable {
       }
     });
 
-/*
     div.addEventListener('dragover', (event) => {
       console.assert(dragging !== null,
         `there is a dragging element on dragover event`);
       // I do not understand why this preventDefault is needed
       event.preventDefault();
-      const target = determineTargetPosition(event);
+      const target = determineDropPosition(event);
       if (target === null) { return; }
       if (highlighted !== null) {
         if (target.equals(highlighted)) { return; }
@@ -504,7 +515,7 @@ export class BigTable {
     div.addEventListener('dragend', (event) => {
       console.assert(dragging !== null,
         `there is a dragging element on dragend event`);
-      for (const cell of headerIndex.elementsAtPosition(dragging.position())) {
+      for (const cell of dragIndex.elementsAtPosition(dragging.position())) {
         cell.classList.remove('dragging');
       }
       dragging = null;
@@ -513,7 +524,6 @@ export class BigTable {
         highlighted = null;
       }
     });
-*/
   }
 
   render(arrangement, virtualizer) {
@@ -528,11 +538,15 @@ export class BigTable {
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
     const dragIndex = new PositionIndex(
-        function(indexedPosition) { return indexedPosition.position(); },
+        (indexedPosition) => indexedPosition.position(),
         arrangement.fixed().length,
         rowHierarchy.length, columnHierarchy.length);
-    //const dropIndex = new DropIndex(arrangement.fixed().length,
-    //    rowHierarchy.length, columnHierarchy.length);
+
+    const unitIndex = new PositionIndex(
+        (position) => position,
+        arrangement.fixed().length === 0 ? 1 : 0,
+        rowHierarchy.length === 0 ? 1 : 0,
+        columnHierarchy.length === 0 ? 1 : 0);
 
     let frow;
     let tbody;
@@ -544,7 +558,7 @@ export class BigTable {
     // draw fixed entries
     if (arrangement.fixed().length === 0) {
       const cell = h("th", "\u2605");
-      //dropIndex.add(cell);
+      unitIndex.add(cell, Position.fixed(0));
       frow.append(cell);
     } else {
       for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
@@ -553,7 +567,6 @@ export class BigTable {
         const dimension = schema.dimensionAtOrder(order);
         const cell = h("th", dimension.nameOfIndex(fixedIndex));
         dragIndex.add(cell, IndexedPosition.fixed(offset, fixedIndex));
-        //dropIndex.add(cell, Position.fixed(offset));
         frow.append(cell);
       }
     }
@@ -590,7 +603,7 @@ export class BigTable {
       }
       if (columnHierarchy.length === 0) {
         const cell = h("th", "\u2605");
-        //dropIndex.add(cell);
+        unitIndex.add(cell, Position.column(0));
         rowArray[0].append(cell);
       } else {
         // go through all cells and draw their heading
@@ -604,7 +617,6 @@ export class BigTable {
             const cell = createHeaderCell(order, dimension, index);
             cell.colSpan = multiplier;
             dragIndex.add(cell, IndexedPosition.column(k, index));
-            //headerIndex.add(cell);
             rowArray[k].append(cell);
             multiplier *= dimension.numIndices();
           }
@@ -626,7 +638,7 @@ export class BigTable {
     if (rowHierarchy.length === 0) {
         const row = h("tr");
         const cell = h("th", "\u2605");
-        //dropIndex.add(cell);
+        unitIndex.add(cell, Position.row(0));
         row.append(cell);
         drawDataPartOfRow(row, []);
         tbody.append(row);
@@ -641,7 +653,6 @@ export class BigTable {
           const cell = createHeaderCell(order, dimension, index);
           cell.rowSpan = multiplier;
           dragIndex.add(cell, IndexedPosition.row(k, index));
-          //headerIndex.add(cell, IndexedPosition.row(index, k));
           row.prepend(cell);
           multiplier *= dimension.numIndices();
         }
@@ -649,7 +660,7 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    this.addListeners(dragIndex, div, arrangement, virtualizer);
+    this.addListeners(dragIndex, unitIndex, div, arrangement, virtualizer);
     return div;
   }
 }
