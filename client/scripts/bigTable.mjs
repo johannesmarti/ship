@@ -537,6 +537,8 @@ export class BigTable {
     arrangement.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
 
+    localStorage.setItem('arrangement', JSON.stringify(arrangement.toJSON(schema)));
+
     const dragIndex = new PositionIndex(
         (indexedPosition) => indexedPosition.position(),
         arrangement.fixed().length,
@@ -652,6 +654,8 @@ export class BigTable {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
           cell.rowSpan = multiplier;
+          // TODO: need to understand whether to save virtualized
+          // indices or base indices
           dragIndex.add(cell, IndexedPosition.row(k, index));
           row.prepend(cell);
           multiplier *= dimension.numIndices();

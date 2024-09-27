@@ -154,7 +154,22 @@ async function main() {
     //  'rowHierarchy': ['datatype', 'province'],
     //  'columnHierarchy': ['iteration', 'good']
     //}
-    const arrangement = Arrangement.fromJSON(dataLayer.schema(), ajson);
+    function getArrangement() {
+      let arrangement;
+      const str = localStorage.getItem('arrangement');
+      if (str === null) {
+        return Arrangement.fromJSON(dataLayer.schema(), ajson);
+      }
+      // TODO: capture pased exception
+      const parsed = JSON.parse(str);
+      const ljson = Arrangement.fromJSON(dataLayer.schema(), parsed);
+      if (ljson === null) {
+        return  Arrangement.fromJSON(dataLayer.schema(), ajson);
+      }
+      return ljson;
+    }
+    const arrangement = getArrangement();
+    console.log(arrangement);
     const virtualizer = new Virtualizer(vconfig);
     const bigTable = new BigTable(dataLayer);
     const domTable = bigTable.render(arrangement, virtualizer);
