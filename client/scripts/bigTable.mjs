@@ -406,15 +406,15 @@ export class BigTable {
       }
     }
 
-    function highlight(position) {
+    function operationOnPositions(operationName, position) {
       if (arrangement.isPosition(position)) {
         if (isHorizontal(position.type())) {
           for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList.add('dragover-left');
+            cell.classList[operationName]('dragover-left');
           }
         } else {
           for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList.add('dragover-top');
+            cell.classList[operationName]('dragover-top');
           }
         }
       } else if (arrangement.isDropPosition(position)) {
@@ -422,17 +422,17 @@ export class BigTable {
         const offset = position.offset();
         if (offset === 0) { // we are a unitPosition
           for (const cell of unitIndex.elementsAtPosition(position)) {
-            cell.classList.add('dragover-unit');
+            cell.classList[operationName]('dragover-unit');
           }
         } else { // we are a dragPosition
           const mutating = new Position(type, offset - 1);
           if (isHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList.add('dragover-right');
+              cell.classList[operationName]('dragover-right');
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList.add('dragover-bottom');
+              cell.classList[operationName]('dragover-bottom');
             }
           }
         }
@@ -441,41 +441,13 @@ export class BigTable {
       }
     }
 
+    function highlight(position) {
+      operationOnPositions('add', position);
+    }
+
     // should be abstracted together with the previous
     function removeHighlighting(position) {
-      if (arrangement.isPosition(position)) {
-        if (isHorizontal(position.type())) {
-          for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList.remove('dragover-left');
-          }
-        } else {
-          for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList.remove('dragover-top');
-          }
-        }
-      } else if (arrangement.isDropPosition(position)) {
-        const type = position.type();
-        const offset = position.offset();
-        if (offset === 0) { // we are a unitPosition
-          for (const cell of unitIndex.elementsAtPosition(position)) {
-            cell.classList.remove('dragover-unit');
-          }
-        } else { // we are a dragPosition
-          const mutating = new Position(type, offset - 1);
-          if (isHorizontal(type)) {
-            for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList.remove('dragover-right');
-            }
-          } else {
-            for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList.remove('dragover-bottom');
-            }
-          }
-        }
-      } else {
-        console.assert(false,
-          `removing highlighting on invalid position: ${position}`);
-      }
+      operationOnPositions('remove', position);
     }
 
     div.addEventListener('dragstart', (event) => {
