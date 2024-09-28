@@ -35,6 +35,10 @@ class IdentityDimensionTransformer {
     return this._baseDimension.nameOfIndex(index);
   }
 
+  indexOfName(name) {
+    return this._baseDimension.indexOfName(name);
+  }
+
   transform(index) {
     return index;
   }
@@ -68,6 +72,10 @@ class FixedValueDimensionTransformer {
     return this.nameOfFixedIndex(); 
   }
 
+  indexOfName(name) {
+    return this._baseDimension.indexOfName(name);
+  }
+
   transform(index) {
     return this._fixedIndex;
   }
@@ -94,6 +102,10 @@ class RemappingDimensionTransformer {
 
   nameOfIndex(index) {
     return this._baseDimension.nameOfIndex(this.transform(index)); 
+  }
+
+  indexOfName(name) {
+    return this._baseDimension.indexOfName(name);
   }
 
   transform(index) {
@@ -137,8 +149,7 @@ function exponentialRemapper(baseDimension, center) {
     }
   }
 
-  const name = `exponential remapper on ${baseDimension.name()} around
-${baseDimension.nameOfIndex(center)}`;
+  const name = `exponential remapper on ${baseDimension.name()} around ${baseDimension.nameOfIndex(center)}`;
   return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 

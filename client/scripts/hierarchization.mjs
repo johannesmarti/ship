@@ -45,14 +45,17 @@ class PointedOrder {
           `${fixedIndex} is not an index in order ${order}`);
   }
 
-  // returns null if there is no such dimension in schema
-  // returns 'formatError' if the json object does not have the right keys.
+  order() { return this._order; }
+  fixedIndex() { return this._fixedIndex; }
+
+  // returns null if the json object is not of the right format or there
+  // is no there is no such dimension in schema
   static fromJSON(schema, json) {
     const dimensionName = json.dimension;
     const indexName = json.fixedIndex;
     if (dimensionName === undefined || indexName === undefined) {
       console.log('ERROR: json object for pointed order is not of the right format');
-      return 'formatError';
+      return null;
     }
     const order = schema.orderOfDimensionName(dimensionName);
     if (order === -1) {
@@ -75,12 +78,39 @@ class PointedOrder {
     };
   }
 
-  order() { return this._order; }
-  fixedIndex() { return this._fixedIndex; }
+  // returns null if the json object is not of the right format
+  static fromPlainJSON(json) {
+    const order = json.order;
+    const fixedIndex = json.fixedIndex;
+    if (order === undefined) {
+      console.log("ERROR: json object for pointed order is not of the right format, needs a field 'order'");
+      return null;
+    }
+    if (fixedIndex === undefined) {
+      console.log("ERROR: json object for pointed order is not of the right format, needs a field 'index'");
+      return null;
+    }
+    if (!Number.isInteger(order)) {
+      console.log(`ERROR: json object for pointed order needs a number
+at 'order', but got ${order}`);
+      return null;
+    }
+    if (!Number.isInteger(fixedIndex)) {
+      console.log(`ERROR: json object for pointed order needs a number
+at 'fixedIndex', but got ${fixedIndex}`);
+      return null;
+    }
+    return new PointedOrder(order, fixedIndex);
+  }
+
+  toPlainJSON() {
+    return {
+      order: this.order(),
+      fixedIndex: this.fixedIndex()
+    };
+  }
 }
 
-// Maybe this should be called Heirarchization. That used to be the name
-// and I almost like it more.
 export class Hierarchization {
   constructor(fixed, rowHierarchy, columnHierarchy) {
     this._fixed = fixed;
@@ -136,6 +166,9 @@ export class Hierarchization {
       pointedOrder.checkAgainstSchema(schema);
     }
   }
+
+  fixed() { return this._fixed; }
+  hierarchies() { return [this._rowHierarchy, this._columnHierarchy]; }
 
   // returns null if json is not of the right structure
   static fromJSON(schema, json) {
@@ -202,12 +235,44 @@ export class Hierarchization {
     };
   }
 
-  fixed() {
-    return this._fixed;
+  static fromPlainJSON(json) {
+    function hierarchyFromJSON(list) {
+      if (list === undefined) {
+        console.log(`ERROR: JSON object for hierarchization is not of the right format`);
+        return null;
+      }
+      for (const order of list) {
+        if (!Number.isInteger(order)) { return null; }
+      }
+      return list;
+    }
+    const rowHierarchy = hierarchyFromJSON(json.rowHierarchy);
+    if (rowHierarchy === null) { return null; }
+    const columnHierarchy = hierarchyFromJSON(json.columnHierarchy);
+    if (columnHierarchy === null) { return null; }
+
+    const fixed = [];
+    const fixedJSON = json.fixed;
+    if (fixedJSON === undefined) {
+      console.log(`ERROR: JSON object for hierarchization is no of the righformat`);
+      return null;
+    }
+    for (const jsonElement of fixedJSON) {
+      const po = PointedOrder.fromPlainJSON(jsonElement);
+      if (po === null) { return null; }
+      fixed.push(po);
+    }
+
+    return Hierarchization.create(fixed, rowHierarchy, columnHierarchy);
   }
 
-  hierarchies() {
-    return [this._rowHierarchy, this._columnHierarchy];
+  toPlainJSON() {
+    const [rowHierarchy, columnHierarchy] = this.hierarchies();
+    return {
+      fixed: this.fixed().map(po => po.toPlainJSON()),
+      rowHierarchy: rowHierarchy,
+      columnHierarchy: columnHierarchy
+    };
   }
 
   numOrders() {

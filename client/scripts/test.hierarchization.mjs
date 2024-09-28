@@ -55,8 +55,23 @@ console.assert(arraysAreEqual(hierarchization.absoluteAddress([1, 3, 3], [7]),
                               [1, 3, 3, 7, 2]),
   "absoluteAddress with fixed is reasonable");
 
+{
 const json = hierarchization.toJSON(schema);
 const reconstructed = Hierarchization.fromJSON(schema, json);
+console.assert(reconstructed._fixed.length === 1,
+  "reconstructed.fixed has right length");
+console.assert(reconstructed._fixed[0].order() === 4,
+  "reconstructed.fixed has right order");
+console.assert(reconstructed._fixed[0].fixedIndex() === 2,
+  "reconstructed.fixed has right fixedIndex");
+console.assert(arraysAreEqual(hierarchization._rowHierarchy, reconstructed._rowHierarchy),
+  "reconstructed has same rowHierarchy");
+console.assert(arraysAreEqual(hierarchization._columnHierarchy, reconstructed._columnHierarchy),
+  "reconstructed has same columnHierarchy");
+}
+
+const json = hierarchization.toPlainJSON();
+const reconstructed = Hierarchization.fromPlainJSON(json);
 console.assert(reconstructed._fixed.length === 1,
   "reconstructed.fixed has right length");
 console.assert(reconstructed._fixed[0].order() === 4,

@@ -131,6 +131,7 @@ async function main() {
         "center": "last"
       }
     }
+    const virtualizer = new Virtualizer(vconfig);
 
     const ajson = {
       'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
@@ -154,23 +155,25 @@ async function main() {
     //  'rowHierarchy': ['datatype', 'province'],
     //  'columnHierarchy': ['iteration', 'good']
     //}
+    // TODO: this should be done such that we don't need to recompute in
+    // the virtualSchema in render as well!
+    const virtualSchema = virtualizer.virtualize(dataLayer.schema());
     function getHierarchization() {
       let hierarchization;
       const str = localStorage.getItem('hierarchization');
       if (str === null) {
-        return Hierarchization.fromJSON(dataLayer.schema(), ajson);
+        return Hierarchization.fromJSON(virtualSchema, ajson);
       }
-      // TODO: capture pased exception
+      // TODO: capture thrown parse exception
       const parsed = JSON.parse(str);
-      const ljson = Hierarchization.fromJSON(dataLayer.schema(), parsed);
+      const ljson = Hierarchization.fromJSON(virtualSchema, parsed);
       if (ljson === null) {
-        return  Hierarchization.fromJSON(dataLayer.schema(), ajson);
+        return  Hierarchization.fromJSON(virtualSchema, ajson);
       }
       return ljson;
     }
     const hierarchization = getHierarchization();
     console.log(hierarchization);
-    const virtualizer = new Virtualizer(vconfig);
     const bigTable = new BigTable(dataLayer);
     const domTable = bigTable.render(hierarchization, virtualizer);
     document.body.append(domTable);
