@@ -1,5 +1,5 @@
 import { Schema } from './schema.mjs';
-import { Position, Arrangement } from './arrangement.mjs';
+import { Position, Hierarchization } from './hierarchization.mjs';
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -371,7 +371,7 @@ export class BigTable {
     this._dataView = dataView;
   }
 
-  addListeners(dragIndex, unitIndex, div, arrangement, virtualizer) {
+  addListeners(dragIndex, unitIndex, div, hierarchization, virtualizer) {
     for (let cell of dragIndex.allElements()) {
       cell.setAttribute('draggable', 'true');
     } 
@@ -407,7 +407,7 @@ export class BigTable {
     }
 
     function operationOnPositions(operationName, position) {
-      if (arrangement.isPosition(position)) {
+      if (hierarchization.isPosition(position)) {
         if (isHorizontal(position.type())) {
           for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList[operationName]('dragover-left');
@@ -417,7 +417,7 @@ export class BigTable {
             cell.classList[operationName]('dragover-top');
           }
         }
-      } else if (arrangement.isDropPosition(position)) {
+      } else if (hierarchization.isDropPosition(position)) {
         const type = position.type();
         const offset = position.offset();
         if (offset === 0) { // we are a unitPosition
@@ -471,7 +471,7 @@ export class BigTable {
         removeHighlighting(highlighted);
         highlighted = null;
       }
-      if (arrangement.isMovable(dragging.position(), target)) {
+      if (hierarchization.isMovable(dragging.position(), target)) {
         highlight(target);
         highlighted = target;
       }
@@ -479,9 +479,9 @@ export class BigTable {
 
     div.addEventListener('drop', (event) => {
       if (highlighted == null) { return; }
-      const newArrangement = arrangement.move(dragging.position(), highlighted,
+      const newHierarchization = hierarchization.move(dragging.position(), highlighted,
                                               dragging.index());
-      div.replaceWith(this.render(newArrangement, virtualizer));
+      div.replaceWith(this.render(newHierarchization, virtualizer));
     });
 
     div.addEventListener('dragend', (event) => {
@@ -498,27 +498,27 @@ export class BigTable {
     });
   }
 
-  render(arrangement, virtualizer) {
+  render(hierarchization, virtualizer) {
     const baseSchema = this._dataView.schema();
     // could be done in constructor, need to think how I do this stuff
     // in the interface
     const schema = virtualizer.virtualize(baseSchema);
-    arrangement.checkInternally();
-    arrangement.checkAgainstSchema(schema);
+    hierarchization.checkInternally();
+    hierarchization.checkAgainstSchema(schema);
     const transformedDataView = new TransformedDataView(this._dataView, schema);
-    arrangement.checkAgainstSchema(schema);
-    const [rowHierarchy, columnHierarchy] = arrangement.hierarchies();
+    hierarchization.checkAgainstSchema(schema);
+    const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
 
-    localStorage.setItem('arrangement', JSON.stringify(arrangement.toJSON(schema)));
+    localStorage.setItem('hierarchization', JSON.stringify(hierarchization.toJSON(schema)));
 
     const dragIndex = new PositionIndex(
         (indexedPosition) => indexedPosition.position(),
-        arrangement.fixed().length,
+        hierarchization.fixed().length,
         rowHierarchy.length, columnHierarchy.length);
 
     const unitIndex = new PositionIndex(
         (position) => position,
-        arrangement.fixed().length === 0 ? 1 : 0,
+        hierarchization.fixed().length === 0 ? 1 : 0,
         rowHierarchy.length === 0 ? 1 : 0,
         columnHierarchy.length === 0 ? 1 : 0);
 
@@ -530,12 +530,12 @@ export class BigTable {
     );
 
     // draw fixed entries
-    if (arrangement.fixed().length === 0) {
+    if (hierarchization.fixed().length === 0) {
       const cell = h("th", "\u2605");
       unitIndex.add(cell, Position.fixed(0));
       frow.append(cell);
     } else {
-      for (const [offset, fixedOrder] of arrangement.fixed().entries()) {
+      for (const [offset, fixedOrder] of hierarchization.fixed().entries()) {
         const order = fixedOrder.order();
         const fixedIndex = fixedOrder.fixedIndex();
         const dimension = schema.dimensionAtOrder(order);
@@ -553,7 +553,7 @@ export class BigTable {
         const baseIndex = dimension.transform(index);
         const newVirtualizer =
             virtualizer.update(order, baseIndex, baseDimension);
-        div.replaceWith(this.render(arrangement, newVirtualizer));
+        div.replaceWith(this.render(hierarchization, newVirtualizer));
       });
       return cell;
     }
@@ -601,7 +601,7 @@ export class BigTable {
     function drawDataPartOfRow(row, rowAddress) {
       const columnIterator = new MutableHierarchicalIterator(schema, columnHierarchy);
       do {
-        const address = arrangement.absoluteAddress(rowAddress,
+        const address = hierarchization.absoluteAddress(rowAddress,
                                                     columnIterator.address());
         const value = transformedDataView.lookup(address);
         row.append(h("td", value.toFixed(3)));
@@ -636,7 +636,7 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    this.addListeners(dragIndex, unitIndex, div, arrangement, virtualizer);
+    this.addListeners(dragIndex, unitIndex, div, hierarchization, virtualizer);
     return div;
   }
 }

@@ -81,7 +81,7 @@ class PointedOrder {
 
 // Maybe this should be called Heirarchization. That used to be the name
 // and I almost like it more.
-export class Arrangement {
+export class Hierarchization {
   constructor(fixed, rowHierarchy, columnHierarchy) {
     this._fixed = fixed;
     this._rowHierarchy = rowHierarchy;
@@ -89,10 +89,10 @@ export class Arrangement {
   }
 
   static create(fixed, rowHierarchy, columnHierarchy) {
-    const newArrangement = new Arrangement(fixed, rowHierarchy,
+    const newHierarchization = new Hierarchization(fixed, rowHierarchy,
                                                   columnHierarchy);
-    newArrangement.checkInternally();
-    return newArrangement;
+    newHierarchization.checkInternally();
+    return newHierarchization;
   }
 
   checkInternally() {
@@ -130,7 +130,7 @@ export class Arrangement {
         `dimension ${o} from the schema is not in either row nor column hierarchy, nor is it fixed`);
     }
     console.assert(this.numOrders() === schema.numDimensions(),
-      "arrangement contains orders that are not in the schema");
+      "hierarchization contains orders that are not in the schema");
 
     for (let pointedOrder of this._fixed) {
       pointedOrder.checkAgainstSchema(schema);
@@ -141,7 +141,7 @@ export class Arrangement {
   static fromJSON(schema, json) {
     function hierarchyFromJSON(list) {
       if (list === undefined) {
-        console.log(`ERROR: JSON object for arrangement is not of the right format`);
+        console.log(`ERROR: JSON object for hierarchization is not of the right format`);
         return 'formatError';
       }
       const result = [];
@@ -163,7 +163,7 @@ export class Arrangement {
     const fixed = [];
     const fixedJSON = json['fixed'];
     if (fixedJSON === undefined) {
-      console.log(`ERROR: JSON object for arrangement is no of the righformat`);
+      console.log(`ERROR: JSON object for hierarchization is no of the righformat`);
       return null;
     }
     for (const jsonElement of fixedJSON) {
@@ -182,14 +182,14 @@ export class Arrangement {
     for (const order of schema.orders()) {
       if (!coveredDimensions.has(order)) {
         const name = schema.dimensionAtOrder(order).name();
-        console.log(`WARNING: dimension ${name} is not accounted for in JSON arrangement`);
+        console.log(`WARNING: dimension ${name} is not accounted for in JSON hierarchization`);
         fixed.push(new PointedOrder(order, 0));
       }
     }
 
-    const arrangement = Arrangement.create(fixed, rowHierarchy, columnHierarchy);
-    arrangement.checkAgainstSchema(schema);
-    return arrangement;
+    const hierarchization = Hierarchization.create(fixed, rowHierarchy, columnHierarchy);
+    hierarchization.checkAgainstSchema(schema);
+    return hierarchization;
   }
 
   toJSON(schema) {
@@ -231,11 +231,11 @@ export class Arrangement {
   setArrayOfType(type, array) {
     switch (type) {
       case 'fixed':
-        return new Arrangement(array, this._rowHierarchy, this._columnHierarchy);
+        return new Hierarchization(array, this._rowHierarchy, this._columnHierarchy);
       case 'rowHierarchy':
-        return new Arrangement(this._fixed, array, this._columnHierarchy);
+        return new Hierarchization(this._fixed, array, this._columnHierarchy);
       case 'columnHierarchy':
-        return new Arrangement(this._fixed, this._rowHierarchy, array);
+        return new Hierarchization(this._fixed, this._rowHierarchy, array);
     }
     console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
   }
@@ -254,9 +254,9 @@ export class Arrangement {
 
   isMovable(fromPosition, toPosition) {
     console.assert(this.isPosition(fromPosition),
-      `position ${fromPosition} is not a position in arrangement`);
+      `position ${fromPosition} is not a position in hierarchization`);
     console.assert(this.isDropPosition(toPosition),
-      `position ${toPosition} is not a drop position in arrangement`);
+      `position ${toPosition} is not a drop position in hierarchization`);
 
     if (toPosition.type() === fromPosition.type() &&
         (toPosition.offset() === fromPosition.offset() ||

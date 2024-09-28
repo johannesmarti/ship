@@ -73,7 +73,7 @@
 
 import { PhysicalData } from './scripts/physicalData.mjs';
 import { RecomputeLayer } from './scripts/recomputeLayer.mjs';
-import { Arrangement } from './scripts/arrangement.mjs';
+import { Hierarchization } from './scripts/hierarchization.mjs';
 import { h, Virtualizer, BigTable } from './scripts/bigTable.mjs';
 
 async function fetchData() {
@@ -154,25 +154,25 @@ async function main() {
     //  'rowHierarchy': ['datatype', 'province'],
     //  'columnHierarchy': ['iteration', 'good']
     //}
-    function getArrangement() {
-      let arrangement;
-      const str = localStorage.getItem('arrangement');
+    function getHierarchization() {
+      let hierarchization;
+      const str = localStorage.getItem('hierarchization');
       if (str === null) {
-        return Arrangement.fromJSON(dataLayer.schema(), ajson);
+        return Hierarchization.fromJSON(dataLayer.schema(), ajson);
       }
       // TODO: capture pased exception
       const parsed = JSON.parse(str);
-      const ljson = Arrangement.fromJSON(dataLayer.schema(), parsed);
+      const ljson = Hierarchization.fromJSON(dataLayer.schema(), parsed);
       if (ljson === null) {
-        return  Arrangement.fromJSON(dataLayer.schema(), ajson);
+        return  Hierarchization.fromJSON(dataLayer.schema(), ajson);
       }
       return ljson;
     }
-    const arrangement = getArrangement();
-    console.log(arrangement);
+    const hierarchization = getHierarchization();
+    console.log(hierarchization);
     const virtualizer = new Virtualizer(vconfig);
     const bigTable = new BigTable(dataLayer);
-    const domTable = bigTable.render(arrangement, virtualizer);
+    const domTable = bigTable.render(hierarchization, virtualizer);
     document.body.append(domTable);
   }
 }
