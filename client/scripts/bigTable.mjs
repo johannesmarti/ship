@@ -1,6 +1,6 @@
 import { Schema } from './schema.mjs';
 import { Position, Hierarchization } from './hierarchization.mjs';
-import { Virtualizer } from './virtualSchema.mjs';
+import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -140,12 +140,14 @@ export class BigTable {
     this._dataView = dataView;
   }
 
-  addListeners(dragIndex, unitIndex, div, hierarchization, virtualizer) {
+  addListeners(dragIndex, unitIndex, div, arrangement) {
     for (let cell of dragIndex.allElements()) {
       cell.setAttribute('draggable', 'true');
     } 
     let dragging = null;
     let highlighted = null;
+
+    const hierarchization = arrangement.hierarchization();
 
     function determineDropPosition(event) {
       const target = event.target.closest('th');
@@ -250,7 +252,7 @@ export class BigTable {
       if (highlighted == null) { return; }
       const newHierarchization = hierarchization.move(dragging.position(), highlighted,
                                               dragging.index());
-      div.replaceWith(this.render(newHierarchization, virtualizer));
+      div.replaceWith(this.render(arrangement.updateHierarchization(newHierarchization)));
     });
 
     div.addEventListener('dragend', (event) => {
@@ -267,18 +269,20 @@ export class BigTable {
     });
   }
 
-  render(hierarchization, virtualizer) {
+  render(arrangement) {
     const baseSchema = this._dataView.schema();
     // could be done in constructor, need to think how I do this stuff
     // in the interface
+
+    const virtualizer = arrangement.virtualizer();
     const schema = virtualizer.virtualize(baseSchema);
+    const hierarchization = arrangement.hierarchization();
     hierarchization.checkInternally();
     hierarchization.checkAgainstSchema(schema);
     const transformedDataView = new TransformedDataView(this._dataView, schema);
-    hierarchization.checkAgainstSchema(schema);
     const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
 
-    localStorage.setItem('hierarchization', JSON.stringify(hierarchization.toJSON(schema)));
+    //localStorage.setItem('hierarchization', JSON.stringify(hierarchization.toJSON(schema)));
 
     const dragIndex = new PositionIndex(
         (indexedPosition) => indexedPosition.position(),
@@ -322,7 +326,7 @@ export class BigTable {
         const baseIndex = dimension.transform(index);
         const newVirtualizer =
             virtualizer.update(order, baseIndex, baseDimension);
-        div.replaceWith(this.render(hierarchization, newVirtualizer));
+        div.replaceWith(this.render(arrangement.updateVirtualizer(newVirtualizer)));
       });
       return cell;
     }
@@ -405,7 +409,7 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    this.addListeners(dragIndex, unitIndex, div, hierarchization, virtualizer);
+    this.addListeners(dragIndex, unitIndex, div, arrangement);
     return div;
   }
 }

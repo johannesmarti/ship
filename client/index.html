@@ -17,7 +17,7 @@
     }
     table {
       border-collapse: collapse;
-      table-layout: fixed;
+      yourmomtable-layout: fixed;
     }
     td,th {
       border: 1px solid #ccc;
@@ -72,6 +72,7 @@ import { PhysicalData } from './scripts/physicalData.mjs';
 import { RecomputeLayer } from './scripts/computeLayer.mjs';
 import { Hierarchization } from './scripts/hierarchization.mjs';
 import { Virtualizer } from './scripts/virtualSchema.mjs';
+import { Arrangement } from './scripts/arrangement.mjs';
 import { h, BigTable } from './scripts/bigTable.mjs';
 
 async function fetchData() {
@@ -125,11 +126,11 @@ async function main() {
 
     const vconfig = {
       [iteration]: {
-        "type": "exponential",
-        "center": "last"
+        type: "exponential",
+        center: "last"
       }
     }
-    const virtualizer = new Virtualizer(vconfig);
+    const virtualizer = Virtualizer.fromConfiguration(vconfig, physicalSchema.numDimensions());
 
     const ajson = {
       'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
@@ -155,7 +156,6 @@ async function main() {
     //}
     // TODO: this should be done such that we don't need to recompute in
     // the virtualSchema in render as well!
-    const virtualSchema = virtualizer.virtualize(dataLayer.schema());
     function getHierarchization() {
       let hierarchization;
       const str = localStorage.getItem('hierarchization');
@@ -166,14 +166,15 @@ async function main() {
       const parsed = JSON.parse(str);
       const ljson = Hierarchization.fromJSON(virtualSchema, parsed);
       if (ljson === null) {
-        return  Hierarchization.fromJSON(virtualSchema, ajson);
+        return Hierarchization.fromJSON(virtualSchema, ajson);
       }
       return ljson;
     }
-    const hierarchization = getHierarchization();
-    console.log(hierarchization);
+    //const hierarchization = getHierarchization();
+    const hierarchization = Hierarchization.fromJSON(physicalSchema, ajson);
+    const arrangement = new Arrangement(hierarchization, virtualizer); 
     const bigTable = new BigTable(dataLayer);
-    const domTable = bigTable.render(hierarchization, virtualizer);
+    const domTable = bigTable.render(arrangement);
     document.body.append(domTable);
   }
 }

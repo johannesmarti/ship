@@ -26,39 +26,6 @@ class IdentityDimensionTransformer {
   }
 }
 
-class FixedValueDimensionTransformer {
-  constructor(baseDimension, fixedIndex) {
-    this._baseDimension = baseDimension;
-    this._fixedIndex = fixedIndex;
-  }
-
-  nameOfFixedIndex() {
-    return this._baseDimension.nameOfIndex(this._fixedIndex);
-  }
-
-  numIndices() {
-    return 1;
-  }
-
-  isIndex(number) {
-    return 0 <= number && number < this.numIndices();
-  }
-
-  name() {
-    return this._baseDimension.name() + `[${this.nameOfFixedIndex()}]`;
-  }
-
-  nameOfIndex(index) {
-    console.assert(index === 0,
-      `${index} is not a index in the fixed dimension ${this.name()} because it is not equal to 0`);
-    return this.nameOfFixedIndex(); 
-  }
-
-  transform(index) {
-    return this._fixedIndex;
-  }
-}
-
 class RemappingDimensionTransformer {
   constructor(baseDimension, remapper, name) {
     this._baseDimension = baseDimension;
@@ -127,7 +94,7 @@ function exponentialRemapper(baseDimension, center) {
   return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 
-class TransformedDataView {
+export class TransformedDataView {
   constructor(physicalView, transformationSchema) {
     this._physicalView = physicalView;
     this._transformationSchema = transformationSchema;
@@ -156,71 +123,72 @@ function indexInDimensionFromJSON(dimension, json) {
   }[json] || (Number.isInteger(json) ? json : defaultValue);
 }
 
+function jsonForDimensionFromIndex(dimension, index) {
+  if (index === 0) return "first";
+  const numIndices = dimension.numIndices();
+  if (index === numIndices / 2) return "mid";
+  if (index === numIndices - 1) return "last";
+  return index;
+}
+
 export class Virtualizer {
-  constructor(configuration) {
-    this._configuration = configuration;
+  constructor(descriptionArray) {
+    this._descriptionArray = descriptionArray;
   }
 
-  configuration() {
-    return this._configuration;
+  static fromConfiguration(configuration, length) {
+    const descriptionArray = new Array(length);
+    for (let order = 0; order < length; order++) {
+      descriptionArray[order] = configuration[order] || {type: "id"};
+    }
+    return new Virtualizer(descriptionArray);
+  }
+
+  checkAgainstSchema(schema) {
+    const thisLength = this._descriptionArray.length;
+    console.assert(thisLength === schema.numDimensions(), 
+      `schema has ${schema.numDimensions()} dimensions but virtualizer
+is of length ${thisLength}`);
   }
 
   virtualize(schema) {
-    const array = schema._dimensions.map((_, o) => {
-      const dimension = schema.dimensionAtOrder(o);
-      const descriptor = this._configuration[o] || {"type": "id"};
+    this.checkAgainstSchema(schema);
+    const array = this._descriptionArray.map((descriptor, order) => {
+      const dimension = schema.dimensionAtOrder(order);
 
       const id = () => new IdentityDimensionTransformer(dimension);
-      const onFixed = () => {
-            const fixedValue = indexInDimensionFromJSON(dimension, descriptor["value"]);
-            return new FixedValueDimensionTransformer(dimension, fixedValue);
-      };
       const mapper = {
         "id": id,
-        "fixed": onFixed,
-        "fixed_id": onFixed,
-        "fixed_exponential": onFixed,
         "exponential": () => {
-            const center = indexInDimensionFromJSON(dimension, descriptor["center"]);
+            const center = indexInDimensionFromJSON(dimension, descriptor.center);
             return exponentialRemapper(dimension, center);
           }
-      }[descriptor["type"]] || id;
+      }[descriptor.type] || id;
       return mapper();
     });
     return new Schema(array);
   }
 
   update(order, baseIndex, baseDimension) {
-    const configuration = this.configuration();
-    const description = configuration[order] || {"type": "id"};
-    const currentType = description["type"] || "id";
-    const computeNewDescription = {
-      "id": () => { return {"type": "fixed_id", "value": baseIndex}; },
-      "fixed": () => { return {"type": "id"}; },
-      "fixed_id": () => { return {"type": "id"}; },
-      "fixed_exponential": () => {
-          return {"type": "exponential",
-                  "center": description["value"]};
-        },
+    const descriptor = this._descriptionArray[order];
+    const currentType = descriptor.type;
+    const computeNewDescriptor = {
+      "id": () => { return descriptor; },
       "exponential": () => {
-          const center = indexInDimensionFromJSON(baseDimension,
-            description["center"]);
+          const center = indexInDimensionFromJSON(baseDimension, descriptor.center);
           if (baseIndex === center) {
-            return {"type": "fixed_exponential",
-                    "value": description["center"]};
+            return descriptor;
           } else {
-            return {"type": "exponential",
-                    // TODO: Here we could make an effort to
-                    // reconstruct the JSON descriptors "first",
-                    // "mid" and "last".
-                    "center": baseIndex};
+            const realIndex = jsonForDimensionFromIndex(baseDimension, baseIndex);
+            return {type: "exponential",
+                    center: realIndex};
           }
         }
     }[currentType];
-    const newDescription = computeNewDescription()
-    const newConfiguration = { ...configuration, [order]: newDescription};
-    const newVirtualizer = new Virtualizer(newConfiguration);
-    return newVirtualizer;
+    const newDescriptor = computeNewDescriptor();
+    const newArray = Array.from(this._descriptionArray);
+    newArray[order] = newDescriptor;
+    return new Virtualizer(newArray);
   }
 }
 
