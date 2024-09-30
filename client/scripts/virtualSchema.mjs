@@ -192,3 +192,17 @@ is of length ${thisLength}`);
   }
 }
 
+/*
+How to serialise:
+
+[
+{name: "good", type: "id"},
+{name: "datatype", type: "id"},
+{name: "province", type: "selection", remapper: ["Switzerland", "The
+Netherlands", "Germany", "France",]},
+{name: "iteration", type: "exponential", center: "12"}
+]
+
+"name" is the name of the base category
+*/
+

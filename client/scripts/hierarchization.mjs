@@ -120,7 +120,7 @@ export class Hierarchization {
 
   static create(fixed, rowHierarchy, columnHierarchy) {
     const newHierarchization = new Hierarchization(fixed, rowHierarchy,
-                                                  columnHierarchy);
+                                                          columnHierarchy);
     newHierarchization.checkInternally();
     return newHierarchization;
   }
@@ -409,6 +409,34 @@ export class Hierarchization {
       return this.setArrayOfType(fromType, newFromArray)
                  .setArrayOfType(toType, newToArray);
     }
+  }
+
+  insertAtDefault(order) {
+    const [rowHierarchy, columnHierarchy] = this.hierarchies();
+    const newRowHierarchy = rowHierarchy.concat(order);
+    return new Hierarchization.create(this.fixed(), newRowHierarchy,
+                                                    columnHierarchy);
+  }
+
+  map(orderMap, dependentIndexMap) {
+    function nonNegative(thing) {
+      return Number.isInteger(thing) && thing >= 0;
+    }
+    const [rowHierarchy, columnHierarchy] = this.hierarchies();
+    const newRowHierarchy = rowHierarchy.map(o => orderMap(o))
+                                        .filter(o => nonNegative(o));
+    const newColumnHierarchy = columnHierarchy.map(o => orderMap(o))
+                                              .filter(o => nonNegative(o));
+    const newFixed = [];
+    for (let po of this.fixed()) {
+      const newOrder = orderMap(po.order());
+      if (!nonNegative(newOrder)) continue;
+      newFixed.add(newOrder);
+      const newFixedIndex = dependentIndexMap(po.order(), po.index());
+      newFixed.add(new PointedOrder(newOrder, newFixedIndex));
+    }
+    return new Hierarchization.create(newFixed, newRowHierarchy,
+                                                newColumnHierarchy);
   }
 
   absoluteAddress(rowAddress, columnAddress) {
