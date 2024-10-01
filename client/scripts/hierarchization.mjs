@@ -52,9 +52,13 @@ class PointedOrder {
   // is no there is no such dimension in schema
   static fromJSON(schema, json) {
     const dimensionName = json.dimension;
+    if (dimensionName === undefined) {
+      console.log("ERROR: json object for pointed order is missing 'dimensionName'");
+      return null;
+    }
     const indexName = json.fixedIndex;
-    if (dimensionName === undefined || indexName === undefined) {
-      console.log('ERROR: json object for pointed order is not of the right format');
+    if (indexName === undefined) {
+      console.log("ERROR: json object for pointed order is missing 'indexName'");
       return null;
     }
     const order = schema.orderOfDimensionName(dimensionName);
@@ -81,11 +85,11 @@ class PointedOrder {
   // returns null if the json object is not of the right format
   static fromPlainJSON(json) {
     const order = json.order;
-    const fixedIndex = json.fixedIndex;
     if (order === undefined) {
       console.log("ERROR: json object for pointed order is not of the right format, needs a field 'order'");
       return null;
     }
+    const fixedIndex = json.fixedIndex;
     if (fixedIndex === undefined) {
       console.log("ERROR: json object for pointed order is not of the right format, needs a field 'index'");
       return null;
@@ -254,7 +258,7 @@ export class Hierarchization {
     const fixed = [];
     const fixedJSON = json.fixed;
     if (fixedJSON === undefined) {
-      console.log(`ERROR: JSON object for hierarchization is no of the righformat`);
+      console.log(`ERROR: JSON object for hierarchization is not of the righformat`);
       return null;
     }
     for (const jsonElement of fixedJSON) {

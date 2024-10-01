@@ -151,6 +151,54 @@ export class Virtualizer {
 is of length ${thisLength}`);
   }
 
+/*
+How to serialise:
+
+[
+{name: "good", type: "id"},
+{name: "datatype", type: "id"},
+{name: "province", type: "selection", remapper: ["Switzerland", "The
+Netherlands", "Germany", "France",]},
+{name: "iteration", type: "exponential", center: "iteration 12"}
+]
+
+"name" is the name of the base category
+*/
+
+  static fromJSON(schema, json) {
+    // something smart
+
+    return {
+      virtualizer: virtualizer,
+      orderMap: orderMap,
+      dependentIndexMap: dependentIndexMap,
+      leftOverOrders: leftOverOrders
+    };
+  }
+
+  toJSON(schema) {
+    function mapper(descriptor, order) {
+      const computeJSON = {
+        "id": () => {
+          return {
+            name: schema.dimensionAtOrder(order).name();
+            type: descriptor.type
+          };
+        },
+        "exponential": () => {
+          const dimension = schema.dimensionAtOrder(order);
+          return {
+            name: dimension.name();
+            type: descriptor.type,
+            center: jsonForDimensionFromIndex(dimension. descriptor.center)
+          };
+        }
+      }
+      return computeJSON[descriptor.type]
+    }
+    return this._descriptionArray.map(mapper);
+  }
+
   virtualize(schema) {
     this.checkAgainstSchema(schema);
     const array = this._descriptionArray.map((descriptor, order) => {
@@ -191,18 +239,4 @@ is of length ${thisLength}`);
     return new Virtualizer(newArray);
   }
 }
-
-/*
-How to serialise:
-
-[
-{name: "good", type: "id"},
-{name: "datatype", type: "id"},
-{name: "province", type: "selection", remapper: ["Switzerland", "The
-Netherlands", "Germany", "France",]},
-{name: "iteration", type: "exponential", center: "12"}
-]
-
-"name" is the name of the base category
-*/
 

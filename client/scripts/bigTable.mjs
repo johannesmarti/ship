@@ -399,8 +399,6 @@ export class BigTable {
           const dimension = schema.dimensionAtOrder(order);
           const cell = createHeaderCell(order, dimension, index);
           cell.rowSpan = multiplier;
-          // TODO: need to understand whether to save virtualized
-          // indices or base indices
           dragIndex.add(cell, IndexedPosition.row(k, index));
           row.prepend(cell);
           multiplier *= dimension.numIndices();
