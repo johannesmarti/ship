@@ -166,12 +166,37 @@ Netherlands", "Germany", "France",]},
 */
 
   static fromJSON(schema, json) {
-    // something smart
-
+    const descriptionArray = new Array(schema.numDimensions());
+    const orderRemapping = new Array(json.length);
+    // this should give an set {0,1,2,...,schema.numDimensions() - 1}
+    const leftOverOrders = new Set(Array(schema.numDimensions()).keys());
+    for (let [oldOrder, jsonDescription] of json.entries()) {
+      const name = jsonDescription.name;
+      if (name === undefined) {
+        console.log("ERROR: json description in virtualizer does not have a 'name' field.");
+        return null;
+      }
+      const newOrder = schema.findIndex(dimension =>
+                                          dimension.name() === name);
+      orderRemapping[oldOrder] = newOrder;
+      if (newOrder !== -1) {
+        leftOverOrders.delete(newOrder);
+        const dimension = schema.dimensionAtOrder(newOrder);
+        const newDescription = descriptionFromJson(dimension, jsonDescription);
+        if (newDescription === null) return null;
+        descriptionArray[newOrder] = newDescription;
+      }
+      // changeDependentIndexMap
+    }
+    const virtualizer = new Virtualizer(descriptionArray);
+    virtualizer.checkAgainstSchema(schema);
+    for (const order of leftOverOrders) {
+      descriptionArray[order] = {type: 'id'};
+    }
     return {
       virtualizer: virtualizer,
-      orderMap: orderMap,
-      dependentIndexMap: dependentIndexMap,
+      orderMap: o => orderRemapping[o],
+      dependentIndexMap: (o,i) => orderRemapping[o],
       leftOverOrders: leftOverOrders
     };
   }

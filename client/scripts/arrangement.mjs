@@ -24,7 +24,7 @@ export class Arrangement {
       return null;
     }
     const returnValue = Virtualizer.fromJSON(baseSchema, virtualizerJSON);
-    // TODO: Maybe check returnValue for null
+    if (returnValue === null) return null
     const virtualizer = returnValue.virtualizer;
     let hierarchization = Hierarchization.fromPlainJSON(hierarchizationJSON);
     if (hierarchization === null) return null;

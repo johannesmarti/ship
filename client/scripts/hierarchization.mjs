@@ -436,7 +436,7 @@ export class Hierarchization {
       const newOrder = orderMap(po.order());
       if (!nonNegative(newOrder)) continue;
       newFixed.add(newOrder);
-      const newFixedIndex = dependentIndexMap(po.order(), po.index());
+      const newFixedIndex = dependentIndexMap(newOrder, po.index());
       newFixed.add(new PointedOrder(newOrder, newFixedIndex));
     }
     return new Hierarchization.create(newFixed, newRowHierarchy,
