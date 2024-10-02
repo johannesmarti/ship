@@ -2,8 +2,8 @@ import { Hierarchization, Position } from './hierarchization.mjs'
 import { Schema } from './schema.mjs'
 
 function arraysAreEqual(arr1, arr2) {
-  // TODO: this chatGPT code might be wrong in case arr1 has undefined
-  // entries.
+  // This chatGPT code might might be wrong in case arr1 has undefined
+  // entries. It works for now
   return arr1.length === arr2.length &&
             arr1.every((value, index) => value === arr2[index]);
 }
@@ -54,21 +54,6 @@ hierarchization = hierarchization.move(Position.column(1), Position.fixed(0), 2)
 console.assert(arraysAreEqual(hierarchization.absoluteAddress([1, 3, 3], [7]),
                               [1, 3, 3, 7, 2]),
   "absoluteAddress with fixed is reasonable");
-
-{
-const json = hierarchization.toJSON(schema);
-const reconstructed = Hierarchization.fromJSON(schema, json);
-console.assert(reconstructed._fixed.length === 1,
-  "reconstructed.fixed has right length");
-console.assert(reconstructed._fixed[0].order() === 4,
-  "reconstructed.fixed has right order");
-console.assert(reconstructed._fixed[0].fixedIndex() === 2,
-  "reconstructed.fixed has right fixedIndex");
-console.assert(arraysAreEqual(hierarchization._rowHierarchy, reconstructed._rowHierarchy),
-  "reconstructed has same rowHierarchy");
-console.assert(arraysAreEqual(hierarchization._columnHierarchy, reconstructed._columnHierarchy),
-  "reconstructed has same columnHierarchy");
-}
 
 const json = hierarchization.toPlainJSON();
 const reconstructed = Hierarchization.fromPlainJSON(json);

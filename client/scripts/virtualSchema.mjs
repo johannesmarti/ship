@@ -149,79 +149,16 @@ export class Virtualizer {
     console.assert(thisLength === schema.numDimensions(), 
       `schema has ${schema.numDimensions()} dimensions but virtualizer
 is of length ${thisLength}`);
+    // TODO: check that every center makes sense
   }
 
-/*
-How to serialise:
-
-[
-{name: "good", type: "id"},
-{name: "datatype", type: "id"},
-{name: "province", type: "selection", remapper: ["Switzerland", "The
-Netherlands", "Germany", "France",]},
-{name: "iteration", type: "exponential", center: "iteration 12"}
-]
-
-"name" is the name of the base category
-*/
-
-  static fromJSON(schema, json) {
-    const descriptionArray = new Array(schema.numDimensions());
-    const orderRemapping = new Array(json.length);
-    // this should give an set {0,1,2,...,schema.numDimensions() - 1}
-    const leftOverOrders = new Set(Array(schema.numDimensions()).keys());
-    for (let [oldOrder, jsonDescription] of json.entries()) {
-      const name = jsonDescription.name;
-      if (name === undefined) {
-        console.log("ERROR: json description in virtualizer does not have a 'name' field.");
-        return null;
-      }
-      const newOrder = schema.findIndex(dimension =>
-                                          dimension.name() === name);
-      orderRemapping[oldOrder] = newOrder;
-      if (newOrder !== -1) {
-        leftOverOrders.delete(newOrder);
-        const dimension = schema.dimensionAtOrder(newOrder);
-        const newDescription = descriptionFromJson(dimension, jsonDescription);
-        if (newDescription === null) return null;
-        descriptionArray[newOrder] = newDescription;
-      }
-      // changeDependentIndexMap
-    }
-    const virtualizer = new Virtualizer(descriptionArray);
-    virtualizer.checkAgainstSchema(schema);
-    for (const order of leftOverOrders) {
-      descriptionArray[order] = {type: 'id'};
-    }
-    return {
-      virtualizer: virtualizer,
-      orderMap: o => orderRemapping[o],
-      dependentIndexMap: (o,i) => orderRemapping[o],
-      leftOverOrders: leftOverOrders
-    };
+  // TODO: should check the validity of the input data
+  static fromPlainJSON(json) {
+    return new Virtualizer(json);
   }
 
-  toJSON(schema) {
-    function mapper(descriptor, order) {
-      const computeJSON = {
-        "id": () => {
-          return {
-            name: schema.dimensionAtOrder(order).name();
-            type: descriptor.type
-          };
-        },
-        "exponential": () => {
-          const dimension = schema.dimensionAtOrder(order);
-          return {
-            name: dimension.name();
-            type: descriptor.type,
-            center: jsonForDimensionFromIndex(dimension. descriptor.center)
-          };
-        }
-      }
-      return computeJSON[descriptor.type]
-    }
-    return this._descriptionArray.map(mapper);
+  toPlainJSON(schema) {
+    return this._descriptionArray;
   }
 
   virtualize(schema) {
@@ -236,7 +173,7 @@ Netherlands", "Germany", "France",]},
             const center = indexInDimensionFromJSON(dimension, descriptor.center);
             return exponentialRemapper(dimension, center);
           }
-      }[descriptor.type] || id;
+      }[descriptor.type];
       return mapper();
     });
     return new Schema(array);

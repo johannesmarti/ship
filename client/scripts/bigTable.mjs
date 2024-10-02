@@ -282,7 +282,7 @@ export class BigTable {
     const transformedDataView = new TransformedDataView(this._dataView, schema);
     const [rowHierarchy, columnHierarchy] = hierarchization.hierarchies();
 
-    //localStorage.setItem('hierarchization', JSON.stringify(hierarchization.toJSON(schema)));
+    localStorage.setItem('arrangement', JSON.stringify(arrangement.toPlainJSON()));
 
     const dragIndex = new PositionIndex(
         (indexedPosition) => indexedPosition.position(),

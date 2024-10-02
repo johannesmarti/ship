@@ -48,40 +48,6 @@ class PointedOrder {
   order() { return this._order; }
   fixedIndex() { return this._fixedIndex; }
 
-  // returns null if the json object is not of the right format or there
-  // is no there is no such dimension in schema
-  static fromJSON(schema, json) {
-    const dimensionName = json.dimension;
-    if (dimensionName === undefined) {
-      console.log("ERROR: json object for pointed order is missing 'dimensionName'");
-      return null;
-    }
-    const indexName = json.fixedIndex;
-    if (indexName === undefined) {
-      console.log("ERROR: json object for pointed order is missing 'indexName'");
-      return null;
-    }
-    const order = schema.orderOfDimensionName(dimensionName);
-    if (order === -1) {
-      console.log(`WARNING: '${dimensionName}' is not the name of any dimension in schema`);
-      return null;
-    }
-    let index = schema.dimensionAtOrder(order).indexOfName(indexName);
-    if (index === -1) {
-      console.log(`WARNING: '${indexName}' is not the name of any index in dimension ${dimensionName}`);
-      index = 0;
-    }
-    return new PointedOrder(order, index);
-  }
-
-  toJSON(schema) {
-    const dimension = schema.dimensionAtOrder(this._order);
-    return {
-      dimension: dimension.name(),
-      fixedIndex: dimension.nameOfIndex(this._fixedIndex)
-    };
-  }
-
   // returns null if the json object is not of the right format
   static fromPlainJSON(json) {
     const order = json.order;
@@ -173,71 +139,6 @@ export class Hierarchization {
 
   fixed() { return this._fixed; }
   hierarchies() { return [this._rowHierarchy, this._columnHierarchy]; }
-
-  // returns null if json is not of the right structure
-  static fromJSON(schema, json) {
-    function hierarchyFromJSON(list) {
-      if (list === undefined) {
-        console.log(`ERROR: JSON object for hierarchization is not of the right format`);
-        return 'formatError';
-      }
-      const result = [];
-      for (const name of list) {
-        const order = schema.orderOfDimensionName(name);
-        if (order === -1) {
-          console.log(`WARNING: '${name}' is not the name of any dimension in schema`);
-        } else {
-          result.push(order);
-        }
-      }
-      return result;
-    }
-    const rowHierarchy = hierarchyFromJSON(json['rowHierarchy']);
-    if (rowHierarchy === 'formatError') { return null; }
-    const columnHierarchy = hierarchyFromJSON(json['columnHierarchy']);
-    if (columnHierarchy === 'formatError') { return null; }
-
-    const fixed = [];
-    const fixedJSON = json['fixed'];
-    if (fixedJSON === undefined) {
-      console.log(`ERROR: JSON object for hierarchization is no of the righformat`);
-      return null;
-    }
-    for (const jsonElement of fixedJSON) {
-      const po = PointedOrder.fromJSON(schema, jsonElement);
-      if (po !== null) {
-        fixed.push(po);
-      }
-    }
-
-    // since orders are just numbers in a range 0 ... n we could also
-    // just use an array to store the accounted orders. This would be
-    // much more efficient than a set, but maybe less clean?
-    const fixedOrders = fixed.map( po => po.order() );
-    const coveredDimensions = new Set([...fixedOrders,
-                                       ...rowHierarchy, ...columnHierarchy]);
-    for (const order of schema.orders()) {
-      if (!coveredDimensions.has(order)) {
-        const name = schema.dimensionAtOrder(order).name();
-        console.log(`WARNING: dimension ${name} is not accounted for in JSON hierarchization`);
-        fixed.push(new PointedOrder(order, 0));
-      }
-    }
-
-    const hierarchization = Hierarchization.create(fixed, rowHierarchy, columnHierarchy);
-    hierarchization.checkAgainstSchema(schema);
-    return hierarchization;
-  }
-
-  toJSON(schema) {
-    return {
-      'fixed': this._fixed.map(po => po.toJSON(schema)),
-      'rowHierarchy': this._rowHierarchy.map( order =>
-            schema.dimensionAtOrder(order).name() ),
-      'columnHierarchy': this._columnHierarchy.map( order =>
-            schema.dimensionAtOrder(order).name() )
-    };
-  }
 
   static fromPlainJSON(json) {
     function hierarchyFromJSON(list) {

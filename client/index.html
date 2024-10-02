@@ -124,56 +124,40 @@ async function main() {
         datatype, "bought",
           (l) => (l(double_volume) - l(error)) / 2 );
 
-    const vconfig = {
-      [iteration]: {
-        type: "exponential",
-        center: "last"
+    function defaultArrangement() {
+      const vconfig = {
+        [iteration]: {
+          type: "exponential",
+          center: "last"
+        }
       }
-    }
-    const virtualizer = Virtualizer.fromConfiguration(vconfig, physicalSchema.numDimensions());
+      const virtualizer = Virtualizer.fromConfiguration(vconfig, physicalSchema.numDimensions());
 
-    const ajson = {
-      'fixed': [{ 'dimension': 'datatype', 'fixedIndex': 'price' }],
-      'rowHierarchy': ['iteration', 'good'],
-      'columnHierarchy': ['province']
+      const hjson = {
+        fixed: [{ order: datatype, fixedIndex: price }],
+        rowHierarchy: [iteration, good],
+        columnHierarchy: [province]
+      }
+      const hierarchization = Hierarchization.fromPlainJSON(hjson);
+      return new Arrangement(hierarchization, virtualizer); 
     }
-    //const ajson = {
-    //  'fixed': [ { dimension: 'datatype', fixedIndex: 'price' },
-    //             { dimension: 'province', fixedIndex: 'Switzerland'} ],
-    //  'rowHierarchy': ['iteration', 'good'],
-    //  'columnHierarchy': []
-    //}
-    //const ajson = {
-    //  'fixed': [ { dimension: 'datatype', fixedIndex: 'price' },
-    //             { dimension: 'province', fixedIndex: 'Switzerland'} ],
-    //  'rowHierarchy': [],
-    //  'columnHierarchy': ['iteration', 'good']
-    //}
-    //const ajson = {
-    //  'fixed': [],
-    //  'rowHierarchy': ['datatype', 'province'],
-    //  'columnHierarchy': ['iteration', 'good']
-    //}
-    // TODO: this should be done such that we don't need to recompute in
-    // the virtualSchema in render as well!
-    function getHierarchization() {
-      let hierarchization;
-      const str = localStorage.getItem('hierarchization');
+    function getArrangement() {
+      let arrangement;
+      const str = localStorage.getItem('arrangement');
       if (str === null) {
-        return Hierarchization.fromJSON(virtualSchema, ajson);
+        return defaultArrangement();
       }
       // TODO: capture thrown parse exception
       const parsed = JSON.parse(str);
-      const ljson = Hierarchization.fromJSON(virtualSchema, parsed);
+      const ljson = Arrangement.fromPlainJSON(parsed);
       if (ljson === null) {
-        return Hierarchization.fromJSON(virtualSchema, ajson);
+        return defaultArrangement();
       }
       return ljson;
     }
-    //const hierarchization = getHierarchization();
-    const hierarchization = Hierarchization.fromJSON(physicalSchema, ajson);
-    const arrangement = new Arrangement(hierarchization, virtualizer); 
+
     const bigTable = new BigTable(dataLayer);
+    const arrangement = new getArrangement(); 
     const domTable = bigTable.render(arrangement);
     document.body.append(domTable);
   }
