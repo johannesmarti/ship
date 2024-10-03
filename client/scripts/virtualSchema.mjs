@@ -132,38 +132,57 @@ function jsonForDimensionFromIndex(dimension, index) {
 }
 
 export class Virtualizer {
-  constructor(descriptionArray) {
-    this._descriptionArray = descriptionArray;
+  constructor(descriptorArray) {
+    this._descriptorArray = descriptorArray;
   }
 
   static fromConfiguration(configuration, length) {
-    const descriptionArray = new Array(length);
+    const descriptorArray = new Array(length);
     for (let order = 0; order < length; order++) {
-      descriptionArray[order] = configuration[order] || {type: "id"};
+      descriptorArray[order] = configuration[order] || {type: "id"};
     }
-    return new Virtualizer(descriptionArray);
+    return new Virtualizer(descriptorArray);
   }
 
   checkAgainstSchema(schema) {
-    const thisLength = this._descriptionArray.length;
+    const thisLength = this._descriptorArray.length;
     console.assert(thisLength === schema.numDimensions(), 
       `schema has ${schema.numDimensions()} dimensions but virtualizer
 is of length ${thisLength}`);
-    // TODO: check that every center makes sense
   }
 
-  // TODO: should check the validity of the input data
   static fromPlainJSON(json) {
+    if (!Array.isArray(json)) {
+      console.log("ERROR: json for virtualizer is no array");
+      return null;
+    }
+    for (let descriptorJSON of json) {
+      const type = descriptorJSON.type;
+      if (type !== 'id' && type !== 'exponential') {
+        console.log(`ERROR: descriptor needs to have a type field that is set to either the value 'id' or the value 'exponential', but it is ${type}`);
+        return null;
+      }
+      if (descriptorJSON.type === 'exponential') {
+        const center = descriptorJSON.center;
+        if (center !== 'first' && center !== 'mid' && center !== 'last'
+                               && !Number.isInteger(center)) {
+          console.log(`ERROR: exponential descriptor needs to have a
+center field that is set to either 'first', 'mid', or 'last' or is an
+integer, but it is ${center}`);
+          return null;
+        }
+      }
+    }
     return new Virtualizer(json);
   }
 
   toPlainJSON(schema) {
-    return this._descriptionArray;
+    return this._descriptorArray;
   }
 
   virtualize(schema) {
     this.checkAgainstSchema(schema);
-    const array = this._descriptionArray.map((descriptor, order) => {
+    const array = this._descriptorArray.map((descriptor, order) => {
       const dimension = schema.dimensionAtOrder(order);
 
       const id = () => new IdentityDimensionTransformer(dimension);
@@ -180,7 +199,7 @@ is of length ${thisLength}`);
   }
 
   update(order, baseIndex, baseDimension) {
-    const descriptor = this._descriptionArray[order];
+    const descriptor = this._descriptorArray[order];
     const currentType = descriptor.type;
     const computeNewDescriptor = {
       "id": () => { return descriptor; },
@@ -196,7 +215,7 @@ is of length ${thisLength}`);
         }
     }[currentType];
     const newDescriptor = computeNewDescriptor();
-    const newArray = Array.from(this._descriptionArray);
+    const newArray = Array.from(this._descriptorArray);
     newArray[order] = newDescriptor;
     return new Virtualizer(newArray);
   }

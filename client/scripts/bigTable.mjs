@@ -271,10 +271,10 @@ export class BigTable {
 
   render(arrangement) {
     const baseSchema = this._dataView.schema();
-    // could be done in constructor, need to think how I do this stuff
-    // in the interface
+    // maybe a lot of the work here should be put into Arrangement
 
     const virtualizer = arrangement.virtualizer();
+    virtualizer.checkAgainstSchema(baseSchema);
     const schema = virtualizer.virtualize(baseSchema);
     const hierarchization = arrangement.hierarchization();
     hierarchization.checkInternally();
