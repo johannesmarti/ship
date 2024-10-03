@@ -236,7 +236,13 @@ export class BigTable {
       // I do not understand why this preventDefault is needed
       event.preventDefault();
       const target = determineDropPosition(event);
-      if (target === null) { return; }
+      if (target === null) {
+        if (highlighted !== null) {
+          removeHighlighting(highlighted);
+          highlighted = null;
+        }
+        return;
+      }
       if (highlighted !== null) {
         if (target.equals(highlighted)) { return; }
         removeHighlighting(highlighted);
