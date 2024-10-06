@@ -156,9 +156,9 @@ async function main() {
       return ljson;
     }
 
-    const bigTable = new BigTable(dataLayer);
     const arrangement = new getArrangement(); 
-    const domTable = bigTable.render(arrangement);
+    const bigTable = new BigTable(dataLayer, arrangement);
+    const domTable = bigTable.render();
     document.body.append(domTable);
   }
 }

@@ -37,6 +37,16 @@ export class Arrangement {
     }
   }
 
+  virtualize(baseSchema) {
+    const virtualizer = this.virtualizer();
+    virtualizer.checkAgainstSchema(baseSchema);
+    const virtualSchema = virtualizer.virtualize(baseSchema);
+    const hierarchization = this.hierarchization();
+    hierarchization.checkInternally();
+    hierarchization.checkAgainstSchema(virtualSchema);
+    return virtualSchema;
+  }
+
   updateHierarchization(newHierarchization) {
     return new Arrangement(newHierarchization, this.virtualizer());
   }
