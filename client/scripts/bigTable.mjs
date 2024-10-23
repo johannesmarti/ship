@@ -374,7 +374,6 @@ export class BigTable {
       operationOnPositions('add', position);
     }
 
-    // should be abstracted together with the previous
     function removeHighlighting(position) {
       operationOnPositions('remove', position);
     }
