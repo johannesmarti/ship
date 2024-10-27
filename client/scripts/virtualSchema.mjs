@@ -28,6 +28,10 @@ class IdentityDimensionTransformer {
 
 class RemappingDimensionTransformer {
   constructor(baseDimension, remapper, name) {
+    for (let baseIndex of remapper) {
+      console.assert(baseDimension.isIndex(baseIndex),
+        `center point ${baseIndex} is not a index in the base dimension ${baseDimension.name()}`);
+    }
     this._baseDimension = baseDimension;
     this._remapper = remapper;
     this._name = name;
@@ -58,7 +62,7 @@ class RemappingDimensionTransformer {
 }
 
 function exponentialRemapper(baseDimension, center) {
-  console.assert(0 <= center && center < baseDimension.numIndices(),
+  console.assert(baseDimension.isIndex(center),
     `center point ${center} is not a index in the base dimension ${baseDimension.name()}`);
   // This could be computed more efficiently. I don't care.
   const remapper = [center];
@@ -91,6 +95,11 @@ function exponentialRemapper(baseDimension, center) {
   }
 
   const name = `exponential remapper on ${baseDimension.name()} around ${baseDimension.nameOfIndex(center)}`;
+  return new RemappingDimensionTransformer(baseDimension, remapper, name);
+}
+
+function explicitRemapper(baseDimension, remapper) {
+  const name = `explicity remapper on ${baseDimension.name()} from ${remapper}`;
   return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 
@@ -152,25 +161,45 @@ is of length ${thisLength}`);
   }
 
   static fromPlainJSON(json) {
+    function isNaturalNumber(value) {
+      return typeof value === "number" &&
+             Number.isInteger(value) &&
+             value >= 0;
+    }
     if (!Array.isArray(json)) {
       console.log("ERROR: json for virtualizer is no array");
       return null;
     }
     for (let descriptorJSON of json) {
       const type = descriptorJSON.type;
-      if (type !== 'id' && type !== 'exponential') {
-        console.log(`ERROR: descriptor needs to have a type field that is set to either the value 'id' or the value 'exponential', but it is ${type}`);
-        return null;
-      }
-      if (descriptorJSON.type === 'exponential') {
-        const center = descriptorJSON.center;
-        if (center !== 'first' && center !== 'mid' && center !== 'last'
-                               && !Number.isInteger(center)) {
-          console.log(`ERROR: exponential descriptor needs to have a
-center field that is set to either 'first', 'mid', or 'last' or is an
-integer, but it is ${center}`);
+      switch (type) {
+        case 'id':
+          break;
+        case 'exponential':
+          const center = descriptorJSON.center;
+          if (center !== 'first' && center !== 'mid' && center !== 'last'
+                                 && !isNaturalNumber(center)) {
+            console.log(`ERROR: exponential descriptor needs to have a center field that is set to either 'first', 'mid', or 'last' or is an integer,   but it is ${center}`);
+            return null;
+          }
+          break;
+        case 'explicit':
+          const remapper = descriptorJSON.remapper;
+          if (!Array.isArray(remapper)) {
+              console.log(`ERROR: explicit remapper descriptor needs a field 'remapper' that is an array`);
+              return null;
+          }
+          for (let i of remapper) {
+            if (!isNaturalNumber(i)) {
+              console.log(`ERROR: remapper needs to contain natural numbers`);
+              return null;
+            }
+          }
+          break;
+        default:
+          console.log(`ERROR: descriptor needs to have a type field that
+  is set to one of the values 'id', 'explicit' or 'exponential', but it is ${type}`);
           return null;
-        }
       }
     }
     return new Virtualizer(json);
@@ -185,10 +214,10 @@ integer, but it is ${center}`);
     const array = this._descriptorArray.map((descriptor, order) => {
       const dimension = schema.dimensionAtOrder(order);
 
-      const id = () => new IdentityDimensionTransformer(dimension);
       const mapper = {
-        "id": id,
-        "exponential": () => {
+        'id': () => new IdentityDimensionTransformer(dimension),
+        'explicit': () => explicitRemapper(dimension, descriptor.remapper),
+        'exponential': () => {
             const center = indexInDimensionFromJSON(dimension, descriptor.center);
             return exponentialRemapper(dimension, center);
           }
@@ -202,14 +231,15 @@ integer, but it is ${center}`);
     const descriptor = this._descriptorArray[order];
     const currentType = descriptor.type;
     const computeNewDescriptor = {
-      "id": () => { return descriptor; },
-      "exponential": () => {
+      'id': () => { return descriptor; },
+      'explicit': () => { return descriptor; },
+      'exponential': () => {
           const center = indexInDimensionFromJSON(baseDimension, descriptor.center);
           if (baseIndex === center) {
             return descriptor;
           } else {
             const realIndex = jsonForDimensionFromIndex(baseDimension, baseIndex);
-            return {type: "exponential",
+            return {type: 'exponential',
                     center: realIndex};
           }
         }

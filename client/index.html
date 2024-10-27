@@ -129,6 +129,10 @@ async function main() {
         [iteration]: {
           type: "exponential",
           center: "last"
+        },
+        [datatype]: {
+          type: "explicit",
+          remapper: [0,2,4]
         }
       }
       const virtualizer = Virtualizer.fromConfiguration(vconfig, physicalSchema.numDimensions());
