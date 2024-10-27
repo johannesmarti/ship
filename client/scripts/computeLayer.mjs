@@ -27,25 +27,9 @@ export class RecomputeLayer {
       return this._baseData.lookup(address);
     }
     const lookup = (index) => {
-      // This lookup is called often. We have a slow copying
-      // implementation that trashes memory at every lookup and an
-      // alternative quicker implementation that reuses the memory of
-      // address but is a bit hacky. It does not seem to make a
-      // measurable difference in performance.
-
-      // slow and clean:
       const newAddress = Array.from(address);
       newAddress[order] = index;
       return this._baseData.lookup(newAddress);
-
-      // quick and dirty:
-/*
-      const tmp = address[order];
-      address[order] = index;
-      const value = this._baseData.lookup(address);
-      address[order] = tmp;
-      return value;
-*/
     }
     return this._recomputer(lookup);
   }

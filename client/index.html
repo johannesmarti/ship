@@ -110,9 +110,6 @@ async function main() {
     const error = datatypeDimension.indexOfName("error");
     const price = datatypeDimension.indexOfName("price");
 
-    new RecomputeLayer(physicalData, datatype, "sold",
-      (l) => (l(double_volume) + l(error)) / 2 );
-
     const dataLayer =
       new RecomputeLayer(
       new RecomputeLayer(
@@ -135,7 +132,7 @@ async function main() {
           remapper: [0,2,4]
         }
       }
-      const virtualizer = Virtualizer.fromConfiguration(vconfig, physicalSchema.numDimensions());
+      const virtualizer = Virtualizer.fromConfiguration(dataLayer.schema(), vconfig);
 
       const hjson = {
         fixed: [{ order: datatype, fixedIndex: price }],

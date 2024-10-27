@@ -1,31 +1,5 @@
 import { Schema } from './schema.mjs';
 
-class IdentityDimensionTransformer {
-  constructor(baseDimension) {
-    this._baseDimension = baseDimension;
-  }
-
-  numIndices() {
-    return this._baseDimension.numIndices();
-  }
-
-  isIndex(number) {
-    return 0 <= number && number < this.numIndices();
-  }
-
-  name() {
-    return this._baseDimension.name();
-  }
-
-  nameOfIndex(index) {
-    return this._baseDimension.nameOfIndex(index);
-  }
-
-  transform(index) {
-    return index;
-  }
-}
-
 class RemappingDimensionTransformer {
   constructor(baseDimension, remapper, name) {
     for (let baseIndex of remapper) {
@@ -55,10 +29,15 @@ class RemappingDimensionTransformer {
 
   transform(index) {
     console.assert(0 <= index && index < this.numIndices(),
-      `${index} is not a index in the remapping dimension ${this.name()}`);
+      `${index} is not an index in the remapping dimension ${this.name()}`);
 
     return this._remapper[index];
   }
+}
+
+function explicitRemapper(baseDimension, remapper) {
+  const name = `explicity remapper on ${baseDimension.name()} from ${remapper}`;
+  return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 
 function exponentialRemapper(baseDimension, center) {
@@ -95,11 +74,6 @@ function exponentialRemapper(baseDimension, center) {
   }
 
   const name = `exponential remapper on ${baseDimension.name()} around ${baseDimension.nameOfIndex(center)}`;
-  return new RemappingDimensionTransformer(baseDimension, remapper, name);
-}
-
-function explicitRemapper(baseDimension, remapper) {
-  const name = `explicity remapper on ${baseDimension.name()} from ${remapper}`;
   return new RemappingDimensionTransformer(baseDimension, remapper, name);
 }
 
@@ -145,10 +119,22 @@ export class Virtualizer {
     this._descriptorArray = descriptorArray;
   }
 
-  static fromConfiguration(configuration, length) {
+  static fromConfiguration(baseSchema, configuration) {
+    function identityRemapper(size) {
+      const remapper = [];
+      for (let i = 0; i < size; i++) { remapper.push(i); }
+      return remapper;
+    }
     const descriptorArray = new Array(length);
-    for (let order = 0; order < length; order++) {
-      descriptorArray[order] = configuration[order] || {type: "id"};
+
+    for (let order = 0; order < baseSchema.numDimensions(); order++) {
+      const suggestedConfiguration = configuration[order];
+      descriptorArray[order] = suggestedConfiguration !== undefined ?
+                                  suggestedConfiguration :
+                                  { type: 'explicit', 
+                                    remapper: identityRemapper(baseSchema
+                                                    .dimensionAtOrder(order)
+                                                    .numIndices()) };
     }
     return new Virtualizer(descriptorArray);
   }
@@ -173,8 +159,6 @@ is of length ${thisLength}`);
     for (let descriptorJSON of json) {
       const type = descriptorJSON.type;
       switch (type) {
-        case 'id':
-          break;
         case 'exponential':
           const center = descriptorJSON.center;
           if (center !== 'first' && center !== 'mid' && center !== 'last'
@@ -198,7 +182,7 @@ is of length ${thisLength}`);
           break;
         default:
           console.log(`ERROR: descriptor needs to have a type field that
-  is set to one of the values 'id', 'explicit' or 'exponential', but it is ${type}`);
+  is set to one of the values 'explicit' or 'exponential', but it is ${type}`);
           return null;
       }
     }
@@ -215,7 +199,6 @@ is of length ${thisLength}`);
       const dimension = schema.dimensionAtOrder(order);
 
       const mapper = {
-        'id': () => new IdentityDimensionTransformer(dimension),
         'explicit': () => explicitRemapper(dimension, descriptor.remapper),
         'exponential': () => {
             const center = indexInDimensionFromJSON(dimension, descriptor.center);
@@ -231,7 +214,6 @@ is of length ${thisLength}`);
     const descriptor = this._descriptorArray[order];
     const currentType = descriptor.type;
     const computeNewDescriptor = {
-      'id': () => { return descriptor; },
       'explicit': () => { return descriptor; },
       'exponential': () => {
           const center = indexInDimensionFromJSON(baseDimension, descriptor.center);
@@ -248,6 +230,62 @@ is of length ${thisLength}`);
     const newArray = Array.from(this._descriptorArray);
     newArray[order] = newDescriptor;
     return new Virtualizer(newArray);
+  }
+
+  isBinable(order, index) {
+    const descriptor = this._descriptorArray[order];
+    const type = descriptor.type;
+    switch (type) {
+      case 'explicit':
+        assert(index < remapper.length, `fromIndex ${index}
+needs to be in the remapper of length ${remapper.length}`);
+        return remapper.length > 1;
+      case 'exponential':
+        return false;
+      default:
+        assert(false, `descriptor.type is 'explicit' or 'exponential'`);
+        return false;
+    }
+  }
+
+  bin(order, index) {
+
+  }
+
+  isUnbinnable(order, baseIndex, toIndex) {
+    const descriptor = this._descriptorArray[order];
+    const type = descriptor.type;
+    switch (type) {
+      case 'explicit':
+        assert(toIndex <= remapper.length, `fromIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
+        return true;
+      case 'exponential':
+        return false;
+      default:
+        assert(false, `descriptor.type is 'explicit' or 'exponential'`);
+        return false;
+    }
+  }
+
+  unbin(order, baseIndex, toIndex) {
+  }
+
+  isMovable(order, fromIndex, toIndex) {
+    const descriptor = this._descriptorArray[order];
+    const type = descriptor.type;
+    switch (type) {
+      case 'explicit':
+        assert(fromIndex < remapper.length, `fromIndex ${fromIndex}
+needs to be in the remapper of length ${remapper.length}`);
+        assert(toIndex <= remapper.length, `toIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
+        return toIndex !== fromIndex && toIndex !== fromIndex + 1;
+      default: // just for 'exponential'
+        return false;
+    }
+  }
+
+  move(fromIndex, toIndex) {
+    // to implement
   }
 }
 
