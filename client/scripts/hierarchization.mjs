@@ -1,3 +1,5 @@
+import { moveElement } from './moveElement.mjs';
+
 export class Position {
   constructor(type, offset) {
     console.assert(type === 'fixed' || type === 'columnHierarchy'
@@ -288,18 +290,7 @@ export class Hierarchization {
     const toOffset = toPosition.offset();
     const fromArray = this.arrayOfType(fromType);
     if (fromType === toType) {
-      const array = fromArray;
-      const mover = array[fromOffset];
-      let newArray;
-      if (fromOffset < toOffset) {
-        newArray = [...array.slice(0, fromOffset),
-                    ...array.slice(fromOffset + 1, toOffset), mover,
-                    ...array.slice(toOffset)];
-      } else {
-        newArray = [...array.slice(0, toOffset), mover,
-                    ...array.slice(toOffset, fromOffset),
-                    ...array.slice(fromOffset + 1)];
-      }
+      const newArray = moveElement(fromArray, fromOffset, toOffset);
       return this.setArrayOfType(fromType, newArray);
     } else {
       const fromElement = fromArray[fromOffset];

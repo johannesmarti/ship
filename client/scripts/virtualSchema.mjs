@@ -1,4 +1,5 @@
 import { Schema } from './schema.mjs';
+import { moveElement } from './moveElement.mjs';
 
 class RemappingDimensionTransformer {
   constructor(baseDimension, remapper, name) {
@@ -210,6 +211,13 @@ is of length ${thisLength}`);
     return new Schema(array);
   }
 
+  updateAtOrder(order, newDescriptor) {
+    const newArray = Array.from(this._descriptorArray);
+    newArray[order] = newDescriptor;
+    return new Virtualizer(newArray);
+  }
+
+  // TODO: maybe this method can be renamed
   update(order, baseIndex, baseDimension) {
     const descriptor = this._descriptorArray[order];
     const currentType = descriptor.type;
@@ -221,15 +229,13 @@ is of length ${thisLength}`);
             return descriptor;
           } else {
             const realIndex = jsonForDimensionFromIndex(baseDimension, baseIndex);
-            return {type: 'exponential',
-                    center: realIndex};
+            return { type: 'exponential',
+                     center: realIndex };
           }
         }
     }[currentType];
     const newDescriptor = computeNewDescriptor();
-    const newArray = Array.from(this._descriptorArray);
-    newArray[order] = newDescriptor;
-    return new Virtualizer(newArray);
+    return this.updateAtOrder(order, newDescriptor);
   }
 
   isBinable(order, index) {
@@ -237,19 +243,26 @@ is of length ${thisLength}`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
-        assert(index < remapper.length, `fromIndex ${index}
+        console.assert(index < remapper.length, `fromIndex ${index}
 needs to be in the remapper of length ${remapper.length}`);
         return remapper.length > 1;
       case 'exponential':
         return false;
       default:
-        assert(false, `descriptor.type is 'explicit' or 'exponential'`);
+        console.assert(false, `descriptor.type is 'explicit' or 'exponential'`);
         return false;
     }
   }
 
   bin(order, index) {
-
+    console.assert(this.isBinable(order, index),
+      `trying to bin index ${index} in order ${order}, but operation is not possible`);
+    const remapper = this._descriptorArray[order].remapper;
+    const newDescriptor = {
+      type: 'explicit',
+      remapper: [...remapper.slice(0, index), ...remapper.slice(index + 1)]
+    };
+    return this.updateAtOrder(order, newDescriptor)
   }
 
   isUnbinnable(order, baseIndex, toIndex) {
@@ -257,17 +270,27 @@ needs to be in the remapper of length ${remapper.length}`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
-        assert(toIndex <= remapper.length, `fromIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
+        console.assert(toIndex <= remapper.length, `fromIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
         return true;
       case 'exponential':
         return false;
       default:
-        assert(false, `descriptor.type is 'explicit' or 'exponential'`);
+        console.assert(false, `descriptor.type is 'explicit' or 'exponential'`);
         return false;
     }
   }
 
   unbin(order, baseIndex, toIndex) {
+    console.assert(this.isUnbinnable(order, baseIndex, toIndex),
+      `trying to unbin base index ${baseIndex} to order ${order} at
+index ${toIndex}, but operation is not possible`);
+    const remapper = this._descriptorArray[order].remapper;
+    const newDescriptor = {
+      type: 'explicit',
+      remapper: [...remapper.slice(0, index), baseIndex,
+                 ...remapper.slice(index + 1)]
+    };
+    return this.updateAtOrder(order, newDescriptor)
   }
 
   isMovable(order, fromIndex, toIndex) {
@@ -275,17 +298,24 @@ needs to be in the remapper of length ${remapper.length}`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
-        assert(fromIndex < remapper.length, `fromIndex ${fromIndex}
+        console.assert(fromIndex < remapper.length, `fromIndex ${fromIndex}
 needs to be in the remapper of length ${remapper.length}`);
-        assert(toIndex <= remapper.length, `toIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
+        console.assert(toIndex <= remapper.length, `toIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
         return toIndex !== fromIndex && toIndex !== fromIndex + 1;
       default: // just for 'exponential'
         return false;
     }
   }
 
-  move(fromIndex, toIndex) {
-    // to implement
+  move(order, fromIndex, toIndex) {
+    console.assert(this.isMovable(order, fromIndex, toIndex),
+      `trying to move index ${fromIndex} to index ${toIndex} in order ${order}, but operation is not possible`);
+    const remapper = this._descriptorArray[order].remapper;
+    const newDescriptor = {
+      type: 'explicit',
+      remapper: moveElement(remapper, fromIndex, toIndex)
+    };
+    return this.updateAtOrder(order, newDescriptor)
+    // TODO: implement
   }
 }
-
