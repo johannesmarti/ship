@@ -1,6 +1,7 @@
 import { Schema } from './schema.mjs';
 import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
+import { attach } from './dragNDrop.mjs';
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -297,14 +298,9 @@ export class BigTable {
     return div;
   }
 
+  // maybe these should only be attached at the next render
   addListeners(dragIndex, unitIndex, div) {
     const arrangement = this.arrangement();
-    for (let cell of dragIndex.allElements()) {
-      cell.setAttribute('draggable', 'true');
-    } 
-    let dragging = null;
-    let highlighted = null;
-
     const hierarchization = arrangement.hierarchization();
 
     function determineDropPosition(event) {
@@ -335,7 +331,7 @@ export class BigTable {
       }
     }
 
-    function operationOnPositions(operationName, position) {
+    function operationOnPosition(operationName, position) {
       if (hierarchization.isPosition(position)) {
         if (isHorizontal(position.type())) {
           for (const cell of dragIndex.elementsAtPosition(position)) {
@@ -370,67 +366,61 @@ export class BigTable {
       }
     }
 
-    function highlight(position) {
-      operationOnPositions('add', position);
-    }
+    const dragNDropStructure = {
+      setDraggable: () => {
+        for (let cell of dragIndex.allElements()) {
+          cell.setAttribute('draggable', 'true');
+        } 
+      },
 
-    function removeHighlighting(position) {
-      operationOnPositions('remove', position);
-    }
+      determineDragItem: (event) => {
+        return dragIndex.valueOfElement(event.target);
+      },
 
-    div.addEventListener('dragstart', (event) => {
-      const indexedPosition = dragIndex.valueOfElement(event.target);
-      dragging = indexedPosition;
-      const position = indexedPosition.position();
-      for (const cell of dragIndex.elementsAtPosition(position)) {
-        cell.classList.add('dragging');
-      }
-    });
+      initialDragArea: (indexedPosition) => {
+        return indexedPosition.position();
+      },
 
-    div.addEventListener('dragover', (event) => {
-      console.assert(dragging !== null,
-        `there is a dragging element on dragover event`);
-      // I do not understand why this preventDefault is needed
-      event.preventDefault();
-      const target = determineDropPosition(event);
-      if (target === null) {
-        if (highlighted !== null) {
-          removeHighlighting(highlighted);
-          highlighted = null;
+      setDragging: (position) => {
+        for (const cell of dragIndex.elementsAtPosition(position)) {
+          cell.classList.add('dragging');
         }
-        return;
-      }
-      if (highlighted !== null) {
-        if (target.equals(highlighted)) { return; }
-        removeHighlighting(highlighted);
-        highlighted = null;
-      }
-      if (hierarchization.isMovable(dragging.position(), target)) {
-        highlight(target);
-        highlighted = target;
-      }
-    });
+      },
 
-    div.addEventListener('drop', (event) => {
-      if (highlighted == null) { return; }
-      const newHierarchization = hierarchization.move(dragging.position(),
-                                                      highlighted,
-                                                      dragging.index());
-      const newArrangement = arrangement.updateHierarchization(newHierarchization);
-      div.replaceWith(this.updateArrangement(newArrangement).render());
-    });
+      removeDragging: (position) => {
+        for (const cell of dragIndex.elementsAtPosition(position)) {
+          cell.classList.remove('dragging');
+        }
+      },
 
-    div.addEventListener('dragend', (event) => {
-      console.assert(dragging !== null,
-        `there is a dragging element on dragend event`);
-      for (const cell of dragIndex.elementsAtPosition(dragging.position())) {
-        cell.classList.remove('dragging');
+      determineTarget: determineDropPosition,
+
+      isDroppable: (indexedPosition, position) => {
+        return hierarchization.isMovable(indexedPosition.position(), position)
+      },
+
+      performDrop: (indexedPosition, position) => {
+        const newHierarchization = hierarchization.move(
+            indexedPosition.position(),
+            position,
+            indexedPosition.index());
+        const newArrangement = arrangement.updateHierarchization(newHierarchization);
+        div.replaceWith(this.updateArrangement(newArrangement).render());
+      },
+
+      dragAreaOfDrop: (indexedPosition, position) => {
+        return indexedPosition.position();
+      },
+
+      highlight: (indexedPosition, position) => {
+        operationOnPosition('add', position);
+      },
+
+      removeHighlight: (indexedPosition, position) => {
+        operationOnPosition('remove', position);
       }
-      dragging = null;
-      if (highlighted !== null) {
-        removeHighlighting(highlighted);
-        highlighted = null;
-      }
-    });
+    }
+
+    attach(dragNDropStructure, div);
   }
 }
