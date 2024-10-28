@@ -1,7 +1,7 @@
 /*
 dragNDropStructure:
     determineDragItem: dragstartEvent -> dragItem
-    determineTarget: dragoverEvent -> Maybe(target)
+    determineTarget: dragItem * dragoverEvent -> Maybe(target)
     droppable: dragItem * target -> Bool
 
     initialDragArea: dragItem -> dragArea
@@ -14,6 +14,8 @@ dragNDropStructure:
     unhighlight: dragItem * target -> IO
 
     performDromp: dragItem * target-> IO
+
+    target is assumed to implement a reasonable equals
 */
 
 export function attach(structure, element) {
@@ -37,7 +39,7 @@ export function attach(structure, element) {
     // I do not understand why this preventDefault is needed
     event.preventDefault();
 
-    const newTarget = structure.determineTarget(event);
+    const newTarget = structure.determineTarget(dragItem, event);
     if (newTarget === null) {
       if (target !== null) {
         structure.removeHighlight(dragItem, target);

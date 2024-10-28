@@ -294,41 +294,80 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    this.addListeners(dragIndex, unitIndex, div);
+    this.addDragNDrop(dragIndex, unitIndex, div);
     return div;
   }
 
   // maybe these should only be attached at the next render
-  addListeners(dragIndex, unitIndex, div) {
+  addDragNDrop(dragIndex, unitIndex, div) {
     const arrangement = this.arrangement();
     const hierarchization = arrangement.hierarchization();
 
-    function determineDropPosition(event) {
+    class DimensionDropTarget {
+      constructor(position) {
+        this._position = position;
+      }
+
+      position() { return this._position; }
+
+      equals(other) {
+        return other instanceof DimensionDropTarget &&
+               this.position().equals(other.position());
+      }
+    }
+
+    class IndexDropTarget {
+      constructor(index) {
+        this._index = index;
+      }
+
+      index() { return this._index; }
+
+      equals(other) {
+        return other instanceof IndexDropTarget &&
+               this.index() === other.index();
+      }
+    }
+
+    function determineHorizontalOffset(event, rectangle) {
+      const xOffset = event.clientX - rectangle.left;
+      return xOffset < rectangle.width / 2 ? 0 : 1;
+    }
+
+    function determineVerticalOffset(event, rectangle) {
+      const yOffset = event.clientY - rectangle.top;
+      return yOffset < rectangle.height / 2 ? 0 : 1;
+    }
+    
+    function determineDropTarget(dragPosition, event) {
       const target = event.target.closest('th');
       if (target === null) { return null; }
-      const overPosition = dragIndex.positionOfElement(target);
-      if (overPosition === null) { 
+      const overIndexedPosition = dragIndex.valueOfElement(target);
+      if (overIndexedPosition === null) { 
         const unitPosition = unitIndex.positionOfElement(target);
         if (unitPosition === null) return null;
-        else return unitPosition;
+        else return new DimensionDropTarget(unitPosition);
       }
 
       const boundingRectangle = target.getBoundingClientRect();
-      if (isHorizontal(overPosition.type())) {
-        const xOffset = event.clientX - boundingRectangle.left;
-        if (xOffset < boundingRectangle.width / 2) {
-          return overPosition;
-        } else {
-          return new Position(overPosition.type(), overPosition.offset() + 1);
-        }
-      } else {
-        const yOffset = event.clientY - boundingRectangle.top;
-        if (yOffset < boundingRectangle.height / 2) {
-          return overPosition;
-        } else {
-          return new Position(overPosition.type(), overPosition.offset() + 1);
+      const overPosition = overIndexedPosition.position();
+      if (overPosition.equals(dragPosition)) {
+        switch (overPosition.type()) {
+          case 'fixed': return null
+          case 'rowHierarchy':
+            return new IndexDropTarget(overIndexedPosition.index() +
+                        determineVerticalOffset(event, boundingRectangle));
+          case 'columnHierarchy':
+            return new IndexDropTarget(overIndexedPosition.index() +
+                        determineHorizontalOffset(event, boundingRectangle));
         }
       }
+      const offset = isHorizontal(overPosition.type()) ?
+                        determineHorizontalOffset(event, boundingRectangle) :
+                        determineVerticalOffset(event, boundingRectangle);
+      const dropPosition = new Position(overPosition.type(),
+                                        overPosition.offset() + offset);
+      return new DimensionDropTarget(dropPosition);
     }
 
     function operationOnPosition(operationName, position) {
@@ -393,31 +432,34 @@ export class BigTable {
         }
       },
 
-      determineTarget: determineDropPosition,
-
-      isDroppable: (indexedPosition, position) => {
-        return hierarchization.isMovable(indexedPosition.position(), position)
+      determineTarget: (indexedPosition, event) => {
+        return determineDropTarget(indexedPosition.position(), event);
       },
 
-      performDrop: (indexedPosition, position) => {
+      isDroppable: (indexedPosition, target) => {
+        return target instanceof DimensionDropTarget &&
+               hierarchization.isMovable(indexedPosition.position(), target.position())
+      },
+
+      performDrop: (indexedPosition, target) => {
         const newHierarchization = hierarchization.move(
             indexedPosition.position(),
-            position,
+            target.position(),
             indexedPosition.index());
         const newArrangement = arrangement.updateHierarchization(newHierarchization);
         div.replaceWith(this.updateArrangement(newArrangement).render());
       },
 
-      dragAreaOfDrop: (indexedPosition, position) => {
+      dragAreaOfDrop: (indexedPosition, target) => {
         return indexedPosition.position();
       },
 
-      highlight: (indexedPosition, position) => {
-        operationOnPosition('add', position);
+      highlight: (indexedPosition, target) => {
+        operationOnPosition('add', target.position());
       },
 
-      removeHighlight: (indexedPosition, position) => {
-        operationOnPosition('remove', position);
+      removeHighlight: (indexedPosition, target) => {
+        operationOnPosition('remove', target.position());
       }
     }
 
