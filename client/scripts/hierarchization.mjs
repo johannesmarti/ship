@@ -212,6 +212,18 @@ export class Hierarchization {
     console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
   }
 
+  orderOfPosition(position) {
+    switch (position.type()) {
+      case 'fixed':
+        return this._fixed[position.offset()].fixedIndex();
+      case 'rowHierarchy':
+        return this._rowHierarchy[position.offset()];
+      case 'columnHierarchy':
+        return this._columnHierarchy[position.offset()];
+    }
+    console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
+  }
+
   isPosition(position) {
     const offset = position.offset();
     if (offset < 0) return false;

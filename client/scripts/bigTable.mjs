@@ -302,6 +302,8 @@ export class BigTable {
   addDragNDrop(dragIndex, unitIndex, div) {
     const arrangement = this.arrangement();
     const hierarchization = arrangement.hierarchization();
+    const virtualizer = arrangement.virtualizer();
+    const bigTable = this;
 
     class DimensionDropTarget {
       constructor(position) {
@@ -313,6 +315,20 @@ export class BigTable {
       equals(other) {
         return other instanceof DimensionDropTarget &&
                this.position().equals(other.position());
+      }
+
+      canDropAt(indexedPosition) {
+        return hierarchization.isMovable(indexedPosition.position(),
+                                         this.position());
+      }
+
+      performDrop(indexedPosition) {
+        const newHierarchization = hierarchization.move(
+            indexedPosition.position(),
+            this.position(),
+            indexedPosition.index());
+        const newArrangement = arrangement.updateHierarchization(newHierarchization);
+        div.replaceWith(bigTable.updateArrangement(newArrangement).render());
       }
     }
 
@@ -326,6 +342,26 @@ export class BigTable {
       equals(other) {
         return other instanceof IndexDropTarget &&
                this.index() === other.index();
+      }
+
+      canDropAt(indexedPosition) {
+        const position = indexedPosition.position();
+        // TODO: Here we actually know that the position needs to be not
+        // a fixed index. Thus, the call to orderOfPosition is a little
+        // too general.
+        const order = hierarchization.orderOfPosition(position);
+        return virtualizer.isMovable(order,
+                                     indexedPosition.index(), this.index());
+      }
+
+      performDrop(indexedPosition) {
+        const position = indexedPosition.position();
+        // TODO: Same as above, we know that we are fixed.
+        const order = hierarchization.orderOfPosition(position);
+        const newVirtualizer = virtualizer.move(order,
+            indexedPosition.index(), this.index());
+        const newArrangement = arrangement.updateVirtualizer(newVirtualizer);
+        div.replaceWith(bigTable.updateArrangement(newArrangement).render());
       }
     }
 
@@ -437,17 +473,11 @@ export class BigTable {
       },
 
       isDroppable: (indexedPosition, target) => {
-        return target instanceof DimensionDropTarget &&
-               hierarchization.isMovable(indexedPosition.position(), target.position())
+        return target.canDropAt(indexedPosition);
       },
 
       performDrop: (indexedPosition, target) => {
-        const newHierarchization = hierarchization.move(
-            indexedPosition.position(),
-            target.position(),
-            indexedPosition.index());
-        const newArrangement = arrangement.updateHierarchization(newHierarchization);
-        div.replaceWith(this.updateArrangement(newArrangement).render());
+        target.performDrop(indexedPosition);
       },
 
       dragAreaOfDrop: (indexedPosition, target) => {
@@ -455,10 +485,12 @@ export class BigTable {
       },
 
       highlight: (indexedPosition, target) => {
+        if (target instanceof IndexDropTarget) { return; }
         operationOnPosition('add', target.position());
       },
 
       removeHighlight: (indexedPosition, target) => {
+        if (target instanceof IndexDropTarget) { return; }
         operationOnPosition('remove', target.position());
       }
     }

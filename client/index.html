@@ -114,7 +114,7 @@ async function main() {
       new RecomputeLayer(
       new RecomputeLayer(
       new RecomputeLayer(physicalData,
-        datatype, "volume",
+        datatype, "market value",
           (l) => l(double_volume)/2 * l(price) ),
         datatype, "sold",
           (l) => (l(double_volume) + l(error)) / 2 ),

@@ -298,6 +298,7 @@ index ${toIndex}, but operation is not possible`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
+        const remapper = descriptor.remapper;
         console.assert(fromIndex < remapper.length, `fromIndex ${fromIndex}
 needs to be in the remapper of length ${remapper.length}`);
         console.assert(toIndex <= remapper.length, `toIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
