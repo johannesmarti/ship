@@ -55,12 +55,12 @@ export function attach(structure, element) {
     if (structure.isDroppable(dragItem, newTarget)) {
       target = newTarget;
       structure.highlight(dragItem, target);
-    }
-    const newDragArea = structure.dragAreaOfDrop(dragItem, target);
-    if (!newDragArea.equals(dragging)) {
-        structure.removeDragging(dragging);
-        dragging = newDragAre;
-        structure.setDragging(dragging);
+      const newDragArea = structure.dragAreaOfDrop(dragItem, target);
+      if (!newDragArea.equals(dragging)) {
+          structure.removeDragging(dragging);
+          dragging = newDragArea;
+          structure.setDragging(dragging);
+      }
     }
   });
 

@@ -66,6 +66,11 @@ class IndexedPosition {
 
   position() { return this._position; }
   index() { return this._index; }
+
+  equals(otherIndexedPosition) {
+    return this.index() == otherIndexedPosition.index() &&
+           this.position().equals(otherIndexedPosition.position());
+  }
 }
 
 class PositionIndex {
@@ -304,6 +309,71 @@ export class BigTable {
     const hierarchization = arrangement.hierarchization();
     const virtualizer = arrangement.virtualizer();
     const bigTable = this;
+    const virtualSchema = this.virtualSchema();
+
+    // Maybe indexedPositoin make only sense for drag elements that are
+    // not fixed and thus come from one of the hierarchies.
+    function *elementsAtIndexedPosition(indexedPosition) {
+      const position = indexedPosition.position();
+      const elementsAtPosition = dragIndex.elementsAtPosition(position);
+      const order = hierarchization.orderOfPosition(position);
+      const sizeOfDimension = virtualSchema.dimensionAtOrder(order).numIndices();
+      const index = indexedPosition.index();
+
+      for (let o = index; o < elementsAtPosition.length; o += sizeOfDimension) {
+        yield elementsAtPosition[o];
+      }
+    }
+
+    class DimensionDragArea {
+      constructor(position) {
+        this._position = position;
+      }
+
+      position() { return this._position; }
+
+      equals(other) {
+        return other instanceof DimensionDragArea &&
+               this.position().equals(other.position());
+      }
+
+      setDragging() {
+        for (const cell of dragIndex.elementsAtPosition(this.position())) {
+          cell.classList.add('dragging');
+        }
+      }
+
+      removeDragging() {
+        for (const cell of dragIndex.elementsAtPosition(this.position())) {
+          cell.classList.remove('dragging');
+        }
+      }
+    }
+
+    class IndexDragArea {
+      constructor(indexedPosition) {
+        this._indexedPosition = indexedPosition;
+      }
+
+      indexedPosition() { return this._indexedPosition; }
+
+      equals(other) {
+        return other instanceof IndexDragArea &&
+               this.indexedPosition().equals(other.indexedPosition());
+      }
+
+      setDragging() {
+        for (const cell of elementsAtIndexedPosition(this.indexedPosition())) {
+          cell.classList.add('dragging');
+        }
+      }
+
+      removeDragging() {
+        for (const cell of elementsAtIndexedPosition(this.indexedPosition())) {
+          cell.classList.remove('dragging');
+        }
+      }
+    }
 
     class DimensionDropTarget {
       constructor(position) {
@@ -329,6 +399,10 @@ export class BigTable {
             indexedPosition.index());
         const newArrangement = arrangement.updateHierarchization(newHierarchization);
         div.replaceWith(bigTable.updateArrangement(newArrangement).render());
+      }
+
+      determineDragArea(indexedPosition) {
+        return new DimensionDragArea(indexedPosition.position());
       }
     }
 
@@ -362,6 +436,10 @@ export class BigTable {
             indexedPosition.index(), this.index());
         const newArrangement = arrangement.updateVirtualizer(newVirtualizer);
         div.replaceWith(bigTable.updateArrangement(newArrangement).render());
+      }
+
+      determineDragArea(indexedPosition) {
+        return new IndexDragArea(indexedPosition);
       }
     }
 
@@ -453,19 +531,15 @@ export class BigTable {
       },
 
       initialDragArea: (indexedPosition) => {
-        return indexedPosition.position();
+        return new IndexDragArea(indexedPosition);
       },
 
-      setDragging: (position) => {
-        for (const cell of dragIndex.elementsAtPosition(position)) {
-          cell.classList.add('dragging');
-        }
+      setDragging: (dragArea) => {
+        dragArea.setDragging();
       },
 
-      removeDragging: (position) => {
-        for (const cell of dragIndex.elementsAtPosition(position)) {
-          cell.classList.remove('dragging');
-        }
+      removeDragging: (dragArea) => {
+        dragArea.removeDragging();
       },
 
       determineTarget: (indexedPosition, event) => {
@@ -481,7 +555,7 @@ export class BigTable {
       },
 
       dragAreaOfDrop: (indexedPosition, target) => {
-        return indexedPosition.position();
+        return target.determineDragArea(indexedPosition);
       },
 
       highlight: (indexedPosition, target) => {
