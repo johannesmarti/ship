@@ -317,6 +317,17 @@ needs to be in the remapper of length ${remapper.length}`);
       remapper: moveElement(remapper, fromIndex, toIndex)
     };
     return this.updateAtOrder(order, newDescriptor)
-    // TODO: implement
+  }
+
+  // TODO: strange method to have
+  lengthAtOrder(order) {
+    const descriptor = this._descriptorArray[order];
+    const type = descriptor.type;
+    switch (type) {
+      case 'explicit':
+        return descriptor.remapper.length;
+      default: // just for 'exponential'
+        console.assert(false, `when getting length at a descriptor it needs to be a explicit remapper`);
+    }
   }
 }

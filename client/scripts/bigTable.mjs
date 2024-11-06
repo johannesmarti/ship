@@ -129,6 +129,7 @@ position ${type}, but got a position with offset '${offset}'`);
   }
 }
 
+// TODO: This is a confusing name
 function isHorizontal(type) {
   switch (type) {
     case 'fixed':
@@ -404,6 +405,14 @@ export class BigTable {
       determineDragArea(indexedPosition) {
         return new DimensionDragArea(indexedPosition.position());
       }
+
+      highlight(indexedPosition) {
+        operationOnPosition('add', this.position());
+      }
+
+      removeHighlight(indexedPosition) {
+        operationOnPosition('remove', this.position());
+      }
     }
 
     class IndexDropTarget {
@@ -440,6 +449,18 @@ export class BigTable {
 
       determineDragArea(indexedPosition) {
         return new IndexDragArea(indexedPosition);
+      }
+
+      highlight(indexedPosition) {
+        const targetIndexedPosition =
+            new IndexedPosition(indexedPosition.position(), this.index());
+        operationOnIndexedPosition('add', targetIndexedPosition);
+      }
+
+      removeHighlight(indexedPosition) {
+        const targetIndexedPosition =
+            new IndexedPosition(indexedPosition.position(), this.index());
+        operationOnIndexedPosition('remove', targetIndexedPosition);
       }
     }
 
@@ -519,6 +540,37 @@ export class BigTable {
       }
     }
 
+    function operationOnIndexedPosition(operationName, indexedPosition) {
+      const position = indexedPosition.position();
+      const order = hierarchization.orderOfPosition(position);
+      const lengthOfOrder = virtualizer.lengthAtOrder(order);
+      const index = indexedPosition.index();
+      if (index < lengthOfOrder) {
+        if (isHorizontal(position.type())) {
+          for (const cell of elementsAtIndexedPosition(indexedPosition)) {
+            cell.classList[operationName]('dragover-top');
+          }
+        } else {
+          for (const cell of elementsAtIndexedPosition(indexedPosition)) {
+            cell.classList[operationName]('dragover-left');
+          }
+        }
+      } else if (index == lengthOfOrder) {
+        const mutating = new IndexedPosition(position, index - 1);
+        if (isHorizontal(position.type())) {
+          for (const cell of elementsAtIndexedPosition(mutating)) {
+            cell.classList[operationName]('dragover-bottom');
+          }
+        } else {
+          for (const cell of elementsAtIndexedPosition(mutating)) {
+            cell.classList[operationName]('dragover-right');
+          }
+        }
+      } else {
+        console.assert(false, `highlighting on invalid indexed position: ${indexedPosition}`);
+      }
+    }
+
     const dragNDropStructure = {
       setDraggable: () => {
         for (let cell of dragIndex.allElements()) {
@@ -559,13 +611,11 @@ export class BigTable {
       },
 
       highlight: (indexedPosition, target) => {
-        if (target instanceof IndexDropTarget) { return; }
-        operationOnPosition('add', target.position());
+        target.highlight(indexedPosition);
       },
 
       removeHighlight: (indexedPosition, target) => {
-        if (target instanceof IndexDropTarget) { return; }
-        operationOnPosition('remove', target.position());
+        target.removeHighlight(indexedPosition);
       }
     }
 
