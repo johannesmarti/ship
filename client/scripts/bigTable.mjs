@@ -142,6 +142,70 @@ function isHorizontal(type) {
   console.assert(false, `position type should be 'fixed', 'rowHierarchy' or 'columnHierarchy', but is '${type}'`);
 }
 
+class DimensionDragArea {
+  constructor(position) {
+    this._position = position;
+  }
+
+  position() { return this._position; }
+
+  equals(other) {
+    return other instanceof DimensionDragArea &&
+           this.position().equals(other.position());
+  }
+
+  accept(visitor) { return visitor.visitDimensionDragArea(this.position()); }
+}
+
+class IndexDragArea {
+  constructor(indexedPosition) {
+    this._indexedPosition = indexedPosition;
+  }
+
+  indexedPosition() { return this._indexedPosition; }
+
+  equals(other) {
+    return other instanceof IndexDragArea &&
+           this.indexedPosition().equals(other.indexedPosition());
+  }
+
+  accept(visitor) { return visitor.visitIndexDragArea(this.indexedPosition()); }
+}
+
+class DimensionDropTarget {
+  constructor(position) {
+    this._position = position;
+  }
+
+  position() { return this._position; }
+
+  equals(other) {
+    return other instanceof DimensionDropTarget &&
+           this.position().equals(other.position());
+  }
+
+  accept(visitor) {
+    return visitor.visitDimensionDropTarget(this.position());
+  }
+}
+
+class IndexDropTarget {
+  constructor(index) {
+    this._index = index;
+  }
+
+  index() { return this._index; }
+
+  equals(other) {
+    return other instanceof IndexDropTarget &&
+           this.index() === other.index();
+  }
+
+  accept(visitor) {
+    return visitor.visitIndexDropTarget(this.index());
+  }
+}
+
 export class BigTable {
   constructor(data, arrangement) {
     this._data = data;
@@ -326,144 +390,6 @@ export class BigTable {
       }
     }
 
-    class DimensionDragArea {
-      constructor(position) {
-        this._position = position;
-      }
-
-      position() { return this._position; }
-
-      equals(other) {
-        return other instanceof DimensionDragArea &&
-               this.position().equals(other.position());
-      }
-
-      setDragging() {
-        for (const cell of dragIndex.elementsAtPosition(this.position())) {
-          cell.classList.add('dragging');
-        }
-      }
-
-      removeDragging() {
-        for (const cell of dragIndex.elementsAtPosition(this.position())) {
-          cell.classList.remove('dragging');
-        }
-      }
-    }
-
-    class IndexDragArea {
-      constructor(indexedPosition) {
-        this._indexedPosition = indexedPosition;
-      }
-
-      indexedPosition() { return this._indexedPosition; }
-
-      equals(other) {
-        return other instanceof IndexDragArea &&
-               this.indexedPosition().equals(other.indexedPosition());
-      }
-
-      setDragging() {
-        for (const cell of elementsAtIndexedPosition(this.indexedPosition())) {
-          cell.classList.add('dragging');
-        }
-      }
-
-      removeDragging() {
-        for (const cell of elementsAtIndexedPosition(this.indexedPosition())) {
-          cell.classList.remove('dragging');
-        }
-      }
-    }
-
-    class DimensionDropTarget {
-      constructor(position) {
-        this._position = position;
-      }
-
-      position() { return this._position; }
-
-      equals(other) {
-        return other instanceof DimensionDropTarget &&
-               this.position().equals(other.position());
-      }
-
-      canDropAt(indexedPosition) {
-        return hierarchization.isMovable(indexedPosition.position(),
-                                         this.position());
-      }
-
-      performDrop(indexedPosition) {
-        const newHierarchization = hierarchization.move(
-            indexedPosition.position(),
-            this.position(),
-            indexedPosition.index());
-        const newArrangement = arrangement.updateHierarchization(newHierarchization);
-        div.replaceWith(bigTable.updateArrangement(newArrangement).render());
-      }
-
-      determineDragArea(indexedPosition) {
-        return new DimensionDragArea(indexedPosition.position());
-      }
-
-      highlight(indexedPosition) {
-        operationOnPosition('add', this.position());
-      }
-
-      removeHighlight(indexedPosition) {
-        operationOnPosition('remove', this.position());
-      }
-    }
-
-    class IndexDropTarget {
-      constructor(index) {
-        this._index = index;
-      }
-
-      index() { return this._index; }
-
-      equals(other) {
-        return other instanceof IndexDropTarget &&
-               this.index() === other.index();
-      }
-
-      canDropAt(indexedPosition) {
-        const position = indexedPosition.position();
-        // TODO: Here we actually know that the position needs to be not
-        // a fixed index. Thus, the call to orderOfPosition is a little
-        // too general.
-        const order = hierarchization.orderOfPosition(position);
-        return virtualizer.isMovable(order,
-                                     indexedPosition.index(), this.index());
-      }
-
-      performDrop(indexedPosition) {
-        const position = indexedPosition.position();
-        // TODO: Same as above, we know that we are fixed.
-        const order = hierarchization.orderOfPosition(position);
-        const newVirtualizer = virtualizer.move(order,
-            indexedPosition.index(), this.index());
-        const newArrangement = arrangement.updateVirtualizer(newVirtualizer);
-        div.replaceWith(bigTable.updateArrangement(newArrangement).render());
-      }
-
-      determineDragArea(indexedPosition) {
-        return new IndexDragArea(indexedPosition);
-      }
-
-      highlight(indexedPosition) {
-        const targetIndexedPosition =
-            new IndexedPosition(indexedPosition.position(), this.index());
-        operationOnIndexedPosition('add', targetIndexedPosition);
-      }
-
-      removeHighlight(indexedPosition) {
-        const targetIndexedPosition =
-            new IndexedPosition(indexedPosition.position(), this.index());
-        operationOnIndexedPosition('remove', targetIndexedPosition);
-      }
-    }
-
     function determineHorizontalOffset(event, rectangle) {
       const xOffset = event.clientX - rectangle.left;
       return xOffset < rectangle.width / 2 ? 0 : 1;
@@ -473,12 +399,12 @@ export class BigTable {
       const yOffset = event.clientY - rectangle.top;
       return yOffset < rectangle.height / 2 ? 0 : 1;
     }
-    
+
     function determineDropTarget(dragPosition, event) {
       const target = event.target.closest('th');
       if (target === null) { return null; }
       const overIndexedPosition = dragIndex.valueOfElement(target);
-      if (overIndexedPosition === null) { 
+      if (overIndexedPosition === null) {
         const unitPosition = unitIndex.positionOfElement(target);
         if (unitPosition === null) return null;
         else return new DimensionDropTarget(unitPosition);
@@ -571,11 +497,33 @@ export class BigTable {
       }
     }
 
+    const getDragAreaElementsVisitor = {
+      visitDimensionDragArea: (position) => {
+        return dragIndex.elementsAtPosition(position);
+      },
+      visitIndexDragArea: (indexedPosition) => {
+        return elementsAtIndexedPosition(indexedPosition);
+      }
+    };
+
+    const highlightDropVisitor = (operation, indexedPosition) => {
+      return {
+        visitDimensionDropTarget: (position) => {
+          operationOnPosition(operation, position);
+        },
+        visitIndexDropTarget: (index) => {
+          const targetIndexedPosition =
+              new IndexedPosition(indexedPosition.position(), index);
+          operationOnIndexedPosition(operation, targetIndexedPosition);
+        }
+      };
+    };
+
     const dragNDropStructure = {
       setDraggable: () => {
         for (let cell of dragIndex.allElements()) {
           cell.setAttribute('draggable', 'true');
-        } 
+        }
       },
 
       determineDragItem: (event) => {
@@ -587,11 +535,15 @@ export class BigTable {
       },
 
       setDragging: (dragArea) => {
-        dragArea.setDragging();
+        for (const cell of dragArea.accept(getDragAreaElementsVisitor)) {
+          cell.classList.add('dragging');
+        }
       },
 
       removeDragging: (dragArea) => {
-        dragArea.removeDragging();
+        for (const cell of dragArea.accept(getDragAreaElementsVisitor)) {
+          cell.classList.remove('dragging');
+        }
       },
 
       determineTarget: (indexedPosition, event) => {
@@ -599,23 +551,69 @@ export class BigTable {
       },
 
       isDroppable: (indexedPosition, target) => {
-        return target.canDropAt(indexedPosition);
+        const canDropAtVisitor = {
+          visitDimensionDropTarget: (position) => {
+            return hierarchization.isMovable(indexedPosition.position(),
+                                             position);
+          },
+          visitIndexDropTarget: (index) => {
+            const position = indexedPosition.position();
+            // TODO: Here we actually know that the position needs to be not
+            // a fixed index. Thus, the call to orderOfPosition is a little
+            // too general.
+            const order = hierarchization.orderOfPosition(position);
+            return virtualizer.isMovable(order, indexedPosition.index(),
+                                                index);
+          }
+        };
+        return target.accept(canDropAtVisitor);
       },
 
       performDrop: (indexedPosition, target) => {
-        target.performDrop(indexedPosition);
+        const dropVisitor = {
+          visitDimensionDropTarget: (position) => {
+            const newHierarchization = hierarchization.move(
+                                        indexedPosition.position(),
+                                        position,
+                                        indexedPosition.index());
+            const newArrangement = arrangement.updateHierarchization(
+                                        newHierarchization);
+            const newBigTable = bigTable.updateArrangement(newArrangement);
+            div.replaceWith(newBigTable.render());
+          },
+          visitIndexDropTarget: (index) => {
+            const position = indexedPosition.position();
+            // TODO: Same as above, we know that we are fixed.
+            const order = hierarchization.orderOfPosition(position);
+            const newVirtualizer = virtualizer.move(order,
+                indexedPosition.index(), index);
+            const newArrangement = arrangement.updateVirtualizer(
+                                        newVirtualizer);
+            const newBigTable = bigTable.updateArrangement(newArrangement);
+            div.replaceWith(newBigTable.render());
+          }
+        };
+        target.accept(dropVisitor);
       },
 
       dragAreaOfDrop: (indexedPosition, target) => {
-        return target.determineDragArea(indexedPosition);
+        const determineDragAreaOfDropVisitor = {
+          visitDimensionDropTarget: (position) => {
+            return new DimensionDragArea(indexedPosition.position());
+          },
+          visitIndexDropTarget: (index) => {
+            return new IndexDragArea(indexedPosition);
+          }
+        };
+        return target.accept(determineDragAreaOfDropVisitor);
       },
 
       highlight: (indexedPosition, target) => {
-        target.highlight(indexedPosition);
+        target.accept(highlightDropVisitor('add', indexedPosition));
       },
 
       removeHighlight: (indexedPosition, target) => {
-        target.removeHighlight(indexedPosition);
+        target.accept(highlightDropVisitor('remove', indexedPosition));
       }
     }
 
