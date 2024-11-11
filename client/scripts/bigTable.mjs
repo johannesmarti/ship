@@ -205,6 +205,12 @@ class IndexDropTarget {
   }
 }
 
+class BinDropTarget {
+  equals(other) { return other instanceof BinDropTarget; }
+
+  accept(visitor) { return visitor.visitBinDropTarget(); }
+}
+
 export class BigTable {
   constructor(data, arrangement) {
     this._data = data;
@@ -233,6 +239,7 @@ export class BigTable {
   }
 
   render() {
+    const star = "\u2605";
     // maybe a lot of the work here should be put into Arrangement
     const schema = this.virtualSchema();
     const arrangement = this.arrangement();
@@ -259,7 +266,7 @@ export class BigTable {
 
     // draw fixed entries
     if (hierarchization.fixed().length === 0) {
-      const cell = h("th", "\u2605");
+      const cell = h("th", star);
       unitIndex.add(cell, Position.fixed(0));
       frow.append(cell);
     } else {
@@ -291,6 +298,7 @@ export class BigTable {
 
     const rowLength = Math.max(1, rowHierarchy.length);
     const columnLength = Math.max(1, columnHierarchy.length);
+    let binElement;
     // draw column headings
     {
       const rowArray = new Array(columnLength);
@@ -301,13 +309,13 @@ export class BigTable {
       }
       // generate top left cell:
       {
-        const cell = h("td")
-        cell.colSpan = rowLength;
-        cell.rowSpan = columnLength;
-        rowArray[0].append(cell);
+        binElement = h("th")
+        binElement.colSpan = rowLength;
+        binElement.rowSpan = columnLength;
+        rowArray[0].append(binElement);
       }
       if (columnHierarchy.length === 0) {
-        const cell = h("th", "\u2605");
+        const cell = h("th", star);
         unitIndex.add(cell, Position.column(0));
         rowArray[0].append(cell);
       } else {
@@ -340,7 +348,7 @@ export class BigTable {
     // draw data rows with iterator
     if (rowHierarchy.length === 0) {
         const row = h("tr");
-        const cell = h("th", "\u2605");
+        const cell = h("th", star);
         unitIndex.add(cell, Position.row(0));
         row.append(cell);
         drawDataPartOfRow(row, []);
@@ -363,12 +371,12 @@ export class BigTable {
         tbody.append(row);
       } while (rowIterator.increment());
     }
-    this.addDragNDrop(dragIndex, unitIndex, div);
+    this.addDragNDrop(dragIndex, unitIndex, binElement, div);
     return div;
   }
 
   // maybe these should only be attached at the next render
-  addDragNDrop(dragIndex, unitIndex, div) {
+  addDragNDrop(dragIndex, unitIndex, binElement, div) {
     const arrangement = this.arrangement();
     const hierarchization = arrangement.hierarchization();
     const virtualizer = arrangement.virtualizer();
@@ -402,6 +410,7 @@ export class BigTable {
     function determineDropTarget(dragPosition, event) {
       const target = event.target.closest('th');
       if (target === null) { return null; }
+      if (target === binElement) { return new BinDropTarget(); }
       const overIndexedPosition = dragIndex.valueOfElement(target);
       if (overIndexedPosition === null) {
         const unitPosition = unitIndex.positionOfElement(target);
@@ -505,16 +514,19 @@ export class BigTable {
       }
     };
 
-    const highlightDropVisitor = (operation, indexedPosition) => {
+    const highlightDropVisitor = (operationName, indexedPosition) => {
       return {
         visitDimensionDropTarget: (position) => {
-          operationOnPosition(operation, position);
+          operationOnPosition(operationName, position);
         },
         visitIndexDropTarget: (index) => {
           const targetIndexedPosition =
               new IndexedPosition(indexedPosition.position(), index);
-          operationOnIndexedPosition(operation, targetIndexedPosition);
-        }
+          operationOnIndexedPosition(operationName, targetIndexedPosition);
+        },
+        visitBinDropTarget: () => {
+          binElement.classList[operationName]('dragover-bin');
+        },
       };
     };
 
@@ -560,6 +572,12 @@ export class BigTable {
             const order = hierarchization.orderOfPosition(position);
             return virtualizer.isMovable(order, indexedPosition.index(),
                                                 index);
+          },
+          visitBinDropTarget: () => {
+            const position = indexedPosition.position();
+            const order = hierarchization.orderOfPosition(position);
+            const index = indexedPosition.index();
+            return virtualizer.isBinable(order, index);
           }
         };
         return target.accept(canDropAtVisitor);
@@ -572,23 +590,26 @@ export class BigTable {
                                         indexedPosition.position(),
                                         position,
                                         indexedPosition.index());
-            const newArrangement = arrangement.updateHierarchization(
-                                        newHierarchization);
-            const newBigTable = bigTable.updateArrangement(newArrangement);
-            div.replaceWith(newBigTable.render());
+            return  arrangement.updateHierarchization( newHierarchization);
           },
           visitIndexDropTarget: (index) => {
             const position = indexedPosition.position();
             const order = hierarchization.orderOfPosition(position);
             const newVirtualizer = virtualizer.move(order,
-                indexedPosition.index(), index);
-            const newArrangement = arrangement.updateVirtualizer(
-                                        newVirtualizer);
-            const newBigTable = bigTable.updateArrangement(newArrangement);
-            div.replaceWith(newBigTable.render());
+                                        indexedPosition.index(), index);
+            return arrangement.updateVirtualizer( newVirtualizer);
+          },
+          visitBinDropTarget: () => {
+            const position = indexedPosition.position();
+            const order = hierarchization.orderOfPosition(position);
+            const index = indexedPosition.index();
+            const newVirtualizer = virtualizer.bin(order, index);
+            return arrangement.updateVirtualizer(newVirtualizer);
           }
         };
-        target.accept(dropVisitor);
+        const newArrangement = target.accept(dropVisitor);
+        const newBigTable = bigTable.updateArrangement(newArrangement);
+        div.replaceWith(newBigTable.render());
       },
 
       dragAreaOfDrop: (indexedPosition, target) => {
@@ -597,6 +618,9 @@ export class BigTable {
             return new DimensionDragArea(indexedPosition.position());
           },
           visitIndexDropTarget: (index) => {
+            return new IndexDragArea(indexedPosition);
+          },
+          visitBinDropTarget: () => {
             return new IndexDragArea(indexedPosition);
           }
         };

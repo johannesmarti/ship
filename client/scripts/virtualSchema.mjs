@@ -243,6 +243,7 @@ is of length ${thisLength}`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
+        const remapper = descriptor.remapper;
         console.assert(index < remapper.length, `fromIndex ${index}
 needs to be in the remapper of length ${remapper.length}`);
         return remapper.length > 1;

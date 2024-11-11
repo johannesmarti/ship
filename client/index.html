@@ -36,6 +36,8 @@
         cursor: grab;
     }
     
+    /* TODO: I should understand these an make sure that maybe the whole
+             dimension follows the mouse */
     /* While dragging */
     [draggable="true"]:active {
         cursor: grabbing;
@@ -44,18 +46,21 @@
       opacity: 0.5;
     }
     .dragover-left {
-      border-left: 2px solid red;
+      border-left: 2px solid green;
     }
     .dragover-right {
-      border-right: 2px solid red;
+      border-right: 2px solid green;
     }
     .dragover-top {
-      border-top: 2px solid red;
+      border-top: 2px solid green;
     }
     .dragover-bottom {
-      border-bottom: 2px solid red;
+      border-bottom: 2px solid green;
     }
-    .dragover-unit{
+    .dragover-unit {
+      border: 2px solid green;
+    }
+    .dragover-bin {
       border: 2px solid red;
     }
   </style>
