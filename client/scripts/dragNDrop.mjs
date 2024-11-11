@@ -26,6 +26,11 @@ export function attach(structure, element) {
   structure.setDraggable();
 
   element.addEventListener('dragstart', (event) => {
+    // this preventDefault is needed because otherwise firefox seems to
+    // execute dragover somtimes before dragstart has finished. This is,
+    // according to ChatGPT, against the standard. Too bad.
+    // event.preventDefault();
+    structure.onDragStart();
     dragItem = structure.determineDragItem(event);
     dragging = structure.initialDragArea(dragItem);
     structure.setDragging(dragging);
@@ -34,10 +39,9 @@ export function attach(structure, element) {
   });
 
   element.addEventListener('dragover', (event) => {
+    event.preventDefault();
     console.assert(dragItem !== null, `there is a drag item on dragover event`);
     console.assert(dragging !== null, `there is a dragging on dragover event`);
-    // I do not understand why this preventDefault is needed
-    event.preventDefault();
 
     const newTarget = structure.determineTarget(dragItem, event);
     if (newTarget === null) {
@@ -74,6 +78,7 @@ export function attach(structure, element) {
   });
 
   element.addEventListener('dragend', (event) => {
+    structure.onDragEnd();
     if (target !== null) {
       structure.removeHighlight(dragItem, target);
       target = null;

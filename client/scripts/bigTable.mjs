@@ -309,7 +309,9 @@ export class BigTable {
       }
       // generate top left cell:
       {
-        binElement = h("th")
+        binElement = h("th", "BIN");
+        binElement.classList.add('hidden');
+        binElement.classList.add('bin-element');
         binElement.colSpan = rowLength;
         binElement.rowSpan = columnLength;
         rowArray[0].append(binElement);
@@ -531,6 +533,14 @@ export class BigTable {
     };
 
     const dragNDropStructure = {
+      onDragStart: () => {
+          binElement.classList.remove('hidden');
+      },
+
+      onDragEnd: () => {
+          binElement.classList.add('hidden');
+      },
+
       setDraggable: () => {
         for (let cell of dragIndex.allElements()) {
           cell.setAttribute('draggable', 'true');
@@ -575,6 +585,7 @@ export class BigTable {
           },
           visitBinDropTarget: () => {
             const position = indexedPosition.position();
+            if (position.type() === 'fixed') { return false; }
             const order = hierarchization.orderOfPosition(position);
             const index = indexedPosition.index();
             return virtualizer.isBinable(order, index);
