@@ -215,7 +215,7 @@ export class Hierarchization {
   orderOfPosition(position) {
     switch (position.type()) {
       case 'fixed':
-        return this._fixed[position.offset()].fixedIndex();
+        return this._fixed[position.offset()].order();
       case 'rowHierarchy':
         return this._rowHierarchy[position.offset()];
       case 'columnHierarchy':
