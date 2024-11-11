@@ -129,8 +129,7 @@ position ${type}, but got a position with offset '${offset}'`);
   }
 }
 
-// TODO: This is a confusing name
-function isHorizontal(type) {
+function showsHorizontal(type) {
   switch (type) {
     case 'fixed':
       return true;
@@ -376,7 +375,7 @@ export class BigTable {
     const bigTable = this;
     const virtualSchema = this.virtualSchema();
 
-    // Maybe indexedPositoin make only sense for drag elements that are
+    // Maybe indexedPositions make only sense for drag elements that are
     // not fixed and thus come from one of the hierarchies.
     function *elementsAtIndexedPosition(indexedPosition) {
       const position = indexedPosition.position();
@@ -423,7 +422,7 @@ export class BigTable {
                         determineHorizontalOffset(event, boundingRectangle));
         }
       }
-      const offset = isHorizontal(overPosition.type()) ?
+      const offset = showsHorizontal(overPosition.type()) ?
                         determineHorizontalOffset(event, boundingRectangle) :
                         determineVerticalOffset(event, boundingRectangle);
       const dropPosition = new Position(overPosition.type(),
@@ -433,7 +432,7 @@ export class BigTable {
 
     function operationOnPosition(operationName, position) {
       if (hierarchization.isPosition(position)) {
-        if (isHorizontal(position.type())) {
+        if (showsHorizontal(position.type())) {
           for (const cell of dragIndex.elementsAtPosition(position)) {
             cell.classList[operationName]('dragover-left');
           }
@@ -451,7 +450,7 @@ export class BigTable {
           }
         } else { // we are a dragPosition
           const mutating = new Position(type, offset - 1);
-          if (isHorizontal(type)) {
+          if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(mutating)) {
               cell.classList[operationName]('dragover-right');
             }
@@ -472,7 +471,7 @@ export class BigTable {
       const lengthOfOrder = virtualizer.lengthAtOrder(order);
       const index = indexedPosition.index();
       if (index < lengthOfOrder) {
-        if (isHorizontal(position.type())) {
+        if (showsHorizontal(position.type())) {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
             cell.classList[operationName]('dragover-top');
           }
@@ -481,9 +480,9 @@ export class BigTable {
             cell.classList[operationName]('dragover-left');
           }
         }
-      } else if (index == lengthOfOrder) {
+      } else if (index === lengthOfOrder) {
         const mutating = new IndexedPosition(position, index - 1);
-        if (isHorizontal(position.type())) {
+        if (showsHorizontal(position.type())) {
           for (const cell of elementsAtIndexedPosition(mutating)) {
             cell.classList[operationName]('dragover-bottom');
           }
@@ -558,9 +557,6 @@ export class BigTable {
           },
           visitIndexDropTarget: (index) => {
             const position = indexedPosition.position();
-            // TODO: Here we actually know that the position needs to be not
-            // a fixed index. Thus, the call to orderOfPosition is a little
-            // too general.
             const order = hierarchization.orderOfPosition(position);
             return virtualizer.isMovable(order, indexedPosition.index(),
                                                 index);
@@ -583,7 +579,6 @@ export class BigTable {
           },
           visitIndexDropTarget: (index) => {
             const position = indexedPosition.position();
-            // TODO: Same as above, we know that we are fixed.
             const order = hierarchization.orderOfPosition(position);
             const newVirtualizer = virtualizer.move(order,
                 indexedPosition.index(), index);
