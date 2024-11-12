@@ -42,24 +42,42 @@ if some of the things below are wieder */
     .dragging {
       opacity: 0.5;
     }
+    .dragover-thin-left {
+      box-shadow: inset 0.1em 0 #0060B0;
+    }
+    .dragover-thin-right {
+      box-shadow: inset -0.1em 0 #0060B0;
+    }
+    .dragover-thin-top {
+      box-shadow: inset 0 0.1em #0060B0;
+    }
+    .dragover-thin-bottom {
+      box-shadow: inset 0 -0.1em #0060B0;
+    }
     .dragover-left {
-      border-left: 2px solid #0060B0;
+      box-shadow: inset 0.2em 0 #0060B0;
     }
     .dragover-right {
-      border-right: 2px solid #0060B0;
+      box-shadow: inset -0.2em 0 #0060B0;
     }
     .dragover-top {
-      border-top: 2px solid #0060B0;
+      box-shadow: inset 0 0.2em #0060B0;
     }
     .dragover-bottom {
-      border-bottom: 2px solid #0060B0;
+      box-shadow: inset 0 -0.2em #0060B0;
     }
     .dragover-unit {
-      border: 2px solid #0060B0;
+      box-shadow: inset 0.2em 0.2em #0060B0,
+                  inset -0.2em -0.2em #0060B0;
     }
     .dragover-bin {
-      border: 2px solid green;
+      box-shadow: inset 0.2em 0.2em green,
+                  inset -0.2em -0.2em green;
     }
+/*
+    .dragover-bin {
+      border: 2px solid green;
+    }*/
     .bin-element {
       color: green;
       opacity: 0.5;
