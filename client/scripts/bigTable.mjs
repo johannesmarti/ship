@@ -331,6 +331,7 @@ export class BigTable {
             const dimension = schema.dimensionAtOrder(order);
             const cell = createHeaderCell(order, dimension, index);
             cell.colSpan = multiplier;
+            cell.classList.add('soft');
             dragIndex.add(cell, IndexedPosition.column(k, index));
             rowArray[k].append(cell);
             multiplier *= dimension.numIndices();

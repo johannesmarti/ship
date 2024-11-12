@@ -6,30 +6,27 @@
 
   <style>
     html {
-      font-size: 36px;
     }
     body {
-      font-size: 16px;
-      line-height: 1rem;
-    }
-    * {
-      line-height: 1rem;
     }
     table {
       border-collapse: collapse;
-      yourmomtable-layout: fixed;
     }
-    td,th {
-      border: 1px solid #ccc;
-      padding: 0 1em;
+    th, td {
+      border: 1px solid lightgray;
+      padding: 0.4em;
       text-align: right;
-      width: 7em;
+      white-space: nowrap;
+    }
+    th {
       max-width: 7em;
-      min-width: 7em;
-      height: 1rem;
       text-overflow: ellipsis;
       overflow: hidden;
-      white-space: nowrap;
+      position: relative; /* needed for the boarder magic */
+    }
+    th.soft {
+      max-width: 1em; /* this is a bit of a hack. they still get wider
+if some of the things below are wieder */
     }
     /* Normal state (draggable) */
     [draggable="true"] {
