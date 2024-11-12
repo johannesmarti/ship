@@ -442,38 +442,56 @@ export class BigTable {
       return new DimensionDropTarget(dropPosition);
     }
 
+    // TODO: Could make this nicer:
     function operationOnPosition(operationName, position) {
-      if (hierarchization.isPosition(position)) {
-        if (showsHorizontal(position.type())) {
-          for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList[operationName]('dragover-left');
-          }
-        } else {
-          for (const cell of dragIndex.elementsAtPosition(position)) {
-            cell.classList[operationName]('dragover-top');
-          }
-        }
-      } else if (hierarchization.isDropPosition(position)) {
-        const type = position.type();
-        const offset = position.offset();
-        if (offset === 0) { // we are a unitPosition
+      const type = position.type();
+      const offset = position.offset();
+      const length = hierarchization.arrayOfType(type).length;
+      if (offset === 0) {
+        if (length === 0) {
           for (const cell of unitIndex.elementsAtPosition(position)) {
             cell.classList[operationName]('dragover-unit');
           }
-        } else { // we are a dragPosition
-          const mutating = new Position(type, offset - 1);
+        } else {
           if (showsHorizontal(type)) {
-            for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList[operationName]('dragover-right');
+            for (const cell of dragIndex.elementsAtPosition(position)) {
+              cell.classList[operationName]('dragover-left');
             }
           } else {
-            for (const cell of dragIndex.elementsAtPosition(mutating)) {
-              cell.classList[operationName]('dragover-bottom');
+            for (const cell of dragIndex.elementsAtPosition(position)) {
+              cell.classList[operationName]('dragover-top');
             }
           }
         }
       } else {
-        console.assert(false, `highlighting on invalid position: ${position}`);
+        const before = new Position(type, offset - 1);
+        if (position.offset() === length) {
+          if (showsHorizontal(type)) {
+            for (const cell of dragIndex.elementsAtPosition(before)) {
+              cell.classList[operationName]('dragover-right');
+            }
+          } else {
+            for (const cell of dragIndex.elementsAtPosition(before)) {
+              cell.classList[operationName]('dragover-bottom');
+            }
+          }
+        } else {
+          if (showsHorizontal(type)) {
+            for (const cell of dragIndex.elementsAtPosition(before)) {
+              cell.classList[operationName]('dragover-thin-right');
+            }
+            for (const cell of dragIndex.elementsAtPosition(position)) {
+              cell.classList[operationName]('dragover-thin-left');
+            }
+          } else {
+            for (const cell of dragIndex.elementsAtPosition(before)) {
+              cell.classList[operationName]('dragover-thin-bottom');
+            }
+            for (const cell of dragIndex.elementsAtPosition(position)) {
+              cell.classList[operationName]('dragover-thin-top');
+            }
+          }
+        }
       }
     }
 
@@ -482,7 +500,7 @@ export class BigTable {
       const order = hierarchization.orderOfPosition(position);
       const lengthOfOrder = virtualizer.lengthAtOrder(order);
       const index = indexedPosition.index();
-      if (index < lengthOfOrder) {
+      if (index === 0) {
         if (showsHorizontal(position.type())) {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
             cell.classList[operationName]('dragover-top');
@@ -492,19 +510,35 @@ export class BigTable {
             cell.classList[operationName]('dragover-left');
           }
         }
-      } else if (index === lengthOfOrder) {
-        const mutating = new IndexedPosition(position, index - 1);
-        if (showsHorizontal(position.type())) {
-          for (const cell of elementsAtIndexedPosition(mutating)) {
-            cell.classList[operationName]('dragover-bottom');
+      } else {
+        const before = new IndexedPosition(position, index - 1);
+        if (index === lengthOfOrder) {
+          if (showsHorizontal(position.type())) {
+            for (const cell of elementsAtIndexedPosition(before)) {
+              cell.classList[operationName]('dragover-bottom');
+            }
+          } else {
+            for (const cell of elementsAtIndexedPosition(before)) {
+              cell.classList[operationName]('dragover-right');
+            }
           }
         } else {
-          for (const cell of elementsAtIndexedPosition(mutating)) {
-            cell.classList[operationName]('dragover-right');
+          if (showsHorizontal(position.type())) {
+            for (const cell of elementsAtIndexedPosition(before)) {
+              cell.classList[operationName]('dragover-thin-bottom');
+            }
+            for (const cell of elementsAtIndexedPosition(indexedPosition)) {
+              cell.classList[operationName]('dragover-thin-top');
+            }
+          } else {
+            for (const cell of elementsAtIndexedPosition(before)) {
+              cell.classList[operationName]('dragover-thin-right');
+            }
+            for (const cell of elementsAtIndexedPosition(indexedPosition)) {
+              cell.classList[operationName]('dragover-thin-left');
+            }
           }
         }
-      } else {
-        console.assert(false, `highlighting on invalid indexed position: ${indexedPosition}`);
       }
     }
 
