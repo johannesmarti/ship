@@ -26,12 +26,12 @@ export function attach(structure, element) {
   structure.setDraggable();
 
   element.addEventListener('dragstart', (event) => {
-    // this preventDefault is needed because otherwise firefox seems to
-    // execute dragover somtimes before dragstart has finished. This is,
-    // according to ChatGPT, against the standard. Too bad.
-    // event.preventDefault();
     structure.onDragStart();
     dragItem = structure.determineDragItem(event);
+    if (dragItem === null) {
+      console.log("dragstart on unexpected item");
+      return;
+    }
     dragging = structure.initialDragArea(dragItem);
     structure.setDragging(dragging);
     console.assert(dragItem !== null, `there is a drag item at end of dragstart`);
@@ -39,9 +39,11 @@ export function attach(structure, element) {
   });
 
   element.addEventListener('dragover', (event) => {
+    if (dragItem === null || dragging === null) {
+      console.log("dragover without successfull dragstart");
+      return;
+    }
     event.preventDefault();
-    console.assert(dragItem !== null, `there is a drag item on dragover event`);
-    console.assert(dragging !== null, `there is a dragging on dragover event`);
 
     const newTarget = structure.determineTarget(dragItem, event);
     if (newTarget === null) {
@@ -69,9 +71,10 @@ export function attach(structure, element) {
   });
 
   element.addEventListener('drop', (event) => {
-    console.assert(dragItem !== null, `there is a drag item on drop event`);
-    console.assert(dragging !== null, `there is a dragging on drop event`);
-
+    if (dragItem === null || dragging === null) {
+      console.log("drop without successfull dragstart");
+      return;
+    }
     if (target !== null) {
       structure.performDrop(dragItem, target)
     }
@@ -85,14 +88,11 @@ export function attach(structure, element) {
       return;
     }
     if (dragItem !== null) {
-      //console.log("dragend without dragItem");
-      console.assert(dragging !== null,
-          `dragItem and dragging are in sync at dragend`);
       dragItem = null;
+    }
+    if (dragging !== null) {
       structure.removeDragging(dragging);
       dragging = null;
     }
-    console.assert(dragging === null,
-        `dragItem and dragging are in sync at dragend`);
   });
 }
