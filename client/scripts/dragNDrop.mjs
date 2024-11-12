@@ -26,12 +26,12 @@ export function attach(structure, element) {
   structure.setDraggable();
 
   element.addEventListener('dragstart', (event) => {
-    structure.onDragStart();
     dragItem = structure.determineDragItem(event);
     if (dragItem === null) {
       console.log("dragstart on unexpected item");
       return;
     }
+    structure.onDragStart(dragItem);
     dragging = structure.initialDragArea(dragItem);
     structure.setDragging(dragging);
     console.assert(dragItem !== null, `there is a drag item at end of dragstart`);
@@ -85,7 +85,6 @@ export function attach(structure, element) {
     if (target !== null) {
       structure.removeHighlight(dragItem, target);
       target = null;
-      return;
     }
     if (dragItem !== null) {
       dragItem = null;

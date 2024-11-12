@@ -532,9 +532,19 @@ export class BigTable {
       };
     };
 
+    const isBinable = (indexedPosition) => {
+      const position = indexedPosition.position();
+      if (position.type() === 'fixed') { return false; }
+      const order = hierarchization.orderOfPosition(position);
+      const index = indexedPosition.index();
+      return virtualizer.isBinable(order, index);
+    }
+
     const dragNDropStructure = {
-      onDragStart: () => {
+      onDragStart: (dragItem) => {
+        if (isBinable(dragItem)) {
           binElement.classList.remove('hidden');
+        }
       },
 
       onDragEnd: () => {
@@ -584,11 +594,7 @@ export class BigTable {
                                                 index);
           },
           visitBinDropTarget: () => {
-            const position = indexedPosition.position();
-            if (position.type() === 'fixed') { return false; }
-            const order = hierarchization.orderOfPosition(position);
-            const index = indexedPosition.index();
-            return virtualizer.isBinable(order, index);
+            return isBinable(indexedPosition);
           }
         };
         return target.accept(canDropAtVisitor);
