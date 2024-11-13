@@ -1,6 +1,37 @@
 import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer } from './virtualSchema.mjs';
 
+export class IndexedPosition {
+  constructor(position, index) {
+    this._position = position;
+    this._index = index;
+  }
+
+  static fixed(offset, index) {
+    return new IndexedPosition(Position.fixed(offset), index);
+  }
+
+  static row(offset, index) {
+    return new IndexedPosition(Position.row(offset), index);
+  }
+
+  static column(offset, index) {
+    return new IndexedPosition(Position.column(offset), index);
+  }
+
+  position() { return this._position; }
+  index() { return this._index; }
+
+  equals(otherIndexedPosition) {
+    return this.index() == otherIndexedPosition.index() &&
+           this.position().equals(otherIndexedPosition.position());
+  }
+
+  toString() {
+    return `${this.position()} with index ${this.index()}`;
+  }
+}
+
 export class Arrangement {
   // could take the base schema here and construct the virtual schema
   // myself
@@ -53,5 +84,32 @@ export class Arrangement {
 
   updateVirtualizer(newVirtualizer) {
     return new Arrangement(this.hierarchization(), newVirtualizer);
+  }
+
+  // TODO: It might be that all the column move operations are better
+  // here than at the virtualizer. The reason is that they also take
+  // some stuff from the hierarchization into consideration. This is
+  // noted by the implementation of isBinnable in bigTable, which is,
+  // unfortunately, non-trivial.
+  isBinable(indexedPosition) {
+    const position = indexedPosition.position();
+    if (position.type() === 'fixed') { return false; }
+    const index = indexedPosition.index();
+    const order = this.hierarchization().orderOfPosition(position);
+    return this.virtualizer().isBinable(order, index);
+  }
+
+  bin(indexedPosition) {
+    console.assert(this.isBinable(indexedPosition),
+      `trying to bin indexed position ${indexedPosition}, but operation is not possible`);
+    const position = indexedPosition.position();
+    const order = this.hierarchization().orderOfPosition(position);
+    const index = indexedPosition.index();
+    const newVirtualizer = this.virtualizer().bin(order, index);
+    return this.updateVirtualizer(newVirtualizer);
+  }
+
+  unbinnableElements() {
+
   }
 }

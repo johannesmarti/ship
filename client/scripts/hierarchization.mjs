@@ -33,6 +33,8 @@ export class Position {
   }
 }
 
+// TODO: This should probabely be called IndexedOrder to be similar to
+// indexedPosition
 class PointedOrder {
   constructor(order, fixedIndex) {
     this._order = order;

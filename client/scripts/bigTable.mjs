@@ -2,6 +2,7 @@ import { Schema } from './schema.mjs';
 import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
 import { attach } from './dragNDrop.mjs';
+import { IndexedPosition } from './arrangement.mjs'
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -43,33 +44,6 @@ class MutableHierarchicalIterator {
       }
       k--;
     } while (k >= 0);
-  }
-}
-
-class IndexedPosition {
-  constructor(position, index) {
-    this._position = position;
-    this._index = index;
-  }
-
-  static fixed(offset, index) {
-    return new IndexedPosition(Position.fixed(offset), index);
-  }
-
-  static row(offset, index) {
-    return new IndexedPosition(Position.row(offset), index);
-  }
-
-  static column(offset, index) {
-    return new IndexedPosition(Position.column(offset), index);
-  }
-
-  position() { return this._position; }
-  index() { return this._index; }
-
-  equals(otherIndexedPosition) {
-    return this.index() == otherIndexedPosition.index() &&
-           this.position().equals(otherIndexedPosition.position());
   }
 }
 
@@ -442,7 +416,7 @@ export class BigTable {
       return new DimensionDropTarget(dropPosition);
     }
 
-    // TODO: Could make this nicer:
+    // TODO: make this nicer:
     function operationOnPosition(operationName, position) {
       const type = position.type();
       const offset = position.offset();
@@ -567,17 +541,9 @@ export class BigTable {
       };
     };
 
-    const isBinable = (indexedPosition) => {
-      const position = indexedPosition.position();
-      if (position.type() === 'fixed') { return false; }
-      const order = hierarchization.orderOfPosition(position);
-      const index = indexedPosition.index();
-      return virtualizer.isBinable(order, index);
-    }
-
     const dragNDropStructure = {
       onDragStart: (dragItem) => {
-        if (isBinable(dragItem)) {
+        if (arrangement.isBinable(dragItem)) {
           binElement.classList.remove('hidden');
         }
       },
@@ -629,7 +595,7 @@ export class BigTable {
                                                 index);
           },
           visitBinDropTarget: () => {
-            return isBinable(indexedPosition);
+            return arrangement.isBinable(indexedPosition);
           }
         };
         return target.accept(canDropAtVisitor);
@@ -652,11 +618,7 @@ export class BigTable {
             return arrangement.updateVirtualizer( newVirtualizer);
           },
           visitBinDropTarget: () => {
-            const position = indexedPosition.position();
-            const order = hierarchization.orderOfPosition(position);
-            const index = indexedPosition.index();
-            const newVirtualizer = virtualizer.bin(order, index);
-            return arrangement.updateVirtualizer(newVirtualizer);
+            return arrangement.bin(indexedPosition);
           }
         };
         const newArrangement = target.accept(dropVisitor);

@@ -256,8 +256,6 @@ needs to be in the remapper of length ${remapper.length}`);
   }
 
   bin(order, index) {
-    console.assert(this.isBinable(order, index),
-      `trying to bin index ${index} in order ${order}, but operation is not possible`);
     const remapper = this._descriptorArray[order].remapper;
     const newDescriptor = {
       type: 'explicit',
