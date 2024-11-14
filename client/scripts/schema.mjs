@@ -10,6 +10,12 @@ class Dimension {
     return new Dimension(spec.name, spec.indices);
   }
 
+  *indices() {
+    for (let index = 0; index < this.numIndices(); index++) {
+      yield index;
+    }
+  }
+
   numIndices() {
     return this._indexNameList.length;
   }

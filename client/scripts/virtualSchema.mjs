@@ -140,6 +140,10 @@ export class Virtualizer {
     return new Virtualizer(descriptorArray);
   }
 
+  descriptorAtOrder(order) {
+    return this._descriptorArray[order];
+  }
+
   checkAgainstSchema(schema) {
     const thisLength = this._descriptorArray.length;
     console.assert(thisLength === schema.numDimensions(), 

@@ -3,6 +3,7 @@ import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
 import { attach } from './dragNDrop.mjs';
 import { IndexedPosition } from './arrangement.mjs'
+import { isBinable, bin, binItems, restore } from './bin.mjs'
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -543,7 +544,7 @@ export class BigTable {
 
     const dragNDropStructure = {
       onDragStart: (dragItem) => {
-        if (arrangement.isBinable(dragItem)) {
+        if (isBinable(virtualizer, hierarchization, dragItem)) {
           binElement.classList.remove('hidden');
         }
       },
@@ -595,7 +596,7 @@ export class BigTable {
                                                 index);
           },
           visitBinDropTarget: () => {
-            return arrangement.isBinable(indexedPosition);
+            return isBinable(virtualizer, hierarchization, indexedPosition);
           }
         };
         return target.accept(canDropAtVisitor);
@@ -608,17 +609,19 @@ export class BigTable {
                                         indexedPosition.position(),
                                         position,
                                         indexedPosition.index());
-            return  arrangement.updateHierarchization( newHierarchization);
+            return arrangement.updateHierarchization(newHierarchization);
           },
           visitIndexDropTarget: (index) => {
             const position = indexedPosition.position();
             const order = hierarchization.orderOfPosition(position);
             const newVirtualizer = virtualizer.move(order,
                                         indexedPosition.index(), index);
-            return arrangement.updateVirtualizer( newVirtualizer);
+            return arrangement.updateVirtualizer(newVirtualizer);
           },
           visitBinDropTarget: () => {
-            return arrangement.bin(indexedPosition);
+            const newVirtualizer = bin(virtualizer, hierarchization,
+                                       indexedPosition);
+            return arrangement.updateVirtualizer(newVirtualizer);
           }
         };
         const newArrangement = target.accept(dropVisitor);
