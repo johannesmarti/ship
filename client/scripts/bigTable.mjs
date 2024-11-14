@@ -284,11 +284,19 @@ export class BigTable {
       }
       // generate top left cell:
       {
-        binElement = h("th", "BIN");
-        binElement.classList.add('hidden');
-        binElement.classList.add('bin-element');
+        binElement = h("th");
         binElement.colSpan = rowLength;
         binElement.rowSpan = columnLength;
+        binElement.classList.add('bin-element');
+        binElement.addEventListener('mouseover', () => {
+          binElement.textContent = "BIN";
+        });
+        binElement.addEventListener('mouseout', () => {
+          binElement.textContent = "";
+        });
+        binElement.addEventListener('click', () => {
+          console.log("bin clicked");
+        });
         rowArray[0].append(binElement);
       }
       if (columnHierarchy.length === 0) {
@@ -545,12 +553,12 @@ export class BigTable {
     const dragNDropStructure = {
       onDragStart: (dragItem) => {
         if (isBinable(virtualizer, hierarchization, dragItem)) {
-          binElement.classList.remove('hidden');
+          binElement.textContent = "BIN";
         }
       },
 
       onDragEnd: () => {
-          binElement.classList.add('hidden');
+          binElement.textContent = "";
       },
 
       setDraggable: () => {

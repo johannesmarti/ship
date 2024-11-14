@@ -28,7 +28,7 @@ export function attach(structure, element) {
   element.addEventListener('dragstart', (event) => {
     dragItem = structure.determineDragItem(event);
     if (dragItem === null) {
-      console.log("dragstart on unexpected item");
+      //console.log("dragstart on unexpected item");
       return;
     }
     structure.onDragStart(dragItem);
@@ -40,7 +40,7 @@ export function attach(structure, element) {
 
   element.addEventListener('dragover', (event) => {
     if (dragItem === null || dragging === null) {
-      console.log("dragover without successfull dragstart");
+      //console.log("dragover without successfull dragstart");
       return;
     }
     event.preventDefault();
@@ -72,7 +72,7 @@ export function attach(structure, element) {
 
   element.addEventListener('drop', (event) => {
     if (dragItem === null || dragging === null) {
-      console.log("drop without successfull dragstart");
+      //console.log("drop without successfull dragstart");
       return;
     }
     if (target !== null) {
