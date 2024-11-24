@@ -295,7 +295,14 @@ export class BigTable {
           binElement.textContent = "";
         });
         binElement.addEventListener('click', () => {
-          console.log("bin clicked");
+          const virtualizer = this.arrangement().virtualizer();
+          const baseSchema = this.data().schema();
+          const items = binItems(virtualizer, baseSchema);
+          showBin(baseSchema, items, (binItem) => {
+            const newVirtualizer = restore(virtualizer, binItem);
+            const newArrangement = arrangement.updateVirtualizer(newVirtualizer);
+            div.replaceWith(this.updateArrangement(newArrangement).render());
+          });
         });
         rowArray[0].append(binElement);
       }
@@ -663,4 +670,65 @@ export class BigTable {
 
     attach(dragNDropStructure, div);
   }
+}
+
+function showBin(baseSchema, binItems, selectedCallback) {
+  const overlay = h("div");
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.background = "rgba(0, 0, 0, 0.8)";
+  overlay.style.display = "flex";
+  overlay.style.justifyContent = "center";
+  overlay.style.alignItems = "center";
+  overlay.style.zIndex = "1000";
+
+  const overlayContent = h("div");
+  overlayContent.style.background = "white";
+  overlayContent.style.padding = "20px";
+  overlayContent.style.borderRadius = "8px";
+  overlayContent.style.width = "80%";
+  overlayContent.style.maxWidth = "500px";
+  overlayContent.style.textAlign = "center";
+
+  const title = h("h2", "BIN");
+  const text = h("p", "Select index to restore:");
+
+  const binDisplay = h("div");
+  binDisplay.style.display = "flex";
+  binDisplay.style.gap = "1em";
+  for (let array of binItems) {
+    const tbody = h("tbody");
+    const table = h("table", tbody);
+    
+    for (let item of array) {
+      const dimension = baseSchema.dimensionAtOrder(item.order());
+      const name = dimension.nameOfIndex(item.baseIndex());
+      const cell = h("th", name);
+      cell.onclick = () => {
+        overlay.remove();
+        selectedCallback(item);
+      }
+      tbody.appendChild(h("tr", cell));
+    }
+    binDisplay.appendChild(table);
+  }
+
+  const closeButton = h("button");
+  closeButton.innerText = "Close";
+  closeButton.style.marginTop = "20px";
+  closeButton.style.padding = "10px 20px";
+  closeButton.style.fontSize = "16px";
+  closeButton.onclick = () => { overlay.remove(); }
+
+  overlayContent.appendChild(title);
+  overlayContent.appendChild(text);
+  overlayContent.appendChild(binDisplay);
+  overlayContent.appendChild(closeButton);
+
+  overlay.appendChild(overlayContent);
+
+  document.body.appendChild(overlay);
 }

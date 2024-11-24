@@ -47,13 +47,14 @@ export class BinItem {
 export function binItems(virtualizer, baseSchema) {
   let result = [];
   for (let order of baseSchema.orders()) {
+    // TODO: Maybe I should only go through order that actually display?
     const descriptor = virtualizer.descriptorAtOrder(order);
-    if (descriptor.type !== `remapper`) continue;
+    if (descriptor.type !== `explicit`) continue;
     const remapper = descriptor.remapper;
     const dimension = baseSchema.dimensionAtOrder(order);
     const binItemsOfOrder = [];
     for (let index of dimension.indices()) {
-      if (remapper.includes(index)) {
+      if (!remapper.includes(index)) {
         binItemsOfOrder.push(new BinItem(order, index));
       }
     }

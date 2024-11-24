@@ -273,6 +273,7 @@ needs to be in the remapper of length ${remapper.length}`);
     const type = descriptor.type;
     switch (type) {
       case 'explicit':
+        const remapper = descriptor.remapper;
         console.assert(toIndex <= remapper.length, `fromIndex ${toIndex} needs to be be smaller or equal to the length ${remapper.length} of the remapper`);
         return true;
       case 'exponential':
@@ -290,8 +291,8 @@ index ${toIndex}, but operation is not possible`);
     const remapper = this._descriptorArray[order].remapper;
     const newDescriptor = {
       type: 'explicit',
-      remapper: [...remapper.slice(0, index), baseIndex,
-                 ...remapper.slice(index + 1)]
+      remapper: [...remapper.slice(0, toIndex), baseIndex,
+                 ...remapper.slice(toIndex)]
     };
     return this.updateAtOrder(order, newDescriptor)
   }
