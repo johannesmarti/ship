@@ -1,7 +1,7 @@
 import { Schema } from './schema.mjs';
 import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
-import { attach } from './dragNDrop.mjs';
+import { attach } from './basicDragNDrop.mjs';
 import { IndexedPosition } from './arrangement.mjs'
 import { isBinable, bin, binItems, restore } from './bin.mjs'
 

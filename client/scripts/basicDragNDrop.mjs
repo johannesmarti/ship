@@ -1,8 +1,10 @@
 /*
 dragNDropStructure:
+    onDragStart: DragItem -> IO
+    onDragEnd: IO
     determineDragItem: dragstartEvent -> dragItem
     determineTarget: dragItem * dragoverEvent -> Maybe(target)
-    droppable: dragItem * target -> Bool
+    isDroppable: dragItem * target -> Bool
 
     initialDragArea: dragItem -> dragArea
     dragAreaOfDrop: dropItem * target -> dragArea
