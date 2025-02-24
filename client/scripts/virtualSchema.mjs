@@ -323,6 +323,25 @@ needs to be in the remapper of length ${remapper.length}`);
     return this.updateAtOrder(order, newDescriptor)
   }
 
+  *allMoveIndices(order, fromIndex) {
+    const descriptor = this._descriptorArray[order];
+    const type = descriptor.type;
+    console.log("type: ", type);
+    switch (type) {
+      case 'explicit':
+        const remapper = descriptor.remapper;
+        console.assert(fromIndex < remapper.length, `fromIndex ${fromIndex}
+needs to be in the remapper of length ${remapper.length}`);
+        for (let i = 0; i <= remapper.length; i++) {
+          if (i !== fromIndex && i !== fromIndex + 1) {
+            yield i;
+          }
+        }
+      default: // just for 'exponential'
+        return; // this will generate the emptyset
+    }
+  }
+
   // TODO: strange method to have
   lengthAtOrder(order) {
     const descriptor = this._descriptorArray[order];

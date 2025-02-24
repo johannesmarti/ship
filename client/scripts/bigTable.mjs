@@ -1,7 +1,8 @@
+import { EqualitySet } from './equalitySet.mjs'
 import { Schema } from './schema.mjs';
 import { Position, Hierarchization } from './hierarchization.mjs';
 import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
-import { attach } from './basicDragNDrop.mjs';
+import { attach } from './dragNDrop.mjs';
 import { IndexedPosition } from './arrangement.mjs'
 import { isBinable, bin, binItems, restore } from './bin.mjs'
 
@@ -557,15 +558,33 @@ export class BigTable {
       };
     };
 
+    let targetSet = null;
+
     const dragNDropStructure = {
       onDragStart: (dragItem) => {
+        targetSet = EqualitySet.empty();
         if (isBinable(virtualizer, hierarchization, dragItem)) {
           binElement.textContent = "BIN";
+          targetSet.add(new BinDropTarget());
         }
+        const fromPosition = dragItem.position();
+        const fromIndex = dragItem.index();
+        const fromOrder = hierarchization.orderOfPosition(fromPosition);
+        for (const index of virtualizer.allMoveIndices(fromOrder, fromIndex)) {
+          targetSet.add(new IndexDropTarget(index));
+        }
+        for (const toPosition of hierarchization.allMoveTargets(fromPosition)) {
+          targetSet.add(new DimensionDropTarget(toPosition));
+        }
+        console.log("targetSet: ", targetSet._array);
+        // TODO: mark all items in the dropSet
       },
 
       onDragEnd: () => {
-          binElement.textContent = "";
+        binElement.textContent = "";
+        // TODO: remove mark from items in the dropSet
+
+        targetSet = null;
       },
 
       setDraggable: () => {
@@ -599,6 +618,7 @@ export class BigTable {
       },
 
       isDroppable: (indexedPosition, target) => {
+        // TODO: just lookup the target in the targetSet
         const canDropAtVisitor = {
           visitDimensionDropTarget: (position) => {
             return hierarchization.isMovable(indexedPosition.position(),

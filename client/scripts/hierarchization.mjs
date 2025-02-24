@@ -293,6 +293,48 @@ export class Hierarchization {
     return true;
   }
 
+  *allMoveTargets(fromPosition) {
+    console.assert(this.isPosition(fromPosition),
+      `position ${fromPosition} is not a position in hierarchization`);
+    const flen = this._fixed.length;
+    const rlen = this._rowHierarchy.length;
+    const clen = this._columnHierarchy.length;
+    switch (fromPosition.type('')) {
+      case 'fixed':
+        if (flen > 1 || clen > 0) {
+          for (let offset = 0; offset <= rlen; offset++) {
+            yield Position.row(offset);
+          }
+        }
+        if (flen > 1 || rlen > 0) {
+          for (let offset = 0; offset <= clen; offset++) {
+            yield Position.column(offset);
+          }
+        }
+        break;
+      case 'rowHierarchy':
+        for (let offset = 0; offset <= flen; offset++) {
+          yield Position.fixed(offset);
+        }
+        if (rlen > 1 || flen > 0) {
+          for (let offset = 0; offset <= clen; offset++) {
+            yield Position.column(offset);
+          }
+        }
+        break;
+      case 'columnHierarchy':
+        for (let offset = 0; offset <= flen; offset++) {
+          yield Position.fixed(offset);
+        }
+        if (clen > 1 || flen > 0) {
+          for (let offset = 0; offset <= rlen; offset++) {
+            yield Position.row(offset);
+          }
+        }
+        break;
+    }
+  }
+
   move(fromPosition, toPosition, fixedIndex) {
     this.checkInternally();
     console.assert(this.isMovable(fromPosition, toPosition),

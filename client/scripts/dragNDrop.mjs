@@ -15,7 +15,7 @@ dragNDropStructure:
     highlight: dragItem * target -> IO
     unhighlight: dragItem * target -> IO
 
-    performDromp: dragItem * target-> IO
+    performDrop: dragItem * target-> IO
 
     target is assumed to implement a reasonable equals
 */
@@ -83,7 +83,6 @@ export function attach(structure, element) {
   });
 
   element.addEventListener('dragend', (event) => {
-    structure.onDragEnd();
     if (target !== null) {
       structure.removeHighlight(dragItem, target);
       target = null;
@@ -95,5 +94,6 @@ export function attach(structure, element) {
       structure.removeDragging(dragging);
       dragging = null;
     }
+    structure.onDragEnd();
   });
 }
