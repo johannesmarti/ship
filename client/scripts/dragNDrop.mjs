@@ -87,13 +87,13 @@ export function attach(structure, element) {
       structure.removeHighlight(dragItem, target);
       target = null;
     }
-    if (dragItem !== null) {
-      dragItem = null;
-    }
     if (dragging !== null) {
       structure.removeDragging(dragging);
       dragging = null;
     }
-    structure.onDragEnd();
+    if (dragItem !== null) {
+      structure.onDragEnd(dragItem);
+      dragItem = null;
+    }
   });
 }

@@ -13,7 +13,7 @@ export class EqualitySet {
   }
 
   elements() {
-    return this._array[Symbol.iterator];
+    return this._array.values();
   }
 
   add(element) {

@@ -434,23 +434,27 @@ export class BigTable {
     }
 
     // TODO: make this nicer:
-    function operationOnPosition(operationName, position) {
+    function operationOnPosition(operationName, prefix, position) {
+      console.log(`${operationName} class ${prefix} on position: `, position);
       const type = position.type();
       const offset = position.offset();
       const length = hierarchization.arrayOfType(type).length;
       if (offset === 0) {
         if (length === 0) {
           for (const cell of unitIndex.elementsAtPosition(position)) {
-            cell.classList[operationName]('dragover-unit');
+            cell.classList[operationName](prefix + '-unit');
+            console.log("class list: ", cell.classList);
           }
         } else {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName]('dragover-left');
+              cell.classList[operationName](prefix + '-left');
+              console.log("class list: ", cell.classList);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName]('dragover-top');
+              cell.classList[operationName](prefix + '-top');
+              console.log("class list: ", cell.classList);
             }
           }
         }
@@ -459,34 +463,40 @@ export class BigTable {
         if (position.offset() === length) {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName]('dragover-right');
+              cell.classList[operationName](prefix + '-right');
+              console.log("class list: ", cell.classList);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName]('dragover-bottom');
+              cell.classList[operationName](prefix + '-bottom');
+              console.log("class list: ", cell.classList);
             }
           }
         } else {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName]('dragover-thin-right');
+              cell.classList[operationName](prefix + '-thin-right');
+              console.log("class list: ", cell.classList);
             }
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName]('dragover-thin-left');
+              cell.classList[operationName](prefix + '-thin-left');
+              console.log("class list: ", cell.classList);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName]('dragover-thin-bottom');
+              cell.classList[operationName](prefix + '-thin-bottom');
+              console.log("class list: ", cell.classList);
             }
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName]('dragover-thin-top');
+              cell.classList[operationName](prefix + '-thin-top');
+              console.log("class list: ", cell.classList);
             }
           }
         }
       }
     }
 
-    function operationOnIndexedPosition(operationName, indexedPosition) {
+    function operationOnIndexedPosition(operationName, prefix, indexedPosition) {
       const position = indexedPosition.position();
       const order = hierarchization.orderOfPosition(position);
       const lengthOfOrder = virtualizer.lengthAtOrder(order);
@@ -494,11 +504,11 @@ export class BigTable {
       if (index === 0) {
         if (showsHorizontal(position.type())) {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-            cell.classList[operationName]('dragover-top');
+            cell.classList[operationName](prefix + '-top');
           }
         } else {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-            cell.classList[operationName]('dragover-left');
+            cell.classList[operationName](prefix + '-left');
           }
         }
       } else {
@@ -506,27 +516,27 @@ export class BigTable {
         if (index === lengthOfOrder) {
           if (showsHorizontal(position.type())) {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName]('dragover-bottom');
+              cell.classList[operationName](prefix + '-bottom');
             }
           } else {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName]('dragover-right');
+              cell.classList[operationName](prefix + '-right');
             }
           }
         } else {
           if (showsHorizontal(position.type())) {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName]('dragover-thin-bottom');
+              cell.classList[operationName](prefix + '-thin-bottom');
             }
             for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-              cell.classList[operationName]('dragover-thin-top');
+              cell.classList[operationName](prefix + '-thin-top');
             }
           } else {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName]('dragover-thin-right');
+              cell.classList[operationName](prefix + '-thin-right');
             }
             for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-              cell.classList[operationName]('dragover-thin-left');
+              cell.classList[operationName](prefix + '-thin-left');
             }
           }
         }
@@ -542,18 +552,18 @@ export class BigTable {
       }
     };
 
-    const highlightDropVisitor = (operationName, indexedPosition) => {
+    const highlightVisitor = (operationName, prefix, indexedPosition) => {
       return {
         visitDimensionDropTarget: (position) => {
-          operationOnPosition(operationName, position);
+          operationOnPosition(operationName, prefix, position);
         },
         visitIndexDropTarget: (index) => {
           const targetIndexedPosition =
               new IndexedPosition(indexedPosition.position(), index);
-          operationOnIndexedPosition(operationName, targetIndexedPosition);
+          operationOnIndexedPosition(operationName, prefix, targetIndexedPosition);
         },
         visitBinDropTarget: () => {
-          binElement.classList[operationName]('dragover-bin');
+          binElement.classList[operationName](prefix + '-bin');
         },
       };
     };
@@ -577,13 +587,16 @@ export class BigTable {
           targetSet.add(new DimensionDropTarget(toPosition));
         }
         console.log("targetSet: ", targetSet._array);
-        // TODO: mark all items in the dropSet
+        for (let target of targetSet.elements()) {
+          target.accept(highlightVisitor('add', 'target', dragItem));
+        }
       },
 
-      onDragEnd: () => {
+      onDragEnd: (dragItem) => {
         binElement.textContent = "";
-        // TODO: remove mark from items in the dropSet
-
+        for (let target of targetSet.elements()) {
+          target.accept(highlightVisitor('remove', 'target', dragItem));
+        }
         targetSet = null;
       },
 
@@ -618,7 +631,7 @@ export class BigTable {
       },
 
       isDroppable: (indexedPosition, target) => {
-        // TODO: just lookup the target in the targetSet
+        // TODO: just use one of the mechanisms
         const canDropAtVisitor = {
           visitDimensionDropTarget: (position) => {
             return hierarchization.isMovable(indexedPosition.position(),
@@ -634,7 +647,11 @@ export class BigTable {
             return isBinable(virtualizer, hierarchization, indexedPosition);
           }
         };
-        return target.accept(canDropAtVisitor);
+        const computed = target.accept(canDropAtVisitor);
+        const cached = targetSet.contains(target);
+        console.assert(cached === computed, `target should be in
+targetSet iff and only it is determied to be a droppable`);
+        return cached;
       },
 
       performDrop: (indexedPosition, target) => {
@@ -680,11 +697,11 @@ export class BigTable {
       },
 
       highlight: (indexedPosition, target) => {
-        target.accept(highlightDropVisitor('add', indexedPosition));
+        target.accept(highlightVisitor('add', 'dragover', indexedPosition));
       },
 
       removeHighlight: (indexedPosition, target) => {
-        target.accept(highlightDropVisitor('remove', indexedPosition));
+        target.accept(highlightVisitor('remove', 'dragover', indexedPosition));
       }
     }
 

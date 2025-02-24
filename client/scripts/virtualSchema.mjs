@@ -326,7 +326,6 @@ needs to be in the remapper of length ${remapper.length}`);
   *allMoveIndices(order, fromIndex) {
     const descriptor = this._descriptorArray[order];
     const type = descriptor.type;
-    console.log("type: ", type);
     switch (type) {
       case 'explicit':
         const remapper = descriptor.remapper;
