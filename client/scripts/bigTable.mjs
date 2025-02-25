@@ -5,6 +5,7 @@ import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
 import { attach } from './dragNDrop.mjs';
 import { IndexedPosition } from './arrangement.mjs'
 import { isBinable, bin, binItems, restore } from './bin.mjs'
+import { Shadow, addShadow, removeShadow } from './shadows.mjs'
 
 export function h(tagName, ...args) {
   const el = document.createElement(tagName);
@@ -434,27 +435,30 @@ export class BigTable {
     }
 
     // TODO: make this nicer:
-    function operationOnPosition(operationName, prefix, position) {
-      console.log(`${operationName} class ${prefix} on position: `, position);
+    function operationOnPosition(operationName, color, position) {
+      //console.log(`${operationName} on position: `, position);
+      const operation = {
+          'add': addShadow,
+          'remove': (cell, where, shadow) => removeShadow(cell, where)
+        }[operationName];
+      const thickShadow = Shadow.thick(color);
+      const thinShadow = Shadow.thin(color);
       const type = position.type();
       const offset = position.offset();
       const length = hierarchization.arrayOfType(type).length;
       if (offset === 0) {
         if (length === 0) {
           for (const cell of unitIndex.elementsAtPosition(position)) {
-            cell.classList[operationName](prefix + '-unit');
-            console.log("class list: ", cell.classList);
+            operation(cell, "unit", thickShadow);
           }
         } else {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName](prefix + '-left');
-              console.log("class list: ", cell.classList);
+              operation(cell, "left", thickShadow);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName](prefix + '-top');
-              console.log("class list: ", cell.classList);
+              operation(cell, "top", thickShadow);
             }
           }
         }
@@ -463,40 +467,41 @@ export class BigTable {
         if (position.offset() === length) {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName](prefix + '-right');
-              console.log("class list: ", cell.classList);
+              operation(cell, "right", thickShadow);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName](prefix + '-bottom');
-              console.log("class list: ", cell.classList);
+              operation(cell, "bottom", thickShadow);
             }
           }
         } else {
           if (showsHorizontal(type)) {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName](prefix + '-thin-right');
-              console.log("class list: ", cell.classList);
+              operation(cell, "right", thinShadow);
             }
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName](prefix + '-thin-left');
-              console.log("class list: ", cell.classList);
+              operation(cell, "left", thinShadow);
             }
           } else {
             for (const cell of dragIndex.elementsAtPosition(before)) {
-              cell.classList[operationName](prefix + '-thin-bottom');
-              console.log("class list: ", cell.classList);
+              operation(cell, "bottom", thinShadow);
             }
             for (const cell of dragIndex.elementsAtPosition(position)) {
-              cell.classList[operationName](prefix + '-thin-top');
-              console.log("class list: ", cell.classList);
+              operation(cell, "top", thinShadow);
             }
           }
         }
       }
     }
 
-    function operationOnIndexedPosition(operationName, prefix, indexedPosition) {
+    function operationOnIndexedPosition(operationName, color, indexedPosition) {
+      //console.log(`${operationName} on indexed position: `, indexedPosition);
+      const operation = {
+          'add': addShadow,
+          'remove': (cell, where, shadow) => removeShadow(cell, where)
+        }[operationName];
+      const thickShadow = Shadow.thick(color);
+      const thinShadow = Shadow.thin(color);
       const position = indexedPosition.position();
       const order = hierarchization.orderOfPosition(position);
       const lengthOfOrder = virtualizer.lengthAtOrder(order);
@@ -504,11 +509,11 @@ export class BigTable {
       if (index === 0) {
         if (showsHorizontal(position.type())) {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-            cell.classList[operationName](prefix + '-top');
+            operation(cell, "top", thickShadow);
           }
         } else {
           for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-            cell.classList[operationName](prefix + '-left');
+            operation(cell, "left", thickShadow);
           }
         }
       } else {
@@ -516,27 +521,27 @@ export class BigTable {
         if (index === lengthOfOrder) {
           if (showsHorizontal(position.type())) {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName](prefix + '-bottom');
+              operation(cell, "bottom", thickShadow);
             }
           } else {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName](prefix + '-right');
+              operation(cell, "right", thickShadow);
             }
           }
         } else {
           if (showsHorizontal(position.type())) {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName](prefix + '-thin-bottom');
+              operation(cell, "bottom", thinShadow);
             }
             for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-              cell.classList[operationName](prefix + '-thin-top');
+              operation(cell, "top", thinShadow);
             }
           } else {
             for (const cell of elementsAtIndexedPosition(before)) {
-              cell.classList[operationName](prefix + '-thin-right');
+              operation(cell, "right", thinShadow);
             }
             for (const cell of elementsAtIndexedPosition(indexedPosition)) {
-              cell.classList[operationName](prefix + '-thin-left');
+              operation(cell, "left", thinShadow);
             }
           }
         }
@@ -552,18 +557,23 @@ export class BigTable {
       }
     };
 
-    const highlightVisitor = (operationName, prefix, indexedPosition) => {
+    const highlightVisitor = (operationName, color, indexedPosition) => {
       return {
         visitDimensionDropTarget: (position) => {
-          operationOnPosition(operationName, prefix, position);
+          operationOnPosition(operationName, color, position);
         },
         visitIndexDropTarget: (index) => {
           const targetIndexedPosition =
               new IndexedPosition(indexedPosition.position(), index);
-          operationOnIndexedPosition(operationName, prefix, targetIndexedPosition);
+          operationOnIndexedPosition(operationName, color, targetIndexedPosition);
         },
         visitBinDropTarget: () => {
-          binElement.classList[operationName](prefix + '-bin');
+          switch (operationName) {
+            case "add":
+              addShadow(binElement, "unit", Shadow.thick(color));
+            case "remove":
+              removeShadow(binElement, "unit");
+          }
         },
       };
     };
@@ -586,16 +596,16 @@ export class BigTable {
         for (const toPosition of hierarchization.allMoveTargets(fromPosition)) {
           targetSet.add(new DimensionDropTarget(toPosition));
         }
-        console.log("targetSet: ", targetSet._array);
+        //console.log("targetSet: ", targetSet._array);
         for (let target of targetSet.elements()) {
-          target.accept(highlightVisitor('add', 'target', dragItem));
+          target.accept(highlightVisitor('add', 'lightblue', dragItem));
         }
       },
 
       onDragEnd: (dragItem) => {
         binElement.textContent = "";
         for (let target of targetSet.elements()) {
-          target.accept(highlightVisitor('remove', 'target', dragItem));
+          target.accept(highlightVisitor('remove', 'lightblue', dragItem));
         }
         targetSet = null;
       },
@@ -697,11 +707,12 @@ targetSet iff and only it is determied to be a droppable`);
       },
 
       highlight: (indexedPosition, target) => {
-        target.accept(highlightVisitor('add', 'dragover', indexedPosition));
+        target.accept(highlightVisitor('add', 'blue', indexedPosition));
       },
 
       removeHighlight: (indexedPosition, target) => {
-        target.accept(highlightVisitor('remove', 'dragover', indexedPosition));
+        target.accept(highlightVisitor('remove', 'blue', indexedPosition));
+        target.accept(highlightVisitor('add', 'lightblue', indexedPosition));
       }
     }
 

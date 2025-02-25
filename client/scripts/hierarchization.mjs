@@ -299,8 +299,15 @@ export class Hierarchization {
     const flen = this._fixed.length;
     const rlen = this._rowHierarchy.length;
     const clen = this._columnHierarchy.length;
-    switch (fromPosition.type('')) {
+    const fromOffset = fromPosition.offset();
+    switch (fromPosition.type()) {
       case 'fixed':
+        for (let offset = 0; offset <= flen; offset++) {
+          // TODO: these could be done smarter
+          if (offset !== fromOffset && offset !== fromOffset + 1) {
+            yield Position.fixed(offset);
+          }
+        }
         if (flen > 1 || clen > 0) {
           for (let offset = 0; offset <= rlen; offset++) {
             yield Position.row(offset);
@@ -316,6 +323,12 @@ export class Hierarchization {
         for (let offset = 0; offset <= flen; offset++) {
           yield Position.fixed(offset);
         }
+        for (let offset = 0; offset <= rlen; offset++) {
+          // TODO: these could be done smarter
+          if (offset !== fromOffset && offset !== fromOffset + 1) {
+            yield Position.row(offset);
+          }
+        }
         if (rlen > 1 || flen > 0) {
           for (let offset = 0; offset <= clen; offset++) {
             yield Position.column(offset);
@@ -329,6 +342,12 @@ export class Hierarchization {
         if (clen > 1 || flen > 0) {
           for (let offset = 0; offset <= rlen; offset++) {
             yield Position.row(offset);
+          }
+        }
+        for (let offset = 0; offset <= clen; offset++) {
+          // TODO: these could be done smarter
+          if (offset !== fromOffset && offset !== fromOffset + 1) {
+            yield Position.column(offset);
           }
         }
         break;
