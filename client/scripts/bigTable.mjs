@@ -435,12 +435,7 @@ export class BigTable {
     }
 
     // TODO: make this nicer:
-    function operationOnPosition(operationName, color, position) {
-      //console.log(`${operationName} on position: `, position);
-      const operation = {
-          'add': addShadow,
-          'remove': (cell, where, shadow) => removeShadow(cell, where)
-        }[operationName];
+    function operationOnPosition(operation, color, position) {
       const thickShadow = Shadow.thick(color);
       const thinShadow = Shadow.thin(color);
       const type = position.type();
@@ -494,12 +489,7 @@ export class BigTable {
       }
     }
 
-    function operationOnIndexedPosition(operationName, color, indexedPosition) {
-      //console.log(`${operationName} on indexed position: `, indexedPosition);
-      const operation = {
-          'add': addShadow,
-          'remove': (cell, where, shadow) => removeShadow(cell, where)
-        }[operationName];
+    function operationOnIndexedPosition(operation, color, indexedPosition) {
       const thickShadow = Shadow.thick(color);
       const thinShadow = Shadow.thin(color);
       const position = indexedPosition.position();
@@ -558,22 +548,21 @@ export class BigTable {
     };
 
     const highlightVisitor = (operationName, color, indexedPosition) => {
+      const operation = {
+          'add': addShadow,
+          'remove': (cell, where, shadow) => removeShadow(cell, where)
+        }[operationName];
       return {
         visitDimensionDropTarget: (position) => {
-          operationOnPosition(operationName, color, position);
+          operationOnPosition(operation, color, position);
         },
         visitIndexDropTarget: (index) => {
           const targetIndexedPosition =
               new IndexedPosition(indexedPosition.position(), index);
-          operationOnIndexedPosition(operationName, color, targetIndexedPosition);
+          operationOnIndexedPosition(operation, color, targetIndexedPosition);
         },
         visitBinDropTarget: () => {
-          switch (operationName) {
-            case "add":
-              addShadow(binElement, "unit", Shadow.thick(color));
-            case "remove":
-              removeShadow(binElement, "unit");
-          }
+          operation(binElement, "unit", Shadow.thick(color));
         },
       };
     };
