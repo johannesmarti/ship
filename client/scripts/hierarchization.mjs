@@ -33,6 +33,14 @@ export class Position {
   }
 }
 
+export function comparePositions(posA, posB) {
+  if (posA.type() < posB.type()) return -1;
+  if (posA.type() > posB.type()) return 1;
+  if (posA.offset() < posB.offset()) return -1;
+  if (posA.offset() > posB.offset()) return 1;
+  return 0;
+}
+
 // TODO: This should probabely be called IndexedOrder to be similar to
 // indexedPosition
 class PointedOrder {
@@ -50,6 +58,8 @@ class PointedOrder {
   }
 
   order() { return this._order; }
+  // TODO: should figure out whether this is a viewIndex or a dataIndex
+  // and adapt the name accordingly
   fixedIndex() { return this._fixedIndex; }
 
   // returns null if the json object is not of the right format

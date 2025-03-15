@@ -41,6 +41,7 @@ class MutableHierarchicalIterator {
   *freshDigits() {
     let k = this._array.length - 1;
     do {
+      // TODO: Think about what these mean.
       yield [k, this._hierarchy[k], this._array[k]];
       if (this._array[k] !== 0) {
         break;
@@ -186,6 +187,34 @@ class BinDropTarget {
   equals(other) { return other instanceof BinDropTarget; }
 
   accept(visitor) { return visitor.visitBinDropTarget(); }
+}
+
+function compareDropTargets(a, b) {
+  if (a instanceof BinDropTarget) {
+    if (b instanceof BinDropTarget) return 0;
+    return -1; // BinDropTarget is the smallest
+  }
+  if (b instanceof BinDropTarget) {
+    return 1;
+  }
+
+  if (a instanceof DimensionDropTarget) {
+    if (b instanceof DimensionDropTarget) {
+      return comparePositions(a.position(), b.position());
+    }
+    return -1; // DimensionDropTarget comes before IndexDropTarget
+  }
+
+  if (a instanceof IndexDropTarget) {
+    if (b instanceof IndexDropTarget) {
+      if (a.index() < b.index()) return -1;
+      if (a.index() > b.index()) return 1;
+      return 0;
+    }
+    return 1; // IndexDropTarget comes after DimensionDropTarget
+  }
+
+  console.assert(false, "Unexpected comparison case in compareDropTargets");
 }
 
 export class BigTable {
@@ -434,7 +463,6 @@ export class BigTable {
       return new DimensionDropTarget(dropPosition);
     }
 
-    // TODO: make this nicer:
     function operationOnPosition(operation, color, position) {
       const thickShadow = Shadow.thick(color);
       const thinShadow = Shadow.thin(color);
@@ -571,7 +599,7 @@ export class BigTable {
 
     const dragNDropStructure = {
       onDragStart: (dragItem) => {
-        targetSet = EqualitySet.empty();
+        targetSet = EqualitySet.empty(compareDropTargets);
         if (isBinable(virtualizer, hierarchization, dragItem)) {
           binElement.textContent = "BIN";
           targetSet.add(new BinDropTarget());
