@@ -19,7 +19,7 @@ class ArrayEqualitySet {
   }
 
   add(element) {
-    console.assert(!this.contains(element), `elemement ${element} is
+    console.assert(!this.contains(element), `element ${element} is
 already in the the set '${this._array}'`);
     this._array.push(element);
   }
@@ -31,7 +31,7 @@ already in the the set '${this._array}'`);
 
 export class TreeEqualitySet {
   constructor(compare) {
-    this._aatree = AATree(compare);
+    this._aatree = new AATree(compare);
   }
 
   static empty(compare) {
@@ -39,26 +39,24 @@ export class TreeEqualitySet {
   }
 
   contains(element) {
-    const ix = this._array.findIndex(e => e.equals(element));
-    return ix !== -1;
+    return this._aatree.contains(element);
   }
 
   elements() {
-    return this._array.values();
+    return this._aatree.keys();
   }
 
   add(element) {
-    console.assert(!this.contains(element), `elemement ${element} is
-already in the the set '${this._array}'`);
-    this._array.push(element);
+    console.assert(!this.contains(element), `element ${element} is already in the set`);
+    this._aatree = this._aatree.add(element);
   }
 
   toString() {
-    return this._array.toString()
+    return this._aatree.toString()
   }
 }
 
 //const EqualitySet = ArrayEqualitySet;
 const EqualitySet = TreeEqualitySet;
 
-export {EqualitySet};
+export { EqualitySet };

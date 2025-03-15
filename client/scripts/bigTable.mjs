@@ -1,7 +1,6 @@
 import { EqualitySet } from './equalitySet.mjs'
-import { Schema } from './schema.mjs';
-import { Position, Hierarchization } from './hierarchization.mjs';
-import { Virtualizer, TransformedDataView } from './virtualSchema.mjs';
+import { Position, comparePositions } from './hierarchization.mjs';
+import { TransformedDataView } from './virtualSchema.mjs';
 import { attach } from './dragNDrop.mjs';
 import { IndexedPosition } from './arrangement.mjs'
 import { isBinable, bin, binItems, restore } from './bin.mjs'
@@ -192,7 +191,7 @@ class BinDropTarget {
 function compareDropTargets(a, b) {
   if (a instanceof BinDropTarget) {
     if (b instanceof BinDropTarget) return 0;
-    return -1; // BinDropTarget is the smallest
+    return -1;
   }
   if (b instanceof BinDropTarget) {
     return 1;
@@ -202,7 +201,7 @@ function compareDropTargets(a, b) {
     if (b instanceof DimensionDropTarget) {
       return comparePositions(a.position(), b.position());
     }
-    return -1; // DimensionDropTarget comes before IndexDropTarget
+    return -1;
   }
 
   if (a instanceof IndexDropTarget) {
@@ -211,7 +210,7 @@ function compareDropTargets(a, b) {
       if (a.index() > b.index()) return 1;
       return 0;
     }
-    return 1; // IndexDropTarget comes after DimensionDropTarget
+    return 1;
   }
 
   console.assert(false, "Unexpected comparison case in compareDropTargets");

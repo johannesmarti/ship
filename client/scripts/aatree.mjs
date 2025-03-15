@@ -35,7 +35,7 @@ const RIGHT = 1
 const EMPTY = Node (null, null, 0, null, null)
   EMPTY.l = EMPTY.r = EMPTY
 
-class AATree {
+export class AATree {
 
   constructor (compare = AATree.defaultCompare, store = EMPTY, size = 0) {
     if (typeof compare !== 'function')
@@ -73,12 +73,12 @@ class AATree {
     return new Cursor (this, path, key)
   }
 
+  add (key) {
+    return this.select(key).add()
+  }
+
   insert (...keys) {
-    let r = this
-    const l = keys.length
-    for (let i = 0; i < l; i += 1)
-      r = r.select (keys[i]).add()
-    return r
+    return keys.reduce((tree, key) => tree.add(key), this)
   }
 
   [Symbol.iterator] () {
@@ -107,6 +107,11 @@ class AATree {
         return _fn (n_) }
       return done
     }
+  }
+
+  toString () {
+    const elements = Array.from(this)
+    return `AATree {${elements.join(', ')}}`
   }
 
 }
@@ -295,11 +300,3 @@ function unset (path) {
   }
   return t
 }
-
-
-// Exports
-// -------
-
-const core = { Node, Empty:EMPTY }
-define (AATree, { core: { value:core } })
-export default AATree
